@@ -9,13 +9,11 @@ class GrammarQuizResultScreen extends StatelessWidget {
     super.key,
     required this.questions,
     required this.answers,
-    required this.onRetry,
-    required this.onExamples,
+    required this.onReturnToLearning,
   });
   final List<ConditionQuestion> questions;
   final List<int> answers;
-  final VoidCallback onRetry;
-  final VoidCallback onExamples;
+  final VoidCallback onReturnToLearning;
 
   @override
   Widget build(BuildContext context) {
@@ -26,19 +24,13 @@ class GrammarQuizResultScreen extends StatelessWidget {
     final score = (correct / questions.length * 100).round();
     return GrammarScaffold(
       title: '학습 결과',
-      footer: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: onExamples,
-              child: const Text('예제 다시 보기'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: FilledButton(onPressed: onRetry, child: const Text('다시 풀기')),
-          ),
-        ],
+      footer: SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: onReturnToLearning,
+          icon: const Icon(Icons.menu_book_outlined),
+          label: const Text('학습으로 돌아가기'),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),

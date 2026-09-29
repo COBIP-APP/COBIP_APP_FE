@@ -51,13 +51,11 @@ class _GrammarQuizScreenState extends State<GrammarQuizScreen> {
       return GrammarQuizResultScreen(
         questions: _questions,
         answers: _answers,
-        onExamples: () => context.pop(),
-        onRetry: () => setState(() {
-          _answers.clear();
-          _selected = null;
-          _submitted = false;
-          _showResult = false;
-        }),
+        onReturnToLearning: () => context.goNamed(
+          AppRouteNames.grammarChapters,
+          pathParameters: {'language': widget.language.id},
+          queryParameters: {'category': GrammarCategory.control.name},
+        ),
       );
     }
     final question = _questions[_answers.length];

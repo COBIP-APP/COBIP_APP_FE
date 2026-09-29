@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('답 선택과 해설, 오답 채점, 결과 및 재시도가 동작한다', (tester) async {
+  testWidgets('답 선택과 해설, 오답 채점 후 학습 목록으로 돌아간다', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -55,18 +55,15 @@ void main() {
     expect(find.text('67점'), findsOneWidget);
     expect(find.text('맞힌 문제 2'), findsOneWidget);
     expect(find.text('틀린 문제 1'), findsOneWidget);
-    await tester.tap(find.text('다시 풀기'));
+    expect(find.text('예제 다시 보기'), findsNothing);
+    expect(find.text('다시 풀기'), findsNothing);
+    await tester.tap(find.text('학습으로 돌아가기'));
     await tester.pumpAndSettle();
-    expect(find.text('문제 1 / 3'), findsOneWidget);
-    expect(
-      tester
-          .widget<FilledButton>(find.widgetWithText(FilledButton, '정답 제출'))
-          .onPressed,
-      isNull,
-    );
-    await tester.tap(find.byTooltip('뒤로가기'));
-    await tester.pumpAndSettle();
-    expect(find.text('예제 3 / 3'), findsOneWidget);
+    expect(find.text('Java 문법'), findsOneWidget);
+    expect(find.text('2개 챕터 · 예시 진행률'), findsOneWidget);
+    expect(find.text('조건문'), findsOneWidget);
+    expect(find.text('반복문'), findsOneWidget);
+    expect(appRouter.canPop(), isFalse);
     expect(tester.takeException(), isNull);
   });
 

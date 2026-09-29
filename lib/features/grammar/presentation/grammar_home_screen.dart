@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_router.dart';
 import '../data/grammar_sample_data.dart';
 import 'grammar_scaffold.dart';
 
@@ -13,6 +15,15 @@ class GrammarHomeScreen extends StatefulWidget {
 class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
   GrammarLanguage _language = GrammarLanguage.java;
   final _searchController = TextEditingController();
+
+  void _openChapters([GrammarCategory? category]) {
+    FocusScope.of(context).unfocus();
+    context.pushNamed(
+      AppRouteNames.grammarChapters,
+      pathParameters: {'language': _language.id},
+      queryParameters: {if (category != null) 'category': category.name},
+    );
+  }
 
   @override
   void dispose() {
@@ -39,9 +50,8 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
         children: [
           Text(
             '코드를 더 잘 이해하는 시작',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           const Text('언어를 선택하고 기초부터 차근차근 학습해 보세요.'),
@@ -108,11 +118,18 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
           const SizedBox(height: 24),
           Text(
             '${_language.label} 문법 챕터',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _openChapters,
+              icon: const Icon(Icons.arrow_forward),
+              label: const Text('전체 보기'),
+            ),
+          ),
           if (chapters.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
@@ -124,6 +141,8 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                 leading: Icon(Icons.code, color: colors.primary),
                 title: Text(chapter.title),
                 subtitle: Text(chapter.description),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _openChapters(chapter.category),
               ),
             ),
         ],

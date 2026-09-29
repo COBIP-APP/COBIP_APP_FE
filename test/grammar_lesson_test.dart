@@ -29,21 +29,24 @@ void main() {
         code,
         contains(switch (language) {
           GrammarLanguage.java => 'System.out.println',
-          GrammarLanguage.python => 'elif score',
+          GrammarLanguage.python => 'if score',
           GrammarLanguage.javascript => 'console.log',
         }),
       );
-      expect(
-        tester
-            .widget<FilledButton>(find.widgetWithText(FilledButton, '퀴즈 준비 중'))
-            .onPressed,
-        isNull,
-      );
+      await tester.tap(find.text('다음 예제'));
+      await tester.pumpAndSettle();
+      expect(find.text('예제 2 / 3'), findsOneWidget);
+      await tester.tap(find.text('다음 예제'));
+      await tester.pumpAndSettle();
+      expect(find.text('예제 3 / 3'), findsOneWidget);
+      expect(find.text('퀴즈 풀기'), findsOneWidget);
       await tester.tap(find.byTooltip('COBIP 챗봇'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('학습 계속하기'));
       await tester.pumpAndSettle();
       expect(find.text('예제 코드'), findsOneWidget);
+      await tester.tap(find.text('예제 1'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('개념 다시 보기'));
       await tester.pumpAndSettle();
       expect(find.text('핵심 개념'), findsOneWidget);

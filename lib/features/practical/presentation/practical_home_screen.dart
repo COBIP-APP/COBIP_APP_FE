@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../data/practical_sample_data.dart';
 import 'practical_scaffold.dart';
+import 'practical_topic_card.dart';
 
 class PracticalHomeScreen extends StatefulWidget {
   const PracticalHomeScreen({super.key});
@@ -83,52 +84,11 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
           for (final topic in topics)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Card(
-                color: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  side: const BorderSide(color: Color(0xFFECE8F5)),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () => context.pushNamed(
-                    AppRouteNames.practicalChapters,
-                    pathParameters: {'topic': topic.id},
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          topic.category,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          topic.title,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(topic.summary),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 6,
-                          children: [
-                            for (final tag in topic.tags)
-                              Chip(label: Text('#$tag')),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text('${topic.chapters.length}개 챕터'),
-                      ],
-                    ),
-                  ),
+              child: PracticalTopicCard(
+                topic: topic,
+                onTap: () => context.pushNamed(
+                  AppRouteNames.practicalChapters,
+                  pathParameters: {'topic': topic.id},
                 ),
               ),
             ),

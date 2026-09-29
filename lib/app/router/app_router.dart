@@ -8,6 +8,7 @@ import '../../features/auth/presentation/sign_up_complete_screen.dart';
 import '../../features/auth/presentation/sign_up_screen.dart';
 import '../../features/auth/presentation/terms_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/grammar/presentation/grammar_home_screen.dart';
 
 abstract final class AppRouteNames {
   static const login = 'login';
@@ -17,6 +18,7 @@ abstract final class AppRouteNames {
   static const signUpComplete = 'sign-up-complete';
   static const terms = 'terms';
   static const home = 'home';
+  static const grammar = 'grammar';
 }
 
 final appRouter = GoRouter(
@@ -30,6 +32,11 @@ final appRouter = GoRouter(
     ),
   ),
   routes: [
+    GoRoute(
+      path: '/grammar',
+      name: AppRouteNames.grammar,
+      builder: (context, state) => const GrammarHomeScreen(),
+    ),
     GoRoute(
       path: '/login',
       name: AppRouteNames.login,

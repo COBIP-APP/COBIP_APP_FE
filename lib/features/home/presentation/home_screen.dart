@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/router/app_router.dart';
 
 enum HomeContentState { loading, empty, loaded, error }
 
@@ -24,8 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _retry() async {
@@ -47,8 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(
               'COBIP 챗봇',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text('챗봇 기능은 담당 화면 연결 후 이용할 수 있습니다.'),
@@ -86,8 +91,9 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 32),
             Text(
               '오늘도 한 단계 성장해 볼까요?',
-              style: Theme.of(context).textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text('최근 학습을 이어서 진행하고 새로운 학습을 만나보세요.'),
@@ -101,6 +107,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onDestinationSelected: (index) {
           if (index == 3) {
             _showChat();
+          } else if (index == 1) {
+            context.pushNamed(AppRouteNames.grammar);
           } else if (index != 0) {
             _showMessage('해당 화면은 담당 팀과 연결 후 이용할 수 있습니다.');
           }
@@ -135,9 +143,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _loadingContent(BuildContext context) {
-    final placeholderColor = Theme.of(context)
-        .colorScheme
-        .surfaceContainerHighest;
+    final placeholderColor = Theme.of(
+      context,
+    ).colorScheme.surfaceContainerHighest;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -177,14 +185,15 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             Text(
               '아직 시작한 학습이 없어요',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text('첫 학습을 시작하고 성장 기록을 만들어 보세요.'),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: () => _showMessage('학습 화면은 담당 팀과 연결 후 이용할 수 있습니다.'),
+              onPressed: () => context.pushNamed(AppRouteNames.grammar),
               child: const Text('학습 시작하기'),
             ),
           ],
@@ -211,8 +220,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 8),
                   Text(
                     '파이썬 기초',
-                    style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   const Text('4장. 자료구조 및 알고리즘'),
@@ -253,8 +263,9 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             Text(
               '학습 정보를 불러오지 못했어요',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text('연결을 확인하고 다시 시도해 주세요.'),
@@ -271,8 +282,9 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleMedium
-            ?.copyWith(fontWeight: FontWeight.bold),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }

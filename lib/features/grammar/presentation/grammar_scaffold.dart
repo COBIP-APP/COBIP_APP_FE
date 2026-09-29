@@ -10,11 +10,13 @@ class GrammarScaffold extends StatelessWidget {
     required this.title,
     required this.body,
     this.isOverview = false,
+    this.footer,
   });
 
   final String title;
   final Widget body;
   final bool isOverview;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +63,15 @@ class GrammarScaffold extends StatelessWidget {
               selectedIndex: 1,
               onChat: () => _showChat(context),
             )
-          : null,
+          : footer == null
+          ? null
+          : SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                child: footer,
+              ),
+            ),
       floatingActionButton: isOverview
           ? null
           : FloatingActionButton.small(

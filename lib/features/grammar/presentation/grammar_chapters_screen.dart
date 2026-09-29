@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/router/app_router.dart';
 
 import '../data/grammar_sample_data.dart';
 import 'grammar_scaffold.dart';
@@ -73,9 +76,18 @@ class _GrammarChaptersScreenState extends State<GrammarChaptersScreen> {
           const SizedBox(height: 16),
           Text('${chapters.length}개 챕터 · 예시 진행률'),
           const SizedBox(height: 12),
-          for (final chapter in chapters) _ChapterCard(chapter: chapter),
+          for (final chapter in chapters)
+            _ChapterCard(
+              chapter: chapter,
+              onTap: chapter.id == 'conditions'
+                  ? () => context.pushNamed(
+                      AppRouteNames.grammarConcept,
+                      pathParameters: {'language': widget.language.id},
+                    )
+                  : null,
+            ),
           const SizedBox(height: 16),
-          const Text('개념·예제·퀴즈 학습 화면은 준비 중이에요.'),
+          const Text('조건문 카드를 눌러 개념을 학습해 보세요. 다른 챕터와 퀴즈는 준비 중이에요.'),
         ],
       ),
     );
@@ -83,9 +95,10 @@ class _GrammarChaptersScreenState extends State<GrammarChaptersScreen> {
 }
 
 class _ChapterCard extends StatelessWidget {
-  const _ChapterCard({required this.chapter});
+  const _ChapterCard({required this.chapter, this.onTap});
 
   final GrammarChapter chapter;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -97,50 +110,55 @@ class _ChapterCard extends StatelessWidget {
       GrammarCategory.collections => Icons.data_array,
     };
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor: colors.primaryContainer,
-              foregroundColor: colors.onPrimaryContainer,
-              child: Icon(icon),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    chapter.title,
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${chapter.category.label} · ${chapter.status}',
-                    style: TextStyle(color: colors.primary),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(chapter.description),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: LinearProgressIndicator(
-                          value: chapter.progress,
-                          semanticsLabel: '${chapter.title} 진행률',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text('${(chapter.progress * 100).round()}%'),
-                    ],
-                  ),
-                ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor: colors.primaryContainer,
+                foregroundColor: colors.onPrimaryContainer,
+                child: Icon(icon),
               ),
-            ),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      chapter.title,
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    if (onTap != null) const Text('개념 학습하기 ›'),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${chapter.category.label} · ${chapter.status}',
+                      style: TextStyle(color: colors.primary),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(chapter.description),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: LinearProgressIndicator(
+                            value: chapter.progress,
+                            semanticsLabel: '${chapter.title} 진행률',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text('${(chapter.progress * 100).round()}%'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

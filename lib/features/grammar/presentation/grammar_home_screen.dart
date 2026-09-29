@@ -45,16 +45,19 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
 
     return GrammarScaffold(
       title: '문법 학습',
+      isOverview: true,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 88),
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
         children: [
           Text(
-            '코드를 더 잘 이해하는 시작',
+            '문법 학습',
             style: Theme.of(context).textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text('언어를 선택하고 기초부터 차근차근 학습해 보세요.'),
+          const Text('코드를 더 잘 이해하는 시작'),
+          const SizedBox(height: 4),
+          const Text('COBIP와 함께 문법을 학습해보세요'),
           const SizedBox(height: 24),
           Card(
             child: Padding(

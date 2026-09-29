@@ -32,6 +32,10 @@ void main() {
 
     await tester.tap(find.byTooltip('뒤로가기'));
     await tester.pumpAndSettle();
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      1,
+    );
     expect(find.text('elif'), findsOneWidget);
     expect(find.text('Python 문법 챕터'), findsOneWidget);
     await tester.ensureVisible(find.text('전체 보기'));

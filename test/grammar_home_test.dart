@@ -5,13 +5,24 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('홈에서 문법으로 이동하고 검색과 언어 선택을 유지한다', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     appRouter.go('/home');
     await tester.pumpWidget(const CobipApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('문법'));
     await tester.pumpAndSettle();
     expect(find.text('문법 학습'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      1,
+    );
+    expect(find.text('COBIP'), findsOneWidget);
+    expect(find.text('코드를 더 잘 이해하는 시작'), findsOneWidget);
+    expect(find.text('COBIP와 함께 문법을 학습해보세요'), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
 
     await tester.tap(find.text('Python'));
     await tester.enterText(find.byType(TextField), 'elif');
@@ -19,7 +30,7 @@ void main() {
     expect(find.text('조건문'), findsOneWidget);
     expect(find.text('변수와 자료형'), findsNothing);
 
-    await tester.tap(find.byTooltip('COBIP 챗봇'));
+    await tester.tap(find.text('챗봇'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('학습 계속하기'));
     await tester.pumpAndSettle();
@@ -33,8 +44,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('변수와 자료형'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('뒤로가기'));
+    await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      0,
+    );
   });
 }

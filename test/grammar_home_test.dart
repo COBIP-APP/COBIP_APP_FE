@@ -8,7 +8,7 @@ void main() {
     appRouter.go('/home');
     await tester.pumpWidget(const CobipApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('학습'));
+    await tester.tap(find.text('문법'));
     await tester.pumpAndSettle();
     expect(find.text('문법 학습'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);

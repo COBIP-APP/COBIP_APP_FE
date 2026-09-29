@@ -102,10 +102,12 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
         onDestinationSelected: (index) {
-          if (index == 3) {
+          if (index == 4) {
             _showChat();
           } else if (index == 1) {
             context.pushNamed(AppRouteNames.grammar);
+          } else if (index == 2) {
+            _showMessage('실무 학습 화면은 준비 중이에요.');
           } else if (index != 0) {
             _showMessage('해당 화면은 담당 팀과 연결 후 이용할 수 있습니다.');
           }
@@ -118,8 +120,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),
-            label: '학습',
+            label: '문법',
           ),
+          NavigationDestination(icon: Icon(Icons.work_outline), label: '실무'),
           NavigationDestination(icon: Icon(Icons.quiz_outlined), label: '문제'),
           NavigationDestination(
             icon: Icon(Icons.smart_toy_outlined),

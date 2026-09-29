@@ -21,23 +21,16 @@ class AppBottomNavigation extends StatelessWidget {
         if (index == selectedIndex) return;
         switch (index) {
           case 0:
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.goNamed(AppRouteNames.home);
-            }
+            context.goNamed(AppRouteNames.home);
           case 1:
-            context.pushNamed(AppRouteNames.grammar);
+            context.goNamed(AppRouteNames.grammar);
+          case 2:
+            context.goNamed(AppRouteNames.practical);
           case 4:
             onChat();
           default:
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  index == 2 ? '실무 학습 화면은 준비 중이에요.' : '문제 화면은 준비 중이에요.',
-                ),
-              ),
-            );
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text('문제 화면은 준비 중이에요.')));
         }
       },
       destinations: const [
@@ -51,7 +44,11 @@ class AppBottomNavigation extends StatelessWidget {
           selectedIcon: Icon(Icons.menu_book),
           label: '문법',
         ),
-        NavigationDestination(icon: Icon(Icons.work_outline), label: '실무'),
+        NavigationDestination(
+          icon: Icon(Icons.work_outline),
+          selectedIcon: Icon(Icons.work),
+          label: '실무',
+        ),
         NavigationDestination(icon: Icon(Icons.quiz_outlined), label: '문제'),
         NavigationDestination(
           icon: Icon(Icons.smart_toy_outlined),

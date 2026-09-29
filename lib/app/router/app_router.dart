@@ -1,3 +1,5 @@
+import '../../features/practical/presentation/practical_home_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,6 +25,7 @@ abstract final class AppRouteNames {
   static const signUpComplete = 'sign-up-complete';
   static const terms = 'terms';
   static const home = 'home';
+  static const practical = 'practical';
   static const grammar = 'grammar';
   static const grammarChapters = 'grammar-chapters';
   static const grammarConcept = 'grammar-concept';
@@ -41,6 +44,11 @@ final appRouter = GoRouter(
     ),
   ),
   routes: [
+    GoRoute(
+      path: '/practical',
+      name: AppRouteNames.practical,
+      builder: (context, state) => const PracticalHomeScreen(),
+    ),
     GoRoute(
       path: '/grammar/:language/chapters',
       name: AppRouteNames.grammarChapters,

@@ -1,3 +1,4 @@
+import '../../features/practical/presentation/practical_chapter_screen.dart';
 import '../../features/practical/data/practical_sample_data.dart';
 import '../../features/practical/presentation/practical_chapters_screen.dart';
 import '../../features/practical/presentation/practical_home_screen.dart';
@@ -55,6 +56,35 @@ final appRouter = GoRouter(
         GoRoute(
           path: ':topic/chapters',
           name: AppRouteNames.practicalChapters,
+          routes: [
+            GoRoute(
+              path: ':chapter',
+              name: AppRouteNames.practicalChapter,
+              redirect: (context, state) {
+                final topic = PracticalTopic.fromId(
+                  state.pathParameters['topic'],
+                );
+                if (topic == null) return '/practical';
+                return topic.chapters.any(
+                      (chapter) =>
+                          chapter.id == state.pathParameters['chapter'],
+                    )
+                    ? null
+                    : '/practical/${topic.id}/chapters';
+              },
+              builder: (context, state) {
+                final topic = PracticalTopic.fromId(
+                  state.pathParameters['topic'],
+                )!;
+                return PracticalChapterScreen(
+                  topic: topic,
+                  chapterIndex: topic.chapters.indexWhere(
+                    (chapter) => chapter.id == state.pathParameters['chapter'],
+                  ),
+                );
+              },
+            ),
+          ],
           redirect: (context, state) =>
               PracticalTopic.fromId(state.pathParameters['topic']) == null
               ? '/practical'

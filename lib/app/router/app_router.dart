@@ -1,3 +1,5 @@
+import '../../features/practical/data/practical_sample_data.dart';
+import '../../features/practical/presentation/practical_chapters_screen.dart';
 import '../../features/practical/presentation/practical_home_screen.dart';
 
 import 'package:flutter/material.dart';
@@ -26,6 +28,8 @@ abstract final class AppRouteNames {
   static const terms = 'terms';
   static const home = 'home';
   static const practical = 'practical';
+  static const practicalChapters = 'practical-chapters';
+  static const practicalChapter = 'practical-chapter';
   static const grammar = 'grammar';
   static const grammarChapters = 'grammar-chapters';
   static const grammarConcept = 'grammar-concept';
@@ -47,6 +51,19 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/practical',
       name: AppRouteNames.practical,
+      routes: [
+        GoRoute(
+          path: ':topic/chapters',
+          name: AppRouteNames.practicalChapters,
+          redirect: (context, state) =>
+              PracticalTopic.fromId(state.pathParameters['topic']) == null
+              ? '/practical'
+              : null,
+          builder: (context, state) => PracticalChaptersScreen(
+            topic: PracticalTopic.fromId(state.pathParameters['topic'])!,
+          ),
+        ),
+      ],
       builder: (context, state) => const PracticalHomeScreen(),
     ),
     GoRoute(

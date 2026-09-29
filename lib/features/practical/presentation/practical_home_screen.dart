@@ -1,3 +1,7 @@
+import 'package:go_router/go_router.dart';
+
+import '../../../app/router/app_router.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/practical_sample_data.dart';
@@ -122,6 +126,17 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text('${topic.chapters.length}개 챕터'),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: () => context.pushNamed(
+                            AppRouteNames.practicalChapters,
+                            pathParameters: {'topic': topic.id},
+                          ),
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text('챕터 보기'),
+                        ),
+                      ),
                     ],
                   ),
                 ),

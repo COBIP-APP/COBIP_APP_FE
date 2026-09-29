@@ -8,9 +8,11 @@ class PracticalScaffold extends StatelessWidget {
     super.key,
     required this.body,
     this.isDetail = false,
+    this.onBack,
   });
   final Widget body;
   final bool isDetail;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -18,6 +20,13 @@ class PracticalScaffold extends StatelessWidget {
         ? AppBar(title: const Text('실무 기술 학습'), centerTitle: true)
         : AppBar(
             automaticallyImplyLeading: false,
+            leading: onBack == null
+                ? null
+                : IconButton(
+                    tooltip: '실무 목록으로 돌아가기',
+                    onPressed: onBack,
+                    icon: const Icon(Icons.arrow_back),
+                  ),
             title: Text(
               'COBIP',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(

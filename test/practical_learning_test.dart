@@ -84,7 +84,7 @@ void main() {
       2,
     );
     expect(find.text('학습 완료'), findsNothing);
-    appRouter.pop();
+    await tester.tap(find.byTooltip('실무 목록으로 돌아가기'));
     await tester.pumpAndSettle();
     expect(find.byType(PracticalHomeScreen), findsOneWidget);
   });

@@ -11,6 +11,13 @@ class PracticalChaptersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => PracticalScaffold(
+    onBack: () {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.goNamed(AppRouteNames.practical);
+      }
+    },
     body: ListView(
       padding: const EdgeInsets.all(24),
       children: [

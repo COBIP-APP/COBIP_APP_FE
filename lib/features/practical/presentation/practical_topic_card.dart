@@ -14,18 +14,19 @@ class PracticalTopicCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (color, icon) = switch (topic.id) {
-      'cache' => (const Color(0xFFB34E62), Icons.layers_outlined),
-      'database' => (const Color(0xFF5262B8), Icons.storage_rounded),
-      'network' => (const Color(0xFF247B98), Icons.language_rounded),
-      _ => (const Color(0xFF31806B), Icons.analytics_outlined),
+    final color = Theme.of(context).colorScheme.primary;
+    final icon = switch (topic.id) {
+      'cache' => Icons.layers_outlined,
+      'database' => Icons.storage_rounded,
+      'network' => Icons.language_rounded,
+      _ => Icons.analytics_outlined,
     };
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.07),
+            color: const Color(0x0A292638),
             blurRadius: 18,
             offset: const Offset(0, 5),
           ),
@@ -41,17 +42,6 @@ class PracticalTopicCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Ink(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [
-                  color.withValues(alpha: 0.09),
-                  Colors.white,
-                  Colors.white,
-                ],
-              ),
-            ),
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(

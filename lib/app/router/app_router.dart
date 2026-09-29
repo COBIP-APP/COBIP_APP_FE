@@ -10,6 +10,7 @@ import '../../features/auth/presentation/terms_screen.dart';
 import '../../features/grammar/data/grammar_sample_data.dart';
 import '../../features/grammar/presentation/grammar_chapters_screen.dart';
 import '../../features/grammar/presentation/grammar_home_screen.dart';
+import '../../features/grammar/presentation/grammar_quiz_screen.dart';
 import '../../features/grammar/presentation/grammar_concept_screen.dart';
 import '../../features/grammar/presentation/grammar_example_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -26,6 +27,7 @@ abstract final class AppRouteNames {
   static const grammarChapters = 'grammar-chapters';
   static const grammarConcept = 'grammar-concept';
   static const grammarExample = 'grammar-example';
+  static const grammarQuiz = 'grammar-quiz';
 }
 
 final appRouter = GoRouter(
@@ -50,6 +52,17 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'example',
               name: AppRouteNames.grammarExample,
+              routes: [
+                GoRoute(
+                  path: 'quiz',
+                  name: AppRouteNames.grammarQuiz,
+                  builder: (context, state) => GrammarQuizScreen(
+                    language: GrammarLanguage.fromId(
+                      state.pathParameters['language']!,
+                    )!,
+                  ),
+                ),
+              ],
               builder: (context, state) => GrammarExampleScreen(
                 language: GrammarLanguage.fromId(
                   state.pathParameters['language']!,

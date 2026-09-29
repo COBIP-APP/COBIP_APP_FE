@@ -87,7 +87,7 @@ class _GrammarChaptersScreenState extends State<GrammarChaptersScreen> {
                   : null,
             ),
           const SizedBox(height: 16),
-          const Text('조건문 카드를 눌러 개념을 학습해 보세요. 다른 챕터와 퀴즈는 준비 중이에요.'),
+          const Text('조건문 카드를 눌러 개념을 학습해 보세요. 다른 챕터는 준비 중이에요.'),
         ],
       ),
     );

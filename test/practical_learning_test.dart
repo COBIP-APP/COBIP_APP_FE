@@ -48,8 +48,8 @@ void main() {
 
   testWidgets('주제에서 챕터에 진입하고 이전 다음 목록으로 이동한다', (tester) async {
     await open(tester, '/practical');
-    await tester.ensureVisible(find.text('챕터 보기').first);
-    await tester.tap(find.text('챕터 보기').first);
+    await tester.ensureVisible(find.text('캐시 관리와 Redis 활용'));
+    await tester.tap(find.text('캐시 관리와 Redis 활용'));
     await tester.pumpAndSettle();
     expect(find.text('챕터 목록'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);

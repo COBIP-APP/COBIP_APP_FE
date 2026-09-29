@@ -90,54 +90,44 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
                   borderRadius: BorderRadius.circular(14),
                   side: const BorderSide(color: Color(0xFFECE8F5)),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        topic.category,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        topic.title,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(topic.summary),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 6,
-                        children: [
-                          for (final tag in topic.tags)
-                            ActionChip(
-                              label: Text('#$tag'),
-                              onPressed: () => setState(() {
-                                _category = null;
-                                _search.text = tag;
-                              }),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text('${topic.chapters.length}개 챕터'),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          onPressed: () => context.pushNamed(
-                            AppRouteNames.practicalChapters,
-                            pathParameters: {'topic': topic.id},
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => context.pushNamed(
+                    AppRouteNames.practicalChapters,
+                    pathParameters: {'topic': topic.id},
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          topic.category,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
                           ),
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text('챕터 보기'),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        Text(
+                          topic.title,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(topic.summary),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 6,
+                          children: [
+                            for (final tag in topic.tags)
+                              Chip(label: Text('#$tag')),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text('${topic.chapters.length}개 챕터'),
+                      ],
+                    ),
                   ),
                 ),
               ),

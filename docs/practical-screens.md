@@ -5,7 +5,7 @@
 
 | 페이지 | 파일 | 역할 |
 | --- | --- | --- |
-| 실무 주제 | `lib/features/practical/presentation/practical_home_screen.dart` | 검색, 카테고리/태그 필터, 챕터 목록 이동 |
+| 실무 주제 | `lib/features/practical/presentation/practical_home_screen.dart` | 검색, 카테고리 필터, 카드 전체 터치로 챕터 목록 이동 |
 | 챕터 목록 | `lib/features/practical/presentation/practical_chapters_screen.dart` | 주제별 챕터 선택 |
 | 챕터 상세 | `lib/features/practical/presentation/practical_chapter_screen.dart` | 핵심 개념, 예제, 이전/다음 챕터, 목록 복귀 |
 
@@ -34,3 +34,5 @@
 
 검증 결과: Flutter 정적 분석 통과, 기존 테스트 13개 통과 및 실무 테스트 3개 재검증 통과, Android debug APK 빌드 성공.
 `docs/screenshots/practical-home.png`, `practical-chapters.png`, `practical-chapter.png`는 위젯 렌더링 이미지입니다. Android 기기 캡처는 아니며 로컬 한글 폰트를 사용했습니다.
+
+주제 카드의 태그는 표시용이며 검색 동작은 없습니다. 목록 상단은 문법과 같은 COBIP·프로필 형태입니다.

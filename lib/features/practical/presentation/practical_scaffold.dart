@@ -14,7 +14,29 @@ class PracticalScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('실무 기술 학습'), centerTitle: true),
+    appBar: isDetail
+        ? AppBar(title: const Text('실무 기술 학습'), centerTitle: true)
+        : AppBar(
+            automaticallyImplyLeading: false,
+            title: Text(
+              'COBIP',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            actions: [
+              IconButton(
+                tooltip: '프로필',
+                icon: const Icon(Icons.account_circle_outlined),
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('마이페이지는 담당 화면 연결 후 이용할 수 있습니다.'),
+                  ),
+                ),
+              ),
+            ],
+          ),
     body: SafeArea(child: body),
     bottomNavigationBar: isDetail
         ? null

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_router.dart';
 import '../data/condition_lesson_data.dart';
 import '../data/grammar_sample_data.dart';
 import 'grammar_scaffold.dart';
@@ -24,8 +25,14 @@ class GrammarConceptScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
-            child: FilledButton(onPressed: null, child: Text('예제 보기')),
+          Expanded(
+            child: FilledButton(
+              onPressed: () => context.pushNamed(
+                AppRouteNames.grammarExample,
+                pathParameters: {'language': language.id},
+              ),
+              child: const Text('예제 보기'),
+            ),
           ),
         ],
       ),

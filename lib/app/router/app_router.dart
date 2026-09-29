@@ -11,6 +11,7 @@ import '../../features/grammar/data/grammar_sample_data.dart';
 import '../../features/grammar/presentation/grammar_chapters_screen.dart';
 import '../../features/grammar/presentation/grammar_home_screen.dart';
 import '../../features/grammar/presentation/grammar_concept_screen.dart';
+import '../../features/grammar/presentation/grammar_example_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 
 abstract final class AppRouteNames {
@@ -24,6 +25,7 @@ abstract final class AppRouteNames {
   static const grammar = 'grammar';
   static const grammarChapters = 'grammar-chapters';
   static const grammarConcept = 'grammar-concept';
+  static const grammarExample = 'grammar-example';
 }
 
 final appRouter = GoRouter(
@@ -44,6 +46,17 @@ final appRouter = GoRouter(
         GoRoute(
           path: 'conditions',
           name: AppRouteNames.grammarConcept,
+          routes: [
+            GoRoute(
+              path: 'example',
+              name: AppRouteNames.grammarExample,
+              builder: (context, state) => GrammarExampleScreen(
+                language: GrammarLanguage.fromId(
+                  state.pathParameters['language']!,
+                )!,
+              ),
+            ),
+          ],
           builder: (context, state) => GrammarConceptScreen(
             language: GrammarLanguage.fromId(
               state.pathParameters['language']!,

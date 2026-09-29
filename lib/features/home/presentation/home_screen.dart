@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/router/app_router.dart';
+import '../../../app/widgets/app_bottom_navigation.dart';
 
 enum HomeContentState { loading, empty, loaded, error }
 
@@ -96,31 +100,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: AppBottomNavigation(
         selectedIndex: 0,
-        onDestinationSelected: (index) {
-          if (index == 3) {
-            _showChat();
-          } else if (index != 0) {
-            _showMessage('해당 화면은 담당 팀과 연결 후 이용할 수 있습니다.');
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: '홈',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            label: '학습',
-          ),
-          NavigationDestination(icon: Icon(Icons.quiz_outlined), label: '문제'),
-          NavigationDestination(
-            icon: Icon(Icons.smart_toy_outlined),
-            label: '챗봇',
-          ),
-        ],
+        onChat: _showChat,
       ),
     );
   }
@@ -184,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text('첫 학습을 시작하고 성장 기록을 만들어 보세요.'),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: () => _showMessage('학습 화면은 담당 팀과 연결 후 이용할 수 있습니다.'),
+              onPressed: () => context.pushNamed(AppRouteNames.grammar),
               child: const Text('학습 시작하기'),
             ),
           ],

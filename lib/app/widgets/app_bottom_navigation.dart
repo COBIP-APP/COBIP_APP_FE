@@ -4,14 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../router/app_router.dart';
 
 class AppBottomNavigation extends StatelessWidget {
-  const AppBottomNavigation({
-    super.key,
-    required this.selectedIndex,
-    required this.onChat,
-  });
+  const AppBottomNavigation({super.key, required this.selectedIndex});
 
   final int selectedIndex;
-  final VoidCallback onChat;
 
   @override
   Widget build(BuildContext context) {
@@ -26,11 +21,10 @@ class AppBottomNavigation extends StatelessWidget {
             context.goNamed(AppRouteNames.grammar);
           case 2:
             context.goNamed(AppRouteNames.practical);
+          case 3:
+            context.goNamed(AppRouteNames.problems);
           case 4:
-            onChat();
-          default:
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text('문제 화면은 준비 중이에요.')));
+            context.pushNamed(AppRouteNames.chat);
         }
       },
       destinations: const [
@@ -52,6 +46,7 @@ class AppBottomNavigation extends StatelessWidget {
         NavigationDestination(icon: Icon(Icons.quiz_outlined), label: '문제'),
         NavigationDestination(
           icon: Icon(Icons.smart_toy_outlined),
+          selectedIcon: Icon(Icons.smart_toy),
           label: '챗봇',
         ),
       ],

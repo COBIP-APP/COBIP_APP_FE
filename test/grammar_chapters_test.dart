@@ -51,20 +51,6 @@ void main() {
     }
   }
 
-  testWidgets('미구현 챕터도 해당 챕터 화면을 열고 전체 목록으로 복귀한다', (tester) async {
-    appRouter.go('/grammar');
-    await tester.pumpWidget(const CobipApp());
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('변수와 자료형'));
-    await tester.tap(find.text('변수와 자료형'));
-    await tester.pumpAndSettle();
-    expect(find.text('Java · 변수와 자료형'), findsOneWidget);
-    expect(find.text('이 챕터의 학습 내용을 준비 중이에요.'), findsOneWidget);
-    await tester.tap(find.byTooltip('뒤로가기'));
-    await tester.pumpAndSettle();
-    expect(find.text('Java 문법'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
   testWidgets('문법 홈에서 언어별 전체 목록을 열고 돌아온다', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

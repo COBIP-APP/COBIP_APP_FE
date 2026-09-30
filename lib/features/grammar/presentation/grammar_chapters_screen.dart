@@ -32,15 +32,12 @@ class GrammarChaptersScreen extends StatelessWidget {
           for (final chapter in chapters)
             _ChapterCard(
               chapter: chapter,
-              onTap: () => context.pushNamed(
-                chapter.id == 'conditions'
-                    ? AppRouteNames.grammarConcept
-                    : AppRouteNames.grammarChapter,
-                pathParameters: {
-                  'language': language.id,
-                  if (chapter.id != 'conditions') 'chapter': chapter.id,
-                },
-              ),
+              onTap: chapter.id == 'conditions'
+                  ? () => context.pushNamed(
+                      AppRouteNames.grammarConcept,
+                      pathParameters: {'language': language.id},
+                    )
+                  : null,
             ),
           const SizedBox(height: 16),
           const Text('조건문 카드를 눌러 개념을 학습해 보세요. 다른 챕터는 준비 중이에요.'),
@@ -89,9 +86,7 @@ class _ChapterCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                    Text(
-                      chapter.id == 'conditions' ? '개념 학습하기 ›' : '준비 중',
-                    ),
+                    if (onTap != null) const Text('개념 학습하기 ›'),
                     const SizedBox(height: 4),
                     Text(
                       '${chapter.category.label} · ${chapter.status}',

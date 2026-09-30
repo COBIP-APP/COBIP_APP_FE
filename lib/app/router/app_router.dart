@@ -18,7 +18,6 @@ import '../../features/auth/presentation/sign_up_screen.dart';
 import '../../features/auth/presentation/terms_screen.dart';
 import '../../features/grammar/data/grammar_sample_data.dart';
 import '../../features/grammar/presentation/grammar_chapters_screen.dart';
-import '../../features/grammar/presentation/grammar_chapter_screen.dart';
 import '../../features/grammar/presentation/grammar_home_screen.dart';
 import '../../features/grammar/presentation/grammar_quiz_screen.dart';
 import '../../features/grammar/presentation/grammar_concept_screen.dart';
@@ -43,7 +42,6 @@ abstract final class AppRouteNames {
   static const practicalChapter = 'practical-chapter';
   static const grammar = 'grammar';
   static const grammarChapters = 'grammar-chapters';
-  static const grammarChapter = 'grammar-chapter';
   static const grammarConcept = 'grammar-concept';
   static const grammarExample = 'grammar-example';
   static const grammarQuiz = 'grammar-quiz';
@@ -175,32 +173,6 @@ final appRouter = GoRouter(
                   state.pathParameters['language']!,
                 )!,
               ),
-            ),
-            GoRoute(
-              path: ':chapter',
-              name: AppRouteNames.grammarChapter,
-              redirect: (context, state) {
-                final language = GrammarLanguage.fromId(
-                  state.pathParameters['language']!,
-                );
-                if (language == null) return '/grammar';
-                return grammarSampleChapters[language]!.any(
-                      (chapter) => chapter.id == state.pathParameters['chapter'],
-                    )
-                    ? null
-                    : '/grammar/${language.id}/chapters';
-              },
-              builder: (context, state) {
-                final language = GrammarLanguage.fromId(
-                  state.pathParameters['language']!,
-                )!;
-                return GrammarChapterScreen(
-                  language: language,
-                  chapter: grammarSampleChapters[language]!.firstWhere(
-                    (chapter) => chapter.id == state.pathParameters['chapter'],
-                  ),
-                );
-              },
             ),
           ],
           redirect: (context, state) =>

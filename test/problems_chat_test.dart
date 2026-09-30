@@ -1,3 +1,4 @@
+import 'package:cobip_app_fe/features/problems/data/problem_sample_data.dart';
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:cobip_app_fe/features/chat/presentation/chat_panel.dart';
@@ -27,7 +28,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('problem-code')),
-      'for demo',
+      problemMissions.first.sampleCode,
     );
     final location = appRouter.routeInformationProvider.value.uri;
     await tester.tap(find.byTooltip('COBIP 챗봇'));
@@ -51,7 +52,7 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('chat-input')), '작성 중');
     await tester.tap(find.byTooltip('챗봇 닫기'));
     await tester.pumpAndSettle();
-    expect(find.text('for demo'), findsOneWidget);
+    expect(find.text(problemMissions.first.sampleCode), findsOneWidget);
     await tester.tap(find.byTooltip('COBIP 챗봇'));
     await tester.pumpAndSettle();
     expect(find.text('작성 중'), findsOneWidget);
@@ -72,14 +73,14 @@ void main() {
     );
     await tester.enterText(find.byKey(const ValueKey('problem-output')), '6');
     await tester.scrollUntilVisible(
-      find.text('답안 확인하기'),
+      find.text('채점하기'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('답안 확인하기'));
+    await tester.tap(find.text('채점하기'));
     await tester.pumpAndSettle();
-    expect(find.text('자동 확인 2 / 2'), findsOneWidget);
+    expect(find.text('정답 3 / 3'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('문제 목록으로 돌아가기'),
       200,
@@ -128,8 +129,8 @@ void main() {
     }
 
     Future<void> submit() async {
-      await reveal(find.text('답안 확인하기'));
-      await tester.tap(find.text('답안 확인하기'));
+      await reveal(find.text('채점하기'));
+      await tester.tap(find.text('채점하기'));
       await tester.pumpAndSettle();
     }
 
@@ -142,13 +143,31 @@ void main() {
     await reveal(find.byKey(const ValueKey('problem-output')));
     await tester.enterText(find.byKey(const ValueKey('problem-output')), '0');
     await submit();
-    expect(find.text('자동 확인 0 / 2'), findsOneWidget);
+    expect(find.text('정답 0 / 3'), findsOneWidget);
+    expect(find.text('결과 확인'), findsOneWidget);
+    expect(find.textContaining('예시 정답'), findsNothing);
+    await tester.tap(find.text('정답 및 풀이 보기').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('예시 정답'), findsOneWidget);
+    await tester.tap(find.text('풀이 숨기기'));
+    await tester.pumpAndSettle();
     await reveal(find.text('다시 풀기'));
     expect(find.text('나가기'), findsOneWidget);
     await tester.tap(find.text('다시 풀기'));
     await tester.pumpAndSettle();
     expect(find.text('오답 다시 풀기'), findsOneWidget);
-    expect(find.byKey(const ValueKey('problem-code')), findsNothing);
+    expect(find.byKey(const ValueKey('problem-code')), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('problem-code')))
+          .controller!
+          .text,
+      isEmpty,
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('problem-code')),
+      problemMissions.first.sampleCode,
+    );
     expect(find.byIcon(Icons.radio_button_checked), findsNothing);
     await reveal(find.text('free'));
     await tester.tap(find.text('free'));
@@ -162,7 +181,7 @@ void main() {
     );
     await tester.enterText(find.byKey(const ValueKey('problem-output')), '1');
     await submit();
-    expect(find.text('자동 확인 1 / 2'), findsOneWidget);
+    expect(find.text('정답 2 / 3'), findsOneWidget);
     await reveal(find.text('다시 풀기'));
     await tester.tap(find.text('다시 풀기'));
     await tester.pumpAndSettle();
@@ -170,7 +189,7 @@ void main() {
     await reveal(find.byKey(const ValueKey('problem-output')));
     await tester.enterText(find.byKey(const ValueKey('problem-output')), '6');
     await submit();
-    expect(find.text('자동 확인 2 / 2'), findsOneWidget);
+    expect(find.text('정답 3 / 3'), findsOneWidget);
     await reveal(find.text('문제 목록으로 돌아가기'));
     expect(find.text('다시 풀기'), findsNothing);
     expect(find.text('나가기'), findsNothing);

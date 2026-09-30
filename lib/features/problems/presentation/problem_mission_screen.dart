@@ -20,11 +20,14 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
   int? _choice;
   bool _submitted = false;
   bool _retry = false;
+  bool _retryCode = false;
   bool _retryChoice = false;
   bool _retryOutput = false;
 
   void _retryWrongAnswers() {
     setState(() {
+      _retryCode = !widget.mission.matchesSampleCode(_code.text);
+      if (_retryCode) _code.clear();
       _retryChoice = _choice != widget.mission.correctIndex;
       _retryOutput = _output.text.trim() != widget.mission.outputAnswer;
       if (_retryChoice) _choice = null;
@@ -51,6 +54,7 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
     if (_submitted) {
       return ProblemResultScreen(
         mission: mission,
+        code: _code.text,
         choice: _choice!,
         output: _output.text.trim(),
         onRetry: _retryWrongAnswers,
@@ -96,7 +100,7 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (!_retry)
+            if (!_retry || _retryCode)
               _card(
                 '1. ${mission.codePrompt}',
                 '코드 작성형',
@@ -182,7 +186,9 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
                   ],
                 ),
               ),
-            const Text('코드는 실행되지 않으며 예시 답안만 제공합니다. 객관식과 출력값은 더미 정답과 비교합니다.'),
+            const Text(
+              '더미 채점입니다. 코드는 실행하지 않고 예시 코드와 문자열을 비교하므로 다른 올바른 코드도 오답으로 표시될 수 있습니다.',
+            ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: !_ready
@@ -191,7 +197,7 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
                       FocusScope.of(context).unfocus();
                       setState(() => _submitted = true);
                     },
-              child: const Text('답안 확인하기'),
+              child: const Text('채점하기'),
             ),
           ],
         ),

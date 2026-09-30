@@ -54,7 +54,6 @@ class _GrammarQuizScreenState extends State<GrammarQuizScreen> {
         onReturnToLearning: () => context.goNamed(
           AppRouteNames.grammarChapters,
           pathParameters: {'language': widget.language.id},
-          queryParameters: {'category': GrammarCategory.control.name},
         ),
       );
     }

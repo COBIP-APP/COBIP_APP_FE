@@ -16,12 +16,25 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
   GrammarLanguage _language = GrammarLanguage.java;
   final _searchController = TextEditingController();
 
-  void _openChapters([GrammarCategory? category]) {
+  void _openChapters() {
     FocusScope.of(context).unfocus();
     context.pushNamed(
       AppRouteNames.grammarChapters,
       pathParameters: {'language': _language.id},
-      queryParameters: {if (category != null) 'category': category.name},
+    );
+  }
+
+  void _openChapter(GrammarChapter chapter) {
+    // 상세 화면에서 뒤로가면 해당 언어의 전체 목록으로 돌아갑니다.
+    FocusScope.of(context).unfocus();
+    context.goNamed(
+      chapter.id == 'conditions'
+          ? AppRouteNames.grammarConcept
+          : AppRouteNames.grammarChapter,
+      pathParameters: {
+        'language': _language.id,
+        if (chapter.id != 'conditions') 'chapter': chapter.id,
+      },
     );
   }
 
@@ -145,7 +158,7 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                 title: Text(chapter.title),
                 subtitle: Text(chapter.description),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _openChapters(chapter.category),
+                onTap: () => _openChapter(chapter),
               ),
             ),
         ],

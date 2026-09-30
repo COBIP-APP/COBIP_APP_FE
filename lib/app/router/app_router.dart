@@ -18,6 +18,7 @@ import '../../features/auth/presentation/sign_up_screen.dart';
 import '../../features/auth/presentation/terms_screen.dart';
 import '../../features/grammar/data/grammar_sample_data.dart';
 import '../../features/grammar/presentation/grammar_chapters_screen.dart';
+import '../../features/grammar/presentation/grammar_chapter_screen.dart';
 import '../../features/grammar/presentation/grammar_home_screen.dart';
 import '../../features/grammar/presentation/grammar_quiz_screen.dart';
 import '../../features/grammar/presentation/grammar_concept_screen.dart';
@@ -42,6 +43,7 @@ abstract final class AppRouteNames {
   static const practicalChapter = 'practical-chapter';
   static const grammar = 'grammar';
   static const grammarChapters = 'grammar-chapters';
+  static const grammarChapter = 'grammar-chapter';
   static const grammarConcept = 'grammar-concept';
   static const grammarExample = 'grammar-example';
   static const grammarQuiz = 'grammar-quiz';
@@ -135,55 +137,83 @@ final appRouter = GoRouter(
       builder: (context, state) => const PracticalHomeScreen(),
     ),
     GoRoute(
-      path: '/grammar/:language/chapters',
-      name: AppRouteNames.grammarChapters,
+      path: '/grammar',
+      name: AppRouteNames.grammar,
+      builder: (context, state) => const GrammarHomeScreen(),
       routes: [
         GoRoute(
-          path: 'conditions',
-          name: AppRouteNames.grammarConcept,
+          path: ':language/chapters',
+          name: AppRouteNames.grammarChapters,
           routes: [
             GoRoute(
-              path: 'example',
-              name: AppRouteNames.grammarExample,
+              path: 'conditions',
+              name: AppRouteNames.grammarConcept,
               routes: [
                 GoRoute(
-                  path: 'quiz',
-                  name: AppRouteNames.grammarQuiz,
-                  builder: (context, state) => GrammarQuizScreen(
+                  path: 'example',
+                  name: AppRouteNames.grammarExample,
+                  routes: [
+                    GoRoute(
+                      path: 'quiz',
+                      name: AppRouteNames.grammarQuiz,
+                      builder: (context, state) => GrammarQuizScreen(
+                        language: GrammarLanguage.fromId(
+                          state.pathParameters['language']!,
+                        )!,
+                      ),
+                    ),
+                  ],
+                  builder: (context, state) => GrammarExampleScreen(
                     language: GrammarLanguage.fromId(
                       state.pathParameters['language']!,
                     )!,
                   ),
                 ),
               ],
-              builder: (context, state) => GrammarExampleScreen(
+              builder: (context, state) => GrammarConceptScreen(
                 language: GrammarLanguage.fromId(
                   state.pathParameters['language']!,
                 )!,
               ),
             ),
+            GoRoute(
+              path: ':chapter',
+              name: AppRouteNames.grammarChapter,
+              redirect: (context, state) {
+                final language = GrammarLanguage.fromId(
+                  state.pathParameters['language']!,
+                );
+                if (language == null) return '/grammar';
+                return grammarSampleChapters[language]!.any(
+                      (chapter) => chapter.id == state.pathParameters['chapter'],
+                    )
+                    ? null
+                    : '/grammar/${language.id}/chapters';
+              },
+              builder: (context, state) {
+                final language = GrammarLanguage.fromId(
+                  state.pathParameters['language']!,
+                )!;
+                return GrammarChapterScreen(
+                  language: language,
+                  chapter: grammarSampleChapters[language]!.firstWhere(
+                    (chapter) => chapter.id == state.pathParameters['chapter'],
+                  ),
+                );
+              },
+            ),
           ],
-          builder: (context, state) => GrammarConceptScreen(
-            language: GrammarLanguage.fromId(
-              state.pathParameters['language']!,
-            )!,
-          ),
+          redirect: (context, state) =>
+              GrammarLanguage.fromId(state.pathParameters['language']!) == null
+              ? '/grammar'
+              : null,
+          builder: (context, state) {
+            return GrammarChaptersScreen(
+              language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
+            );
+          },
         ),
       ],
-      redirect: (context, state) =>
-          GrammarLanguage.fromId(state.pathParameters['language']!) == null
-          ? '/grammar'
-          : null,
-      builder: (context, state) {
-        return GrammarChaptersScreen(
-          language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
-        );
-      },
-    ),
-    GoRoute(
-      path: '/grammar',
-      name: AppRouteNames.grammar,
-      builder: (context, state) => const GrammarHomeScreen(),
     ),
     GoRoute(
       path: '/login',

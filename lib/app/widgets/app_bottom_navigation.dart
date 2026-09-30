@@ -1,17 +1,14 @@
+import '../../features/chat/presentation/chat_panel.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../router/app_router.dart';
 
 class AppBottomNavigation extends StatelessWidget {
-  const AppBottomNavigation({
-    super.key,
-    required this.selectedIndex,
-    required this.onChat,
-  });
+  const AppBottomNavigation({super.key, required this.selectedIndex});
 
   final int selectedIndex;
-  final VoidCallback onChat;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +26,7 @@ class AppBottomNavigation extends StatelessWidget {
           case 3:
             context.goNamed(AppRouteNames.problems);
           case 4:
-            onChat();
+            showChatPanel(context);
         }
       },
       destinations: const [

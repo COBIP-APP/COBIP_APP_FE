@@ -1,3 +1,5 @@
+import '../../chat/presentation/chat_panel.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/problem_sample_data.dart';
@@ -20,10 +22,16 @@ class ProblemResultScreen extends StatelessWidget {
         (choice == mission.correctIndex ? 1 : 0) +
         (output.trim() == mission.outputAnswer ? 1 : 0);
     return Scaffold(
+      floatingActionButton: FloatingActionButton.small(
+        tooltip: 'COBIP 챗봇',
+        shape: const CircleBorder(),
+        onPressed: () => showChatPanel(context),
+        child: const Icon(Icons.smart_toy_outlined),
+      ),
       appBar: AppBar(title: const Text('풀이 결과')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
           children: [
             Icon(
               Icons.fact_check_outlined,

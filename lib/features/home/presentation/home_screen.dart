@@ -39,29 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _contentState = HomeContentState.loaded);
   }
 
-  void _showChat() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'COBIP 챗봇',
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text('챗봇 기능은 담당 화면 연결 후 이용할 수 있습니다.'),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,10 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNavigation(
-        selectedIndex: 0,
-        onChat: _showChat,
-      ),
+      bottomNavigationBar: AppBottomNavigation(selectedIndex: 0),
     );
   }
 

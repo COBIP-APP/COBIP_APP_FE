@@ -1,3 +1,5 @@
+import '../../chat/presentation/chat_panel.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,14 +33,21 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
   @override
   Widget build(BuildContext context) {
     final mission = widget.mission;
-    if (_submitted)
+    if (_submitted) {
       return ProblemResultScreen(
         mission: mission,
         choice: _choice!,
         output: _output.text.trim(),
         onReturn: () => context.goNamed(AppRouteNames.problems),
       );
+    }
     return Scaffold(
+      floatingActionButton: FloatingActionButton.small(
+        tooltip: 'COBIP 챗봇',
+        shape: const CircleBorder(),
+        onPressed: () => showChatPanel(context),
+        child: const Icon(Icons.smart_toy_outlined),
+      ),
       appBar: AppBar(title: const Text('문제 풀이'), centerTitle: true),
       body: SafeArea(
         child: ListView(

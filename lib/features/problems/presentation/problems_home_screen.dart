@@ -26,7 +26,7 @@ class ProblemsHomeScreen extends StatelessWidget {
         ),
       ],
     ),
-    bottomNavigationBar: AppBottomNavigation(selectedIndex: 3, onChat: () {}),
+    bottomNavigationBar: AppBottomNavigation(selectedIndex: 3),
     body: SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(24),

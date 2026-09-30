@@ -16,12 +16,11 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
   GrammarLanguage _language = GrammarLanguage.java;
   final _searchController = TextEditingController();
 
-  void _openChapters([GrammarCategory? category]) {
+  void _openChapters() {
     FocusScope.of(context).unfocus();
     context.pushNamed(
       AppRouteNames.grammarChapters,
       pathParameters: {'language': _language.id},
-      queryParameters: {if (category != null) 'category': category.name},
     );
   }
 
@@ -145,7 +144,9 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                 title: Text(chapter.title),
                 subtitle: Text(chapter.description),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _openChapters(chapter.category),
+                onTap: grammarChapterRoutes.containsKey(chapter.id)
+                    ? () => openGrammarChapter(context, _language, chapter)
+                    : null,
               ),
             ),
         ],

@@ -1,51 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_router.dart';
 
 import '../data/grammar_sample_data.dart';
 import 'grammar_scaffold.dart';
 
-class GrammarChaptersScreen extends StatefulWidget {
-  const GrammarChaptersScreen({
-    super.key,
-    required this.language,
-    this.initialCategory,
-  });
+class GrammarChaptersScreen extends StatelessWidget {
+  const GrammarChaptersScreen({super.key, required this.language});
 
   final GrammarLanguage language;
-  final GrammarCategory? initialCategory;
-
-  @override
-  State<GrammarChaptersScreen> createState() => _GrammarChaptersScreenState();
-}
-
-class _GrammarChaptersScreenState extends State<GrammarChaptersScreen> {
-  GrammarCategory? _category;
-
-  @override
-  void initState() {
-    super.initState();
-    _category = widget.initialCategory;
-  }
-
-  @override
-  void didUpdateWidget(covariant GrammarChaptersScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.language != widget.language ||
-        oldWidget.initialCategory != widget.initialCategory) {
-      _category = widget.initialCategory;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    final chapters = grammarSampleChapters[widget.language]!
-        .where((chapter) => _category == null || chapter.category == _category)
-        .toList();
-
+    final chapters = grammarSampleChapters[language]!;
     return GrammarScaffold(
-      title: '${widget.language.label} 문법',
+      title: '${language.label} 문법',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 88),
         children: [
@@ -57,37 +26,17 @@ class _GrammarChaptersScreenState extends State<GrammarChaptersScreen> {
           const SizedBox(height: 8),
           const Text('범위별로 학습할 내용과 진행 상태를 확인해 보세요.'),
           const SizedBox(height: 20),
-          Wrap(
-            spacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('전체'),
-                selected: _category == null,
-                onSelected: (_) => setState(() => _category = null),
-              ),
-              for (final category in GrammarCategory.values)
-                ChoiceChip(
-                  label: Text(category.label),
-                  selected: _category == category,
-                  onSelected: (_) => setState(() => _category = category),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
           Text('${chapters.length}개 챕터 · 예시 진행률'),
           const SizedBox(height: 12),
           for (final chapter in chapters)
             _ChapterCard(
               chapter: chapter,
-              onTap: chapter.id == 'conditions'
-                  ? () => context.pushNamed(
-                      AppRouteNames.grammarConcept,
-                      pathParameters: {'language': widget.language.id},
-                    )
+              onTap: grammarChapterRoutes.containsKey(chapter.id)
+                  ? () => openGrammarChapter(context, language, chapter)
                   : null,
             ),
           const SizedBox(height: 16),
-          const Text('조건문 카드를 눌러 개념을 학습해 보세요. 다른 챕터는 준비 중이에요.'),
+          const Text('학습 가능한 챕터를 눌러 개념을 학습해 보세요.'),
         ],
       ),
     );

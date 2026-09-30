@@ -47,8 +47,53 @@ abstract final class AppRouteNames {
   static const grammarQuiz = 'grammar-quiz';
 }
 
-final appRouter = GoRouter(
-  initialLocation: '/login',
+// 새 챕터의 상세 경로를 여기에 등록하면 메인과 전체 목록에 함께 연결됩니다.
+final grammarChapterRoutes = <String, GoRoute>{
+  'conditions': GoRoute(
+    path: 'conditions',
+    name: AppRouteNames.grammarConcept,
+    routes: [
+      GoRoute(
+        path: 'example',
+        name: AppRouteNames.grammarExample,
+        routes: [
+          GoRoute(
+            path: 'quiz',
+            name: AppRouteNames.grammarQuiz,
+            builder: (context, state) => GrammarQuizScreen(
+              language: GrammarLanguage.fromId(
+                state.pathParameters['language']!,
+              )!,
+            ),
+          ),
+        ],
+        builder: (context, state) => GrammarExampleScreen(
+          language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
+        ),
+      ),
+    ],
+    builder: (context, state) => GrammarConceptScreen(
+      language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
+    ),
+  ),
+};
+
+void openGrammarChapter(
+  BuildContext context,
+  GrammarLanguage language,
+  GrammarChapter chapter,
+) {
+  final route = grammarChapterRoutes[chapter.id];
+  if (route == null) return;
+  FocusScope.of(context).unfocus();
+  // 중첩 경로가 메인 → 전체 목록 → 상세의 뒤로가기 순서를 구성합니다.
+  context.goNamed(route.name!, pathParameters: {'language': language.id});
+}
+
+final appRouter = createAppRouter();
+
+GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
+  initialLocation: initialLocation,
   errorBuilder: (context, state) => Scaffold(
     body: Center(
       child: FilledButton(
@@ -135,61 +180,27 @@ final appRouter = GoRouter(
       builder: (context, state) => const PracticalHomeScreen(),
     ),
     GoRoute(
-      path: '/grammar/:language/chapters',
-      name: AppRouteNames.grammarChapters,
-      routes: [
-        GoRoute(
-          path: 'conditions',
-          name: AppRouteNames.grammarConcept,
-          routes: [
-            GoRoute(
-              path: 'example',
-              name: AppRouteNames.grammarExample,
-              routes: [
-                GoRoute(
-                  path: 'quiz',
-                  name: AppRouteNames.grammarQuiz,
-                  builder: (context, state) => GrammarQuizScreen(
-                    language: GrammarLanguage.fromId(
-                      state.pathParameters['language']!,
-                    )!,
-                  ),
-                ),
-              ],
-              builder: (context, state) => GrammarExampleScreen(
-                language: GrammarLanguage.fromId(
-                  state.pathParameters['language']!,
-                )!,
-              ),
-            ),
-          ],
-          builder: (context, state) => GrammarConceptScreen(
-            language: GrammarLanguage.fromId(
-              state.pathParameters['language']!,
-            )!,
-          ),
-        ),
-      ],
-      redirect: (context, state) =>
-          GrammarLanguage.fromId(state.pathParameters['language']!) == null
-          ? '/grammar'
-          : null,
-      builder: (context, state) {
-        final categoryName = state.uri.queryParameters['category'];
-        GrammarCategory? category;
-        for (final value in GrammarCategory.values) {
-          if (value.name == categoryName) category = value;
-        }
-        return GrammarChaptersScreen(
-          language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
-          initialCategory: category,
-        );
-      },
-    ),
-    GoRoute(
       path: '/grammar',
       name: AppRouteNames.grammar,
       builder: (context, state) => const GrammarHomeScreen(),
+      routes: [
+        GoRoute(
+          path: ':language/chapters',
+          name: AppRouteNames.grammarChapters,
+          routes: grammarChapterRoutes.values.toList(),
+          redirect: (context, state) =>
+              GrammarLanguage.fromId(state.pathParameters['language']!) == null
+              ? '/grammar'
+              : null,
+          builder: (context, state) {
+            return GrammarChaptersScreen(
+              language: GrammarLanguage.fromId(
+                state.pathParameters['language']!,
+              )!,
+            );
+          },
+        ),
+      ],
     ),
     GoRoute(
       path: '/login',

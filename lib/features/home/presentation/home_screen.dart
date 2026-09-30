@@ -81,8 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 IconButton(
                   tooltip: '프로필',
-                  onPressed: () =>
-                      _showMessage('마이페이지는 담당 화면 연결 후 이용할 수 있습니다.'),
+                  onPressed: () => context.pushNamed(AppRouteNames.myPage),
                   icon: const Icon(Icons.account_circle_outlined),
                 ),
               ],

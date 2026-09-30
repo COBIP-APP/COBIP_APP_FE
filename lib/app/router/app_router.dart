@@ -1,3 +1,6 @@
+import '../../features/problems/data/problem_sample_data.dart';
+import '../../features/problems/presentation/problems_home_screen.dart';
+import '../../features/problems/presentation/problem_mission_screen.dart';
 import '../../features/practical/presentation/practical_chapter_screen.dart';
 import '../../features/practical/data/practical_sample_data.dart';
 import '../../features/practical/presentation/practical_chapters_screen.dart';
@@ -28,6 +31,8 @@ abstract final class AppRouteNames {
   static const signUp = 'sign-up';
   static const signUpComplete = 'sign-up-complete';
   static const terms = 'terms';
+  static const problems = 'problems';
+  static const problemMission = 'problem-mission';
   static const home = 'home';
   static const myPage = 'my-page';
   static const practical = 'practical';
@@ -51,6 +56,25 @@ final appRouter = GoRouter(
     ),
   ),
   routes: [
+    GoRoute(
+      path: '/problems',
+      name: AppRouteNames.problems,
+      builder: (context, state) => const ProblemsHomeScreen(),
+      routes: [
+        GoRoute(
+          path: ':mission',
+          name: AppRouteNames.problemMission,
+          redirect: (context, state) =>
+              ProblemMission.fromId(state.pathParameters['mission']) == null
+              ? '/problems'
+              : null,
+          builder: (context, state) => ProblemMissionScreen(
+            key: ValueKey(state.pathParameters['mission']),
+            mission: ProblemMission.fromId(state.pathParameters['mission'])!,
+          ),
+        ),
+      ],
+    ),
     GoRoute(
       path: '/my-page',
       name: AppRouteNames.myPage,

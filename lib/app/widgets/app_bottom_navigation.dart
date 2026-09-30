@@ -26,11 +26,10 @@ class AppBottomNavigation extends StatelessWidget {
             context.goNamed(AppRouteNames.grammar);
           case 2:
             context.goNamed(AppRouteNames.practical);
+          case 3:
+            context.goNamed(AppRouteNames.problems);
           case 4:
             onChat();
-          default:
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text('문제 화면은 준비 중이에요.')));
         }
       },
       destinations: const [

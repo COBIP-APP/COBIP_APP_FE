@@ -1,0 +1,36 @@
+# 문제 풀이와 챗봇 패널
+
+최신 develop의 실무·마이페이지 병합 내용에서 `feature/problems-chat-panel`을 생성했습니다.
+
+| 화면 | 파일 | 동작 |
+| --- | --- | --- |
+| 문제 목록 | `lib/features/problems/presentation/problems_home_screen.dart` | Java·Python·JavaScript 미션 선택, 문제 탭 표시, 프로필 이동 |
+| 미션 풀이 | `lib/features/problems/presentation/problem_mission_screen.dart` | 코드 작성, 객관식 선택, 출력값 입력을 스크롤로 확인 |
+| 풀이 결과 | `lib/features/problems/presentation/problem_result_screen.dart` | 예시 코드, 정오답·해설, 문제 목록 복귀 |
+| 공통 챗봇 패널 | `lib/features/chat/presentation/chat_panel.dart` | 현재 화면 위에 채팅 영역 표시, 입력·전송·닫기 |
+
+## 문제 데이터와 범위
+
+- `data/problem_sample_data.dart`에 언어별 3문항씩 총 9문항의 더미 데이터를 분리했습니다.
+- 경로는 `/problems`와 `/problems/:mission`이며 잘못된 미션은 목록으로 돌아갑니다.
+- 세 답안을 모두 입력한 뒤 답안을 확인합니다. 코드 입력은 공백만 입력하면 제출할 수 없습니다.
+- 코드는 실제로 실행·채점하지 않고 예시 답안만 제공합니다. 객관식과 출력값 2문항만 로컬 정답과 비교합니다.
+- 완료 표시, 학습 진도, 서버 저장을 갱신하지 않습니다. 미션을 나가면 입력은 유지하지 않습니다.
+- 상세·결과는 하단 메뉴를 숨기고 원형 챗봇 버튼을 제공합니다.
+
+## 챗봇 동작
+
+- 별도 페이지나 챗봇 URL로 이동하지 않고 현재 화면 위에 바텀시트 패널을 엽니다.
+- 홈·문법·실무·문제 하단 메뉴와 학습 상세의 원형 버튼이 같은 패널을 사용합니다.
+- 닫기 버튼, 학습 계속하기, 바깥 영역 터치 등으로 닫아도 기존 화면의 답안과 위치를 유지합니다.
+- Provider + ChangeNotifier로 앱 실행 중 대화와 입력 중인 메시지를 공유합니다. 파일·서버에 저장하지 않습니다.
+- 응답은 `data/chat_sample_data.dart`의 키워드 기반 샘플입니다. AI 연결, 코드 분석, 자동 문제 맥락 전달은 없습니다.
+- 패널에 더미 응답임을 표시합니다. 공백 메시지는 보낼 수 없고 입력은 1,000자로 제한합니다.
+- 키보드 높이만큼 패널을 조정하며 대화 목록은 스크롤할 수 있습니다.
+
+## 검증과 이미지
+
+- 정적 분석 통과, 전체 테스트 19개 통과, Android debug APK 빌드 성공.
+
+- `test/problems_chat_test.dart`: 문제 진입·답안 입력·결과 복귀, 대화/임시 입력 유지, 빈 메시지 비활성화, 작은 화면과 키보드, 잘못된 경로 검증.
+- `docs/screenshots/problems-home.png`, `problem-mission.png`, `problem-result.png`, `chat-panel.png`는 한글 폰트를 적용한 위젯 렌더링 이미지입니다. 실제 Android 캡처와는 차이가 있습니다.

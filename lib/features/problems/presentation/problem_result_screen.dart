@@ -61,10 +61,12 @@ class ProblemResultScreen extends StatelessWidget {
             _answer(
               '2. 객관식 · ${choice == mission.correctIndex ? '정답' : '오답'}',
               '내 답: ${mission.options[choice]}\n정답: ${mission.options[mission.correctIndex]}\n\n${mission.choiceExplanation}',
+              isCorrect: choice == mission.correctIndex,
             ),
             _answer(
               '3. 출력값 · ${output.trim() == mission.outputAnswer ? '정답' : '오답'}',
               '내 답: $output\n정답: ${mission.outputAnswer}\n\n1 + 2 + 3의 합을 출력하므로 결과는 6입니다.',
+              isCorrect: output.trim() == mission.outputAnswer,
             ),
             const SizedBox(height: 16),
             FilledButton(
@@ -77,9 +79,15 @@ class ProblemResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _answer(String title, String body) => Card(
+  Widget _answer(String title, String body, {bool isCorrect = false}) => Card(
     color: Colors.white,
     elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: isCorrect
+          ? const BorderSide(color: Color(0xFF86B89A), width: 1.2)
+          : BorderSide.none,
+    ),
     child: Padding(
       padding: const EdgeInsets.all(20),
       child: Column(

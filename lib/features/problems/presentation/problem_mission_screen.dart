@@ -19,6 +19,21 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
   final _output = TextEditingController();
   int? _choice;
   bool _submitted = false;
+  bool _retry = false;
+  bool _retryChoice = false;
+  bool _retryOutput = false;
+
+  void _retryWrongAnswers() {
+    setState(() {
+      _retryChoice = _choice != widget.mission.correctIndex;
+      _retryOutput = _output.text.trim() != widget.mission.outputAnswer;
+      if (_retryChoice) _choice = null;
+      if (_retryOutput) _output.clear();
+      _retry = true;
+      _submitted = false;
+    });
+  }
+
   @override
   void dispose() {
     _code.dispose();
@@ -38,6 +53,7 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
         mission: mission,
         choice: _choice!,
         output: _output.text.trim(),
+        onRetry: _retryWrongAnswers,
         onReturn: () => context.goNamed(AppRouteNames.problems),
       );
     }
@@ -48,7 +64,10 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
         onPressed: () => showChatPanel(context),
         child: const Icon(Icons.smart_toy_outlined),
       ),
-      appBar: AppBar(title: const Text('문제 풀이'), centerTitle: true),
+      appBar: AppBar(
+        title: Text(_retry ? '오답 다시 풀기' : '문제 풀이'),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
@@ -68,94 +87,101 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  const Text('기초 개념을 확인하고 3개의 문제를 풀어보세요.'),
+                  Text(
+                    _retry
+                        ? '틀린 문제만 다시 풀어보세요. 맞힌 답은 유지됩니다.'
+                        : '기초 개념을 확인하고 3개의 문제를 풀어보세요.',
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            _card(
-              '1. ${mission.codePrompt}',
-              '코드 작성형',
-              TextField(
-                key: const ValueKey('problem-code'),
-                controller: _code,
-                onChanged: (_) => setState(() {}),
-                minLines: 5,
-                maxLines: 12,
-                autocorrect: false,
-                enableSuggestions: false,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
-                decoration: const InputDecoration(
-                  hintText: '// 코드를 작성하세요.',
-                  border: OutlineInputBorder(),
+            if (!_retry)
+              _card(
+                '1. ${mission.codePrompt}',
+                '코드 작성형',
+                TextField(
+                  key: const ValueKey('problem-code'),
+                  controller: _code,
+                  onChanged: (_) => setState(() {}),
+                  minLines: 5,
+                  maxLines: 12,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+                  decoration: const InputDecoration(
+                    hintText: '// 코드를 작성하세요.',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
               ),
-            ),
-            _card(
-              '2. ${mission.choicePrompt}',
-              '객관식',
-              Column(
-                children: [
-                  for (var i = 0; i < mission.options.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Semantics(
-                        selected: _choice == i,
-                        child: OutlinedButton(
-                          onPressed: () => setState(() => _choice = i),
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: _choice == i
-                                ? const Color(0xFFF0EAFF)
-                                : Colors.white,
-                            padding: const EdgeInsets.all(14),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                _choice == i
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_off,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(child: Text(mission.options[i])),
-                            ],
+            if (!_retry || _retryChoice)
+              _card(
+                '2. ${mission.choicePrompt}',
+                '객관식',
+                Column(
+                  children: [
+                    for (var i = 0; i < mission.options.length; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Semantics(
+                          selected: _choice == i,
+                          child: OutlinedButton(
+                            onPressed: () => setState(() => _choice = i),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: _choice == i
+                                  ? const Color(0xFFF0EAFF)
+                                  : Colors.white,
+                              padding: const EdgeInsets.all(14),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _choice == i
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_off,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(child: Text(mission.options[i])),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            _card(
-              '3. 코드를 해석하고 출력값을 적어주세요.',
-              '출력값 입력',
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SelectableText(
-                      mission.outputCode,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        height: 1.7,
+            if (!_retry || _retryOutput)
+              _card(
+                '3. 코드를 해석하고 출력값을 적어주세요.',
+                '출력값 입력',
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SelectableText(
+                        mission.outputCode,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          height: 1.7,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    key: const ValueKey('problem-output'),
-                    controller: _output,
-                    onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      labelText: '출력값',
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 16),
+                    TextField(
+                      key: const ValueKey('problem-output'),
+                      controller: _output,
+                      onChanged: (_) => setState(() {}),
+                      decoration: const InputDecoration(
+                        labelText: '출력값',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             const Text('코드는 실행되지 않으며 예시 답안만 제공합니다. 객관식과 출력값은 더미 정답과 비교합니다.'),
             const SizedBox(height: 16),
             FilledButton(

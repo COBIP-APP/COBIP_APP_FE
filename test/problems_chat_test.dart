@@ -116,6 +116,69 @@ void main() {
     expect(find.byType(ChatPanel), findsNothing);
   });
 
+  testWidgets('오답만 초기화해 반복 재풀이하고 모두 맞으면 복귀만 제공한다', (tester) async {
+    await open(tester, '/problems/java-basics');
+    Future<void> reveal(Finder finder) async {
+      await tester.scrollUntilVisible(
+        finder,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> submit() async {
+      await reveal(find.text('답안 확인하기'));
+      await tester.tap(find.text('답안 확인하기'));
+      await tester.pumpAndSettle();
+    }
+
+    await tester.enterText(
+      find.byKey(const ValueKey('problem-code')),
+      'sample',
+    );
+    await reveal(find.text('public'));
+    await tester.tap(find.text('public'));
+    await reveal(find.byKey(const ValueKey('problem-output')));
+    await tester.enterText(find.byKey(const ValueKey('problem-output')), '0');
+    await submit();
+    expect(find.text('자동 확인 0 / 2'), findsOneWidget);
+    await reveal(find.text('다시 풀기'));
+    expect(find.text('나가기'), findsOneWidget);
+    await tester.tap(find.text('다시 풀기'));
+    await tester.pumpAndSettle();
+    expect(find.text('오답 다시 풀기'), findsOneWidget);
+    expect(find.byKey(const ValueKey('problem-code')), findsNothing);
+    expect(find.byIcon(Icons.radio_button_checked), findsNothing);
+    await reveal(find.text('free'));
+    await tester.tap(find.text('free'));
+    await reveal(find.byKey(const ValueKey('problem-output')));
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('problem-output')))
+          .controller!
+          .text,
+      isEmpty,
+    );
+    await tester.enterText(find.byKey(const ValueKey('problem-output')), '1');
+    await submit();
+    expect(find.text('자동 확인 1 / 2'), findsOneWidget);
+    await reveal(find.text('다시 풀기'));
+    await tester.tap(find.text('다시 풀기'));
+    await tester.pumpAndSettle();
+    expect(find.text('객관식'), findsNothing);
+    await reveal(find.byKey(const ValueKey('problem-output')));
+    await tester.enterText(find.byKey(const ValueKey('problem-output')), '6');
+    await submit();
+    expect(find.text('자동 확인 2 / 2'), findsOneWidget);
+    await reveal(find.text('문제 목록으로 돌아가기'));
+    expect(find.text('다시 풀기'), findsNothing);
+    expect(find.text('나가기'), findsNothing);
+    await tester.tap(find.text('문제 목록으로 돌아가기'));
+    await tester.pumpAndSettle();
+    expect(find.text('Java 기초 미션'), findsOneWidget);
+  });
+
   testWidgets('잘못된 미션 주소는 문제 목록으로 돌아간다', (tester) async {
     await open(tester, '/problems/missing');
     expect(find.text('Java 기초 미션'), findsOneWidget);

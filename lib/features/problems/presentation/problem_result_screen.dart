@@ -11,11 +11,13 @@ class ProblemResultScreen extends StatelessWidget {
     required this.choice,
     required this.output,
     required this.onReturn,
+    required this.onRetry,
   });
   final ProblemMission mission;
   final int choice;
   final String output;
   final VoidCallback onReturn;
+  final VoidCallback onRetry;
   @override
   Widget build(BuildContext context) {
     final correct =
@@ -69,10 +71,16 @@ class ProblemResultScreen extends StatelessWidget {
               isCorrect: output.trim() == mission.outputAnswer,
             ),
             const SizedBox(height: 16),
-            FilledButton(
-              onPressed: onReturn,
-              child: const Text('문제 목록으로 돌아가기'),
-            ),
+            if (correct == 2)
+              FilledButton(
+                onPressed: onReturn,
+                child: const Text('문제 목록으로 돌아가기'),
+              )
+            else ...[
+              FilledButton(onPressed: onRetry, child: const Text('다시 풀기')),
+              const SizedBox(height: 8),
+              OutlinedButton(onPressed: onReturn, child: const Text('나가기')),
+            ],
           ],
         ),
       ),

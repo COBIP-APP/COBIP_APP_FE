@@ -19,6 +19,7 @@ import '../../features/grammar/presentation/grammar_quiz_screen.dart';
 import '../../features/grammar/presentation/grammar_concept_screen.dart';
 import '../../features/grammar/presentation/grammar_example_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/my_page/presentation/my_page_screen.dart';
 
 abstract final class AppRouteNames {
   static const login = 'login';
@@ -28,6 +29,7 @@ abstract final class AppRouteNames {
   static const signUpComplete = 'sign-up-complete';
   static const terms = 'terms';
   static const home = 'home';
+  static const myPage = 'my-page';
   static const practical = 'practical';
   static const practicalChapters = 'practical-chapters';
   static const practicalChapter = 'practical-chapter';
@@ -49,6 +51,11 @@ final appRouter = GoRouter(
     ),
   ),
   routes: [
+    GoRoute(
+      path: '/my-page',
+      name: AppRouteNames.myPage,
+      builder: (context, state) => const MyPageScreen(),
+    ),
     GoRoute(
       path: '/practical',
       name: AppRouteNames.practical,

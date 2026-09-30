@@ -194,7 +194,9 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
               : null,
           builder: (context, state) {
             return GrammarChaptersScreen(
-              language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
+              language: GrammarLanguage.fromId(
+                state.pathParameters['language']!,
+              )!,
             );
           },
         ),

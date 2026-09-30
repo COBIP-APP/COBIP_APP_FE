@@ -32,7 +32,8 @@
 
 ## 검증과 이미지
 
-- 정적 분석 통과, 전체 테스트 19개 통과, Android debug APK 빌드 성공.
+- 정적 분석 통과, 전체 테스트 20개 통과, Android debug APK 빌드 성공.
 
 - `test/problems_chat_test.dart`: 문제 진입·답안 입력·결과 복귀, 대화/임시 입력 유지, 빈 메시지 비활성화, 작은 화면과 키보드, 잘못된 경로 검증.
 - `docs/screenshots/problems-home.png`, `problem-mission.png`, `problem-result.png`, `chat-panel.png`는 한글 폰트를 적용한 위젯 렌더링 이미지입니다. 실제 Android 캡처와는 차이가 있습니다.
+

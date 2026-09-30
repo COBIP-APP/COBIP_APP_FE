@@ -175,14 +175,8 @@ final appRouter = GoRouter(
           ? '/grammar'
           : null,
       builder: (context, state) {
-        final categoryName = state.uri.queryParameters['category'];
-        GrammarCategory? category;
-        for (final value in GrammarCategory.values) {
-          if (value.name == categoryName) category = value;
-        }
         return GrammarChaptersScreen(
           language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
-          initialCategory: category,
         );
       },
     ),

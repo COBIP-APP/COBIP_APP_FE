@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   for (final language in GrammarLanguage.values) {
-    testWidgets('${language.label} 조건문 개념과 예제 이동 및 카테고리 복귀', (tester) async {
+    testWidgets('${language.label} 조건문 개념과 예제 이동 및 전체 목록 복귀', (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -52,7 +52,10 @@ void main() {
       expect(find.text('핵심 개념'), findsOneWidget);
       await tester.tap(find.text('이전'));
       await tester.pumpAndSettle();
-      expect(find.text('2개 챕터 · 예시 진행률'), findsOneWidget);
+      expect(
+        find.text('${grammarSampleChapters[language]!.length}개 챕터 · 예시 진행률'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
   }

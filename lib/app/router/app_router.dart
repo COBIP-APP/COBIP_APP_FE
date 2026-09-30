@@ -1,3 +1,4 @@
+import '../../features/chat/presentation/chat_screen.dart';
 import '../../features/problems/data/problem_sample_data.dart';
 import '../../features/problems/presentation/problems_home_screen.dart';
 import '../../features/problems/presentation/problem_mission_screen.dart';
@@ -25,6 +26,7 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/my_page/presentation/my_page_screen.dart';
 
 abstract final class AppRouteNames {
+  static const chat = 'chat';
   static const login = 'login';
   static const passwordReset = 'password-reset';
   static const passwordResetComplete = 'password-reset-complete';
@@ -56,6 +58,11 @@ final appRouter = GoRouter(
     ),
   ),
   routes: [
+    GoRoute(
+      path: '/chat',
+      name: AppRouteNames.chat,
+      builder: (context, state) => const ChatScreen(),
+    ),
     GoRoute(
       path: '/problems',
       name: AppRouteNames.problems,

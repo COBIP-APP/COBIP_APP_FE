@@ -1,5 +1,3 @@
-import '../../features/chat/presentation/chat_panel.dart';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -26,7 +24,7 @@ class AppBottomNavigation extends StatelessWidget {
           case 3:
             context.goNamed(AppRouteNames.problems);
           case 4:
-            showChatPanel(context);
+            context.pushNamed(AppRouteNames.chat);
         }
       },
       destinations: const [
@@ -48,6 +46,7 @@ class AppBottomNavigation extends StatelessWidget {
         NavigationDestination(icon: Icon(Icons.quiz_outlined), label: '문제'),
         NavigationDestination(
           icon: Icon(Icons.smart_toy_outlined),
+          selectedIcon: Icon(Icons.smart_toy),
           label: '챗봇',
         ),
       ],

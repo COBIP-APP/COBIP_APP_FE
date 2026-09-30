@@ -1,3 +1,4 @@
+import 'package:cobip_app_fe/features/chat/presentation/chat_screen.dart';
 import 'package:cobip_app_fe/features/problems/data/problem_sample_data.dart';
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
@@ -92,16 +93,22 @@ void main() {
     await tester.tap(find.text('챗봇'));
     await tester.pumpAndSettle();
     expect(find.text('반복문 알려줘'), findsOneWidget);
-    await tester.tap(find.byTooltip('챗봇 닫기'));
+    expect(find.byType(ChatScreen), findsOneWidget);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      4,
+    );
+    expect(find.byTooltip('챗봇 닫기'), findsNothing);
+    await tester.tap(find.byTooltip('이전 화면으로'));
     await tester.pumpAndSettle();
   });
 
   testWidgets('작은 화면과 키보드에서도 채팅 입력과 닫기가 가능하다', (tester) async {
-    await open(tester, '/practical');
+    await open(tester, '/practical/cache/chapters/basics');
     tester.view.physicalSize = const Size(320, 700);
     tester.platformDispatcher.textScaleFactorTestValue = 1.3;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await tester.tap(find.text('챗봇'));
+    await tester.tap(find.byTooltip('COBIP 챗봇'));
     await tester.pumpAndSettle();
     tester.view.viewInsets = const FakeViewPadding(bottom: 280);
     addTearDown(tester.view.resetViewInsets);

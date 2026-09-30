@@ -12,7 +12,8 @@ Future<void> showChatPanel(BuildContext context) => showModalBottomSheet<void>(
 );
 
 class ChatPanel extends StatefulWidget {
-  const ChatPanel({super.key});
+  const ChatPanel({super.key, this.isPage = false});
+  final bool isPage;
   @override
   State<ChatPanel> createState() => _ChatPanelState();
 }
@@ -57,37 +58,42 @@ class _ChatPanelState extends State<ChatPanel> {
         (media.size.height - media.viewInsets.bottom - media.padding.top - 48)
             .clamp(160.0, media.size.height);
     return Padding(
-      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: widget.isPage ? 0 : media.viewInsets.bottom,
+      ),
       child: SizedBox(
-        height: (media.size.height * .72).clamp(160.0, available),
+        height: widget.isPage
+            ? null
+            : (media.size.height * .72).clamp(160.0, available),
         child: SafeArea(
           top: false,
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.smart_toy_outlined,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'COBIP 챗봇',
-                        style: Theme.of(context).textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
+              if (!widget.isPage)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.smart_toy_outlined,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                    ),
-                    IconButton(
-                      tooltip: '챗봇 닫기',
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'COBIP 챗봇',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: '챗봇 닫기',
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 child: Align(
@@ -171,10 +177,11 @@ class _ChatPanelState extends State<ChatPanel> {
                   ],
                 ),
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('학습 계속하기'),
-              ),
+              if (!widget.isPage)
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('학습 계속하기'),
+                ),
             ],
           ),
         ),

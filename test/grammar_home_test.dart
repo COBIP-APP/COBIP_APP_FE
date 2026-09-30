@@ -32,7 +32,7 @@ void main() {
 
     await tester.tap(find.text('챗봇'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('학습 계속하기'));
+    await tester.tap(find.byTooltip('이전 화면으로'));
     await tester.pumpAndSettle();
     expect(find.text('elif'), findsOneWidget);
     expect(find.text('Python 문법 챕터'), findsOneWidget);

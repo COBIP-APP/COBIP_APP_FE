@@ -24,15 +24,6 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
     );
   }
 
-  void _openChapter() {
-    // 상세 화면에서 뒤로가면 해당 언어의 전체 목록으로 돌아갑니다.
-    FocusScope.of(context).unfocus();
-    context.goNamed(
-      AppRouteNames.grammarConcept,
-      pathParameters: {'language': _language.id},
-    );
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -153,7 +144,9 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                 title: Text(chapter.title),
                 subtitle: Text(chapter.description),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: chapter.id == 'conditions' ? _openChapter : null,
+                onTap: grammarChapterRoutes.containsKey(chapter.id)
+                    ? () => openGrammarChapter(context, _language, chapter)
+                    : null,
               ),
             ),
         ],

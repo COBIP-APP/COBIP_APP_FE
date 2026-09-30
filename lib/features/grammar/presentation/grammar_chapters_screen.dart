@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_router.dart';
 
@@ -32,15 +31,12 @@ class GrammarChaptersScreen extends StatelessWidget {
           for (final chapter in chapters)
             _ChapterCard(
               chapter: chapter,
-              onTap: chapter.id == 'conditions'
-                  ? () => context.pushNamed(
-                      AppRouteNames.grammarConcept,
-                      pathParameters: {'language': language.id},
-                    )
+              onTap: grammarChapterRoutes.containsKey(chapter.id)
+                  ? () => openGrammarChapter(context, language, chapter)
                   : null,
             ),
           const SizedBox(height: 16),
-          const Text('조건문 카드를 눌러 개념을 학습해 보세요. 다른 챕터는 준비 중이에요.'),
+          const Text('학습 가능한 챕터를 눌러 개념을 학습해 보세요.'),
         ],
       ),
     );

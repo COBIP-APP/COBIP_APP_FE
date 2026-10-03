@@ -14,7 +14,7 @@ class CobipApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => ChatViewModel(),
       child: MaterialApp.router(
-        title: 'COBIP',
+        title: 'COBIA',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5538F2)),
           scaffoldBackgroundColor: const Color(0xFFF9F8FF),

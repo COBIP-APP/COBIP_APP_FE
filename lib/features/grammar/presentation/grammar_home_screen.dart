@@ -44,7 +44,6 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
               .contains(query),
         )
         .toList();
-    final colors = Theme.of(context).colorScheme;
 
     return GrammarScaffold(
       title: '문법 학습',
@@ -66,12 +65,12 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.menu_book_outlined, color: colors.primary),
+                      Icon(Icons.menu_book_outlined, color: AppColors.primary),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
                           '오늘 학습 $sampleDailyCompleted개',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: AppTypography.section,
                         ),
                       ),
                       const Text('$sampleDailyCompleted / $sampleDailyGoal'),
@@ -82,7 +81,7 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                     value: sampleDailyCompleted / sampleDailyGoal,
                   ),
                   const SizedBox(height: 8),
-                  const Text('학습 진행률은 예시 데이터입니다.'),
+                  const Text('학습 진행률은 예시 데이터입니다.', style: AppTypography.meta),
                 ],
               ),
             ),

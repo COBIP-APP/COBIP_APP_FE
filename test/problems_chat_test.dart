@@ -32,7 +32,7 @@ void main() {
       problemMissions.first.sampleCode,
     );
     final location = appRouter.routeInformationProvider.value.uri;
-    await tester.tap(find.byTooltip('COBIP 챗봇'));
+    await tester.tap(find.byTooltip('COBIA 챗봇'));
     await tester.pumpAndSettle();
     expect(appRouter.routeInformationProvider.value.uri, location);
     expect(
@@ -54,7 +54,7 @@ void main() {
     await tester.tap(find.byTooltip('챗봇 닫기'));
     await tester.pumpAndSettle();
     expect(find.text(problemMissions.first.sampleCode), findsOneWidget);
-    await tester.tap(find.byTooltip('COBIP 챗봇'));
+    await tester.tap(find.byTooltip('COBIA 챗봇'));
     await tester.pumpAndSettle();
     expect(find.text('작성 중'), findsOneWidget);
     expect(find.text('반복문 알려줘'), findsOneWidget);
@@ -87,6 +87,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('문제 목록으로 돌아가기'));
     await tester.pumpAndSettle();
     expect(find.text('Java 기초 미션'), findsOneWidget);
@@ -108,7 +109,7 @@ void main() {
     tester.view.physicalSize = const Size(320, 700);
     tester.platformDispatcher.textScaleFactorTestValue = 1.3;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await tester.tap(find.byTooltip('COBIP 챗봇'));
+    await tester.tap(find.byTooltip('COBIA 챗봇'));
     await tester.pumpAndSettle();
     tester.view.viewInsets = const FakeViewPadding(bottom: 280);
     addTearDown(tester.view.resetViewInsets);

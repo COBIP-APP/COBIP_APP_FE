@@ -1,3 +1,6 @@
+import '../../../app/widgets/learning_ui.dart';
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +11,10 @@ Future<void> showChatPanel(BuildContext context) => showModalBottomSheet<void>(
   isScrollControlled: true,
   useSafeArea: true,
   showDragHandle: true,
+  backgroundColor: AppColors.background,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  ),
   builder: (context) => const ChatPanel(),
 );
 
@@ -57,132 +64,165 @@ class _ChatPanelState extends State<ChatPanel> {
     final available =
         (media.size.height - media.viewInsets.bottom - media.padding.top - 48)
             .clamp(160.0, media.size.height);
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: widget.isPage ? 0 : media.viewInsets.bottom,
-      ),
-      child: SizedBox(
-        height: widget.isPage
-            ? null
-            : (media.size.height * .72).clamp(160.0, available),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              if (!widget.isPage)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.smart_toy_outlined,
-                        color: Theme.of(context).colorScheme.primary,
+    return LearningTheme(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: widget.isPage ? 0 : media.viewInsets.bottom,
+        ),
+        child: SizedBox(
+          height: widget.isPage
+              ? null
+              : (media.size.height * .72).clamp(160.0, available),
+          child: SafeArea(
+            top: false,
+            child: LearningBody(
+              child: Column(
+                children: [
+                  if (!widget.isPage)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.smart_toy_outlined,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'COBIA 챗봇',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: '챗봇 닫기',
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'COBIP 챗봇',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '더미 응답 · 대화는 앱 실행 중에만 유지됩니다.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
                       ),
-                      IconButton(
-                        tooltip: '챗봇 닫기',
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close),
+                    ),
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scroll,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
                       ),
-                    ],
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final message = messages[index];
+                        return Align(
+                          alignment: message.isUser
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Container(
+                            constraints: BoxConstraints(
+                              maxWidth:
+                                  (media.size.width > 560
+                                      ? 560
+                                      : media.size.width) *
+                                  .82,
+                            ),
+                            margin: const EdgeInsets.only(bottom: 14),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: message.isUser
+                                  ? AppColors.primary
+                                  : Colors.white,
+                              border: Border.all(
+                                color: message.isUser
+                                    ? AppColors.primary
+                                    : AppColors.border,
+                              ),
+                              borderRadius: BorderRadius.only(
+                                topLeft: const Radius.circular(16),
+                                topRight: const Radius.circular(16),
+                                bottomLeft: Radius.circular(
+                                  message.isUser ? 16 : 4,
+                                ),
+                                bottomRight: Radius.circular(
+                                  message.isUser ? 4 : 16,
+                                ),
+                              ),
+                            ),
+                            child: SelectableText(
+                              message.text,
+                              style: TextStyle(
+                                color: message.isUser
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '더미 응답 · 대화는 앱 실행 중에만 유지됩니다.',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF706B7F)),
-                  ),
-                ),
-              ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  controller: _scroll,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    return Align(
-                      alignment: message.isUser
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        constraints: BoxConstraints(
-                          maxWidth: media.size.width * .76,
-                        ),
-                        margin: const EdgeInsets.only(bottom: 14),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: message.isUser
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: SelectableText(
-                          message.text,
-                          style: TextStyle(
-                            color: message.isUser
-                                ? Colors.white
-                                : const Color(0xFF292638),
-                            height: 1.5,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            key: const ValueKey('chat-input'),
+                            controller: _input,
+                            minLines: 1,
+                            maxLines: 3,
+                            maxLength: 1000,
+                            onChanged: (value) {
+                              context.read<ChatViewModel>().draft = value;
+                              setState(() {});
+                            },
+                            decoration: const InputDecoration(
+                              hintText: '메시지를 입력하세요',
+                              labelText: '메시지',
+                              counterText: '',
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        key: const ValueKey('chat-input'),
-                        controller: _input,
-                        minLines: 1,
-                        maxLines: 3,
-                        maxLength: 1000,
-                        onChanged: (value) {
-                          context.read<ChatViewModel>().draft = value;
-                          setState(() {});
-                        },
-                        decoration: const InputDecoration(
-                          hintText: '메시지를 입력하세요',
-                          counterText: '',
-                          border: OutlineInputBorder(),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          tooltip: '메시지 보내기',
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(52, 52),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadii.control,
+                              ),
+                            ),
+                          ),
+                          onPressed: _input.text.trim().isEmpty ? null : _send,
+                          icon: const Icon(Icons.send_rounded),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      tooltip: '메시지 보내기',
-                      onPressed: _input.text.trim().isEmpty ? null : _send,
-                      icon: const Icon(Icons.send_rounded),
+                  ),
+                  if (!widget.isPage)
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('학습 계속하기'),
                     ),
-                  ],
-                ),
+                ],
               ),
-              if (!widget.isPage)
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('학습 계속하기'),
-                ),
-            ],
+            ),
           ),
         ),
       ),

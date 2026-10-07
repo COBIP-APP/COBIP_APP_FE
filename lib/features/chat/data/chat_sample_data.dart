@@ -1,4 +1,4 @@
-const chatWelcome = '안녕하세요! COBIP 학습 도우미예요. 궁금한 개념을 물어보세요.';
+const chatWelcome = '안녕하세요! COBIA 학습 도우미예요. 궁금한 개념을 물어보세요.';
 
 String sampleChatReply(String message) {
   final query = message.toLowerCase();

@@ -45,7 +45,7 @@ class PracticalTopicCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(topic.title, style: AppTypography.section),
+                      Text(topic.title, style: AppTypography.card),
                     ],
                   ),
                 ),

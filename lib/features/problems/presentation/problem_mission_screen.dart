@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_visuals.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
 import '../../chat/presentation/chat_panel.dart';
@@ -80,30 +81,15 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
             child: ListView(
               padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(AppRadii.card),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        mission.title,
-                        style: Theme.of(context).textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _retry
-                            ? '틀린 문제만 다시 풀어보세요. 맞힌 답은 유지됩니다.'
-                            : '기초 개념을 확인하고 3개의 문제를 풀어보세요.',
-                      ),
-                    ],
-                  ),
+                LearningHero(
+                  title: mission.title,
+                  art: 'login_code',
+                  eyebrow: '${mission.language} · 3문항',
+                  description: _retry
+                      ? '틀린 문제를 다시 풀어보세요. 맞힌 답은 유지됩니다.'
+                      : '기초 개념을 확인하고 3개의 문제를 풀어보세요.',
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 if (!_retry || _retryCode)
                   _card(
                     '1. ${mission.codePrompt}',
@@ -190,7 +176,7 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
                       ],
                     ),
                   ),
-                const Text(
+                const LearningNotice(
                   '더미 채점입니다. 코드는 실행하지 않고 예시 코드와 문자열을 비교하므로 다른 올바른 코드도 오답으로 표시될 수 있습니다.',
                 ),
                 const SizedBox(height: 16),
@@ -211,29 +197,13 @@ class _ProblemMissionScreenState extends State<ProblemMissionScreen> {
     );
   }
 
-  Widget _card(String title, String type, Widget child) => Card(
-    color: Colors.white,
-    elevation: 0,
-    margin: const EdgeInsets.only(bottom: 16),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppRadii.card),
-      side: const BorderSide(color: AppColors.border),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(type, style: TextStyle(color: AppColors.primary, fontSize: 12)),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold, height: 1.5),
-          ),
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
+  Widget _card(String title, String type, Widget child) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: LearningSection(
+      title: title,
+      label: type,
+      icon: type == '코드 작성형' ? Icons.terminal_rounded : Icons.quiz_outlined,
+      child: child,
     ),
   );
 }

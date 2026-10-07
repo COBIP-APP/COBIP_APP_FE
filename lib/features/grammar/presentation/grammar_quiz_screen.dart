@@ -1,3 +1,5 @@
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -88,7 +90,7 @@ class _GrammarQuizScreenState extends State<GrammarQuizScreen> {
       ),
       body: ListView(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
+        padding: AppSpacing.pagePadding(context).copyWith(bottom: 88),
         children: [
           LessonPosition(
             language: widget.language.label,
@@ -181,10 +183,10 @@ class _AnswerOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isCorrect
-        ? const Color(0xFF23815A)
+        ? AppColors.success
         : isWrong
-        ? const Color(0xFFC33F60)
-        : const Color(0xFF6735FF);
+        ? AppColors.error
+        : AppColors.primary;
     return Semantics(
       selected: selected,
       inMutuallyExclusiveGroup: true,

@@ -1,3 +1,5 @@
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -65,7 +67,7 @@ class _GrammarExampleScreenState extends State<GrammarExampleScreen> {
       ),
       body: ListView(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
+        padding: AppSpacing.pagePadding(context).copyWith(bottom: 88),
         children: [
           LessonPosition(
             language: widget.language.label,
@@ -112,7 +114,7 @@ class _GrammarExampleScreenState extends State<GrammarExampleScreen> {
                       children: [
                         CircleAvatar(
                           radius: 12,
-                          backgroundColor: const Color(0xFFECE5FF),
+                          backgroundColor: AppColors.primarySoft,
                           child: Text(
                             '${i + 1}',
                             style: const TextStyle(fontSize: 12),

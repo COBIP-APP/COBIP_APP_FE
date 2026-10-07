@@ -1,3 +1,5 @@
+import '../../../app/widgets/learning_ui.dart';
+import '../../../app/app_ui_tokens.dart';
 import '../../chat/presentation/chat_panel.dart';
 
 import 'package:flutter/material.dart';
@@ -22,50 +24,16 @@ class GrammarScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Theme(
-      data: isOverview
-          ? theme
-          : theme.copyWith(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF6735FF),
-              ).copyWith(primary: const Color(0xFF6735FF)),
-              scaffoldBackgroundColor: const Color(0xFFFAF9FE),
-              appBarTheme: AppBarTheme(
-                backgroundColor: const Color(0xFFFAF9FE),
-                surfaceTintColor: Colors.transparent,
-                centerTitle: true,
-                titleTextStyle: theme.textTheme.titleLarge?.copyWith(
-                  color: const Color(0xFF242034),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              filledButtonTheme: FilledButtonThemeData(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(0, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              outlinedButtonTheme: OutlinedButtonThemeData(
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
+      data: learningUiTheme,
       child: Scaffold(
         appBar: isOverview
             ? AppBar(
                 automaticallyImplyLeading: false,
                 title: Text(
-                  'COBIP',
+                  'COBIA',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -95,7 +63,7 @@ class GrammarScaffold extends StatelessWidget {
                   },
                 ),
               ),
-        body: SafeArea(child: body),
+        body: SafeArea(child: LearningBody(child: body)),
         bottomNavigationBar: isOverview
             ? AppBottomNavigation(selectedIndex: 1)
             : footer == null
@@ -104,13 +72,13 @@ class GrammarScaffold extends StatelessWidget {
                 top: false,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-                  child: footer,
+                  child: LearningBody(child: footer!),
                 ),
               ),
         floatingActionButton: isOverview
             ? null
-            : FloatingActionButton.small(
-                tooltip: 'COBIP 챗봇',
+            : FloatingActionButton(
+                tooltip: 'COBIA 챗봇',
                 shape: const CircleBorder(),
                 onPressed: () => showChatPanel(context),
                 child: const Icon(Icons.smart_toy_outlined),

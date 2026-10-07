@@ -1,3 +1,5 @@
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/router/app_router.dart';
@@ -16,7 +18,7 @@ class GrammarChaptersScreen extends StatelessWidget {
     return GrammarScaffold(
       title: '${language.label} 문법',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 88),
+        padding: AppSpacing.pagePadding(context).copyWith(bottom: 88),
         children: [
           Text(
             '문법 챕터',
@@ -59,6 +61,7 @@ class _ChapterCard extends StatelessWidget {
       GrammarCategory.collections => Icons.data_array,
     };
     return Card(
+      margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -68,8 +71,8 @@ class _ChapterCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                backgroundColor: colors.primaryContainer,
-                foregroundColor: colors.onPrimaryContainer,
+                backgroundColor: AppColors.primarySoft,
+                foregroundColor: AppColors.primary,
                 child: Icon(icon),
               ),
               const SizedBox(width: 16),
@@ -89,7 +92,7 @@ class _ChapterCard extends StatelessWidget {
                       style: TextStyle(color: colors.primary),
                     ),
                     const SizedBox(height: 8),
-                    Text(chapter.description),
+                    Text(chapter.description, style: AppTypography.helper),
                     const SizedBox(height: 16),
                     Row(
                       children: [

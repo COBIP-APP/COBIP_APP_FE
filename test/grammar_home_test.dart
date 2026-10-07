@@ -19,9 +19,9 @@ void main() {
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
       1,
     );
-    expect(find.text('COBIP'), findsOneWidget);
+    expect(find.text('COBIA'), findsOneWidget);
     expect(find.text('코드를 더 잘 이해하는 시작'), findsOneWidget);
-    expect(find.text('COBIP와 함께 문법을 학습해보세요'), findsOneWidget);
+    expect(find.text('COBIA와 함께 문법을 학습해보세요'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsNothing);
 
     await tester.tap(find.text('Python'));

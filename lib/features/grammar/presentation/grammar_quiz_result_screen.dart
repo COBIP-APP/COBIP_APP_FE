@@ -1,3 +1,5 @@
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/condition_quiz_data.dart';
@@ -33,7 +35,7 @@ class GrammarQuizResultScreen extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
+        padding: AppSpacing.pagePadding(context).copyWith(bottom: 88),
         children: [
           LessonCard(
             title: '조건문 복습 완료',
@@ -44,7 +46,7 @@ class GrammarQuizResultScreen extends StatelessWidget {
                 Text(
                   '$score점',
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: const Color(0xFF6735FF),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -61,11 +63,11 @@ class GrammarQuizResultScreen extends StatelessWidget {
                   children: [
                     Text(
                       '맞힌 문제 $correct',
-                      style: const TextStyle(color: Color(0xFF23815A)),
+                      style: const TextStyle(color: AppColors.success),
                     ),
                     Text(
                       '틀린 문제 ${questions.length - correct}',
-                      style: const TextStyle(color: Color(0xFFC33F60)),
+                      style: const TextStyle(color: AppColors.error),
                     ),
                   ],
                 ),
@@ -101,7 +103,7 @@ class GrammarQuizResultScreen extends StatelessWidget {
                   Text(
                     '정답: ${questions[i].options[questions[i].correctIndex]}',
                     style: const TextStyle(
-                      color: Color(0xFF6735FF),
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

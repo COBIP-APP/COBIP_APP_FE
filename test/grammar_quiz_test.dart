@@ -78,6 +78,7 @@ void main() {
     await tester.pumpWidget(const CobipApp());
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const ValueKey('answer-1')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('answer-1')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('정답 제출'));

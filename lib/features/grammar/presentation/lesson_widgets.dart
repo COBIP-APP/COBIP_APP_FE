@@ -1,3 +1,5 @@
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 
 class LessonCard extends StatelessWidget {
@@ -19,8 +21,8 @@ class LessonCard extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: Color(0xFFF0EDF7)),
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        side: const BorderSide(color: AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -32,13 +34,10 @@ class LessonCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0EAFF),
+                    color: AppColors.primarySoft,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    icon,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                  child: Icon(icon, color: AppColors.primary),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -68,9 +67,9 @@ class LessonCode extends StatelessWidget {
   Widget build(BuildContext context) {
     final lines = code.split('\n');
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F2FC),
+        color: AppColors.surfaceSubtle,
         borderRadius: BorderRadius.circular(12),
       ),
       child: SingleChildScrollView(
@@ -81,10 +80,10 @@ class LessonCode extends StatelessWidget {
             Text(
               [for (var i = 0; i < lines.length; i++) '${i + 1}'].join('\n'),
               style: const TextStyle(
-                color: Color(0xFF9691A5),
+                color: AppColors.textSecondary,
                 fontFamily: 'monospace',
-                fontSize: 13,
-                height: 1.7,
+                fontSize: 14,
+                height: 22 / 14,
               ),
             ),
             const SizedBox(width: 14),
@@ -92,8 +91,8 @@ class LessonCode extends StatelessWidget {
               TextSpan(children: _highlight(code)),
               style: const TextStyle(
                 fontFamily: 'monospace',
-                fontSize: 13,
-                height: 1.7,
+                fontSize: 14,
+                height: 22 / 14,
               ),
             ),
           ],
@@ -114,10 +113,10 @@ class LessonCode extends StatelessWidget {
       }
       final token = match.group(0)!;
       final color = token.startsWith('"')
-          ? const Color(0xFF25825B)
+          ? AppColors.success
           : int.tryParse(token) != null
-          ? const Color(0xFFBC4792)
-          : const Color(0xFF5B3ABF);
+          ? AppColors.error
+          : AppColors.primary;
       spans.add(
         TextSpan(
           text: token,
@@ -154,7 +153,7 @@ class LessonPosition extends StatelessWidget {
         Text(
           '$language · 제어문 · 조건문',
           style: Theme.of(context).textTheme.labelLarge
-              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+              ?.copyWith(color: AppColors.primary),
         ),
         if (current != null && total != null) ...[
           const SizedBox(height: 14),
@@ -172,8 +171,8 @@ class LessonPosition extends StatelessWidget {
                           margin: const EdgeInsets.symmetric(horizontal: 3),
                           decoration: BoxDecoration(
                             color: i < current!
-                                ? Theme.of(context).colorScheme.primary
-                                : const Color(0xFFECE8F5),
+                                ? AppColors.primary
+                                : AppColors.border,
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),

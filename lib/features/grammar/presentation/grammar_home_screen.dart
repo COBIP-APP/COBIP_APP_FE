@@ -1,3 +1,6 @@
+import '../../../app/widgets/learning_ui.dart';
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -46,19 +49,15 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
       title: '문법 학습',
       isOverview: true,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        padding: AppSpacing.pagePadding(context),
         children: [
-          Text(
-            '문법 학습',
-            style: Theme.of(context).textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+          LearningIntro(
+            title: '문법 학습',
+            lines: ['코드를 더 잘 이해하는 시작', 'COBIA와 함께 문법을 학습해보세요'],
+            icon: Icons.menu_book_outlined,
           ),
-          const SizedBox(height: 8),
-          const Text('코드를 더 잘 이해하는 시작'),
-          const SizedBox(height: 4),
-          const Text('COBIP와 함께 문법을 학습해보세요'),
-          const SizedBox(height: 24),
           Card(
+            color: AppColors.primarySoft,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -139,10 +138,14 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
             ),
           for (final chapter in chapters)
             Card(
+              margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
-                leading: Icon(Icons.code, color: colors.primary),
-                title: Text(chapter.title),
-                subtitle: Text(chapter.description),
+                leading: const LearningIcon(Icons.code),
+                title: Text(chapter.title, style: AppTypography.card),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(chapter.description, style: AppTypography.helper),
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: grammarChapterRoutes.containsKey(chapter.id)
                     ? () => openGrammarChapter(context, _language, chapter)

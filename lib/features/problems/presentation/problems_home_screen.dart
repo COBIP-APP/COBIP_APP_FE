@@ -65,7 +65,7 @@ class ProblemsHomeScreen extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          Text(mission.title, style: AppTypography.section),
+                          Text(mission.title, style: AppTypography.card),
                           const SizedBox(height: 8),
                           const Text('반복문과 기본 문법을 확인해보세요.'),
                           const SizedBox(height: 16),

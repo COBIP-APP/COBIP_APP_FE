@@ -135,8 +135,8 @@ class _GrammarQuizScreenState extends State<GrammarQuizScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF2ECFF),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.primarySoft,
+                      borderRadius: BorderRadius.circular(AppRadii.control),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -194,16 +194,16 @@ class _AnswerOption extends StatelessWidget {
       child: Material(
         color: selected || isCorrect
             ? color.withValues(alpha: .08)
-            : const Color(0xFFF8F6FC),
+            : AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadii.control),
           side: BorderSide(
-            color: selected || isCorrect ? color : const Color(0xFFECE8F3),
+            color: selected || isCorrect ? color : AppColors.border,
           ),
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadii.control),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(
@@ -218,7 +218,7 @@ class _AnswerOption extends StatelessWidget {
                       : Icons.radio_button_off,
                   color: selected || isCorrect
                       ? color
-                      : const Color(0xFFA5A0B3),
+                      : AppColors.textSecondary,
                   size: 22,
                 ),
                 const SizedBox(width: 12),

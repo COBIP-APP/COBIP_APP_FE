@@ -54,7 +54,6 @@ class ProblemsHomeScreen extends StatelessWidget {
                       title: mission.title,
                       description: '반복문과 기본 문법을 확인해보세요.',
                       icon: Icons.terminal_rounded,
-                      symbol: '{ }',
                       tags: const ['코드 작성', '객관식', '출력값 입력'],
                       footer: '3문항 · 문제 풀기',
                     ),

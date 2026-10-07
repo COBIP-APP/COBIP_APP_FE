@@ -153,7 +153,6 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                     'variables' => Icons.data_object_rounded,
                     _ => Icons.code_rounded,
                   },
-                  symbol: '</>',
                   footer: grammarChapterRoutes.containsKey(chapter.id)
                       ? '개념부터 예제까지 학습하기'
                       : '문법 개념 살펴보기',

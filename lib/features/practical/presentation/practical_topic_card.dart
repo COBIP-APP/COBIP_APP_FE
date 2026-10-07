@@ -28,7 +28,6 @@ class PracticalTopicCard extends StatelessWidget {
         title: topic.title,
         description: topic.summary,
         icon: icon,
-        symbol: 'LAB',
         tags: topic.tags,
         footer: '${topic.chapters.length}개 챕터 · 실무 학습 시작',
       ),

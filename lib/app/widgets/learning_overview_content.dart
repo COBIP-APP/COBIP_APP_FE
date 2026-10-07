@@ -11,13 +11,12 @@ class LearningOverviewContent extends StatelessWidget {
     required this.title,
     required this.description,
     required this.icon,
-    required this.symbol,
     required this.footer,
     this.tags = const [],
     this.enabled = true,
   });
 
-  final String label, title, description, symbol, footer;
+  final String label, title, description, footer;
   final IconData icon;
   final List<String> tags;
   final bool enabled;
@@ -69,7 +68,7 @@ class LearningOverviewContent extends StatelessWidget {
                 ExcludeSemantics(
                   child: SizedBox(
                     width: 64,
-                    height: 76,
+                    height: 64,
                     child: Stack(
                       children: [
                         Positioned(
@@ -107,17 +106,6 @@ class LearningOverviewContent extends StatelessWidget {
                               ],
                             ),
                             child: Icon(icon, color: Colors.white, size: 28),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 2,
-                          child: Text(
-                            symbol,
-                            style: AppTypography.meta.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w800,
-                            ),
                           ),
                         ),
                       ],

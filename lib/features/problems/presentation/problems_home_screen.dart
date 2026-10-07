@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_card.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
 
@@ -40,15 +41,8 @@ class ProblemsHomeScreen extends StatelessWidget {
                 icon: Icons.terminal_rounded,
               ),
               for (final mission in problemMissions)
-                Card(
-                  color: Colors.white,
-                  elevation: 0,
+                LearningCard(
                   margin: const EdgeInsets.only(bottom: 16),
-                  clipBehavior: Clip.antiAlias,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
                   child: InkWell(
                     onTap: () => context.pushNamed(
                       AppRouteNames.problemMission,
@@ -61,14 +55,17 @@ class ProblemsHomeScreen extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.code, color: AppColors.primary),
+                              const LearningIcon(
+                                Icons.terminal_rounded,
+                                size: 48,
+                              ),
                               const SizedBox(width: 10),
                               Expanded(child: Text(mission.language)),
-                              const Icon(Icons.arrow_forward),
+                              const LearningCardArrow(),
                             ],
                           ),
                           const SizedBox(height: 16),
-                          Text(mission.title, style: AppTypography.card),
+                          Text(mission.title, style: AppTypography.section),
                           const SizedBox(height: 8),
                           const Text('반복문과 기본 문법을 확인해보세요.'),
                           const SizedBox(height: 16),

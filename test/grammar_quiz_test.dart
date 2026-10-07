@@ -60,9 +60,20 @@ void main() {
     await tester.tap(find.text('학습으로 돌아가기'));
     await tester.pumpAndSettle();
     expect(find.text('Java 문법'), findsOneWidget);
-    expect(find.text('2개 챕터 · 예시 진행률'), findsOneWidget);
+    expect(find.text('6개 챕터 · 예시 진행률'), findsOneWidget);
+    expect(find.text('변수와 자료형'), findsOneWidget);
     expect(find.text('조건문'), findsOneWidget);
     expect(find.text('반복문'), findsOneWidget);
+    expect(
+      appRouter.routeInformationProvider.value.uri.path,
+      '/grammar/java/chapters',
+    );
+    await tester.tap(find.byTooltip('뒤로가기'));
+    await tester.pumpAndSettle();
+    expect(appRouter.routeInformationProvider.value.uri.path, '/grammar');
+    expect(find.text('Java 문법 챕터'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('학습 결과'), findsNothing);
     expect(appRouter.canPop(), isFalse);
     expect(tester.takeException(), isNull);
   });

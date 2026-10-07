@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_overview_content.dart';
 import '../../../app/widgets/learning_card.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
@@ -140,15 +141,24 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
             LearningCard(
               margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
-                leading: const LearningIcon(Icons.code),
-                title: Text(chapter.title, style: AppTypography.card),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(chapter.description, style: AppTypography.helper),
+                contentPadding: EdgeInsets.zero,
+                title: LearningOverviewContent(
+                  label: '${_language.label} · ${chapter.category.label}',
+                  title: chapter.title,
+                  description: chapter.description,
+                  icon: switch (chapter.id) {
+                    'conditions' => Icons.call_split_rounded,
+                    'loops' => Icons.repeat_rounded,
+                    'arrays' => Icons.grid_view_rounded,
+                    'variables' => Icons.data_object_rounded,
+                    _ => Icons.code_rounded,
+                  },
+                  symbol: '</>',
+                  footer: grammarChapterRoutes.containsKey(chapter.id)
+                      ? '개념부터 예제까지 학습하기'
+                      : '문법 개념 살펴보기',
+                  enabled: grammarChapterRoutes.containsKey(chapter.id),
                 ),
-                trailing: grammarChapterRoutes.containsKey(chapter.id)
-                    ? const LearningCardArrow()
-                    : null,
                 onTap: grammarChapterRoutes.containsKey(chapter.id)
                     ? () => openGrammarChapter(context, _language, chapter)
                     : null,

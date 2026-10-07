@@ -56,6 +56,11 @@ void main() {
 
         await tester.tap(find.byTooltip('뒤로가기'));
         await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.text('Python 문법 챕터'),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(find.text('Python 문법 챕터'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });

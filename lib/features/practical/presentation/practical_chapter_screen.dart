@@ -1,4 +1,4 @@
-import '../../../app/widgets/learning_card.dart';
+import '../../../app/widgets/learning_visuals.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
 
@@ -34,18 +34,12 @@ class PracticalChapterScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              '${topic.category} · 챕터 ${chapterIndex + 1} / ${topic.chapters.length}',
-              style: TextStyle(color: AppColors.primary),
+            LearningHero(
+              title: chapter.title,
+              description: chapter.summary,
+              eyebrow:
+                  '${topic.category} · 챕터 ${chapterIndex + 1} / ${topic.chapters.length}',
             ),
-            const SizedBox(height: 12),
-            Text(
-              chapter.title,
-              style: Theme.of(context).textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(chapter.summary),
             const SizedBox(height: 24),
             _Section(
               title: '핵심 개념',
@@ -127,29 +121,6 @@ class _Section extends StatelessWidget {
   final IconData icon;
   final Widget child;
   @override
-  Widget build(BuildContext context) => LearningCard(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: AppColors.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      LearningSection(title: title, icon: icon, child: child);
 }

@@ -65,6 +65,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('free'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
@@ -178,6 +179,7 @@ void main() {
     );
     expect(find.byIcon(Icons.radio_button_checked), findsNothing);
     await reveal(find.text('free'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('free'));
     await reveal(find.byKey(const ValueKey('problem-output')));
     expect(

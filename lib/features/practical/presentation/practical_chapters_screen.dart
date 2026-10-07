@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_visuals.dart';
 import '../../../app/widgets/learning_card.dart';
 import '../../../app/app_ui_tokens.dart';
 
@@ -24,20 +25,13 @@ class PracticalChaptersScreen extends StatelessWidget {
     body: ListView(
       padding: AppSpacing.pagePadding(context),
       children: [
-        Text(
-          topic.category,
-          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        LearningHero(
+          title: topic.title,
+          description: topic.summary,
+          eyebrow: topic.category,
         ),
-        const SizedBox(height: 8),
-        Text(
-          topic.title,
-          style: Theme.of(context).textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Text(topic.summary),
-        const SizedBox(height: 24),
-        Text('챕터 목록', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.section),
+        Text('챕터 목록', style: AppTypography.section),
         const SizedBox(height: 8),
         const Text('궁금한 챕터부터 자유롭게 살펴보세요.'),
         const SizedBox(height: 16),

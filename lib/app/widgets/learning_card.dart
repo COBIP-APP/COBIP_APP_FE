@@ -19,7 +19,7 @@ class LearningCard extends StatelessWidget {
     padding: margin,
     child: DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: .08),
@@ -31,48 +31,18 @@ class LearningCard extends StatelessWidget {
       child: Material(
         color: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFDAD2F5)),
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          side: const BorderSide(color: AppColors.border),
         ),
         clipBehavior: Clip.antiAlias,
-        child: Ink(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [Color(0xFFF1EDFF), Colors.white, Colors.white],
-              stops: [0, .45, 1],
-            ),
-          ),
-          child: InkWell(
-            onTap: onTap,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    width: 52,
-                    height: 4,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.only(
-                        bottomRight: Radius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                child,
-              ],
-            ),
-          ),
-        ),
+        child: InkWell(onTap: onTap, child: child),
       ),
     ),
   );
 }
 
-/// 카드는 하나의 탭 영역이며 화살표는 추가 버튼이 아닌 시각적 안내입니다.
+/// 카드는 하나의 탭 영역이며 화살표는 시각적 안내입니다.
+
 class LearningCardArrow extends StatelessWidget {
   const LearningCardArrow({super.key});
   @override
@@ -101,11 +71,7 @@ class ChapterNumber extends StatelessWidget {
     constraints: const BoxConstraints(minWidth: 48, minHeight: 52),
     padding: const EdgeInsets.all(8),
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [AppColors.primary, AppColors.accent],
-      ),
+      color: AppColors.primarySoft,
       borderRadius: BorderRadius.circular(14),
       boxShadow: [
         BoxShadow(
@@ -118,7 +84,7 @@ class ChapterNumber extends StatelessWidget {
     child: Text(
       number,
       textAlign: TextAlign.center,
-      style: AppTypography.section.copyWith(color: Colors.white),
+      style: AppTypography.section.copyWith(color: AppColors.primary),
     ),
   );
 }

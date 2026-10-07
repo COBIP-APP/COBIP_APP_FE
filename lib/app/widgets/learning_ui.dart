@@ -1,3 +1,5 @@
+import 'learning_visuals.dart';
+
 import 'package:flutter/material.dart';
 
 import '../app_ui_tokens.dart';
@@ -102,8 +104,13 @@ class LearningIntro extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(child: Text(title, style: AppTypography.title)),
-            const SizedBox(width: 12),
-            LearningIcon(icon, size: 52),
+            if (MediaQuery.textScalerOf(context).scale(14) < 21) ...[
+              const SizedBox(width: 12),
+              LearningArt(
+                icon == Icons.layers_outlined ? 'home_learning' : 'login_code',
+                size: 88,
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 12),
@@ -134,13 +141,7 @@ class LearningCode extends StatelessWidget {
   const LearningCode(this.code, {super.key});
   final String code;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(AppSpacing.card),
-    decoration: BoxDecoration(
-      color: AppColors.surfaceSubtle,
-      borderRadius: BorderRadius.circular(AppRadii.control),
-      border: Border.all(color: AppColors.border),
-    ),
+  Widget build(BuildContext context) => LearningCodeFrame(
     child: SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(

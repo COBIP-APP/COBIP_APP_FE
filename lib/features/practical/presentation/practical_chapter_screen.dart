@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_card.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
 
@@ -126,14 +127,7 @@ class _Section extends StatelessWidget {
   final IconData icon;
   final Widget child;
   @override
-  Widget build(BuildContext context) => Card(
-    color: Colors.white,
-    elevation: 0,
-    margin: EdgeInsets.zero,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppRadii.card),
-      side: const BorderSide(color: AppColors.border),
-    ),
+  Widget build(BuildContext context) => LearningCard(
     child: Padding(
       padding: const EdgeInsets.all(16),
       child: Column(

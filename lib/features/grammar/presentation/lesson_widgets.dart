@@ -1,4 +1,4 @@
-import '../../../app/widgets/learning_card.dart';
+import '../../../app/widgets/learning_visuals.dart';
 import '../../../app/app_ui_tokens.dart';
 
 import 'package:flutter/material.dart';
@@ -17,38 +17,7 @@ class LessonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LearningCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: AppColors.primary),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            child,
-          ],
-        ),
-      ),
-    );
+    return LearningSection(title: title, icon: icon, child: child);
   }
 }
 
@@ -60,12 +29,7 @@ class LessonCode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lines = code.split('\n');
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return LearningCodeFrame(
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -141,43 +105,50 @@ class LessonPosition extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$language · 제어문 · 조건문',
-          style: Theme.of(context).textTheme.labelLarge
-              ?.copyWith(color: AppColors.primary),
-        ),
-        if (current != null && total != null) ...[
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Text('$label $current / $total'),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Row(
-                  children: [
-                    for (var i = 0; i < total!; i++)
-                      Expanded(
-                        child: Container(
-                          height: 6,
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          decoration: BoxDecoration(
-                            color: i < current!
-                                ? AppColors.primary
-                                : AppColors.border,
-                            borderRadius: BorderRadius.circular(8),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primarySoft,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$language · 제어문 · 조건문',
+            style: Theme.of(context).textTheme.labelLarge
+                ?.copyWith(color: AppColors.primary),
+          ),
+          if (current != null && total != null) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(child: Text('$label $current / $total')),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < total!; i++)
+                        Expanded(
+                          child: Container(
+                            height: 6,
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            decoration: BoxDecoration(
+                              color: i < current!
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

@@ -1,3 +1,5 @@
+import '../../../app/widgets/learning_card.dart';
+import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
 
 import 'package:flutter/material.dart';
@@ -60,7 +62,7 @@ class _ChapterCard extends StatelessWidget {
       GrammarCategory.objects => Icons.account_tree_outlined,
       GrammarCategory.collections => Icons.data_array,
     };
-    return Card(
+    return LearningCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: onTap,
@@ -70,11 +72,7 @@ class _ChapterCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                backgroundColor: AppColors.primarySoft,
-                foregroundColor: AppColors.primary,
-                child: Icon(icon),
-              ),
+              LearningIcon(icon, size: 48),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

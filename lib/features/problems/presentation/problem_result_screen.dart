@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_visuals.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
 
@@ -47,28 +48,17 @@ class ProblemResultScreen extends StatelessWidget {
             child: ListView(
               padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
               children: [
-                Icon(
-                  Icons.fact_check_outlined,
-                  size: 56,
-                  color: AppColors.primary,
+                LearningHero(
+                  title: '정답 $correct / 3',
+                  eyebrow: mission.title,
+                  art: 'sign_up_complete',
+                  description: correct == 3
+                      ? '모든 문제를 맞혔어요. 다음 학습도 이어가 보세요.'
+                      : '잘 풀었어요. 틀린 문제를 확인하고 다시 도전해 보세요.',
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  mission.title,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.section,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '정답 $correct / 3',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                const Text(
+                const LearningNotice(
                   '더미 채점 결과입니다. 코드 문제는 실행 없이 예시 코드와 문자열을 비교합니다. 다른 올바른 코드도 오답으로 표시될 수 있습니다.',
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 _ResultCard(
@@ -140,10 +130,7 @@ class _ResultCardState extends State<_ResultCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            widget.title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(widget.title, style: AppTypography.card),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -154,10 +141,7 @@ class _ResultCardState extends State<_ResultCard> {
                 size: 22,
               ),
               const SizedBox(width: 8),
-              Text(
-                widget.isCorrect ? '정답' : '오답',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              Text(widget.isCorrect ? '정답' : '오답', style: AppTypography.card),
             ],
           ),
           Align(

@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_visuals.dart';
 import '../../../app/widgets/learning_card.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
@@ -22,14 +23,13 @@ class GrammarChaptersScreen extends StatelessWidget {
       body: ListView(
         padding: AppSpacing.pagePadding(context).copyWith(bottom: 88),
         children: [
-          Text(
-            '문법 챕터',
-            style: Theme.of(context).textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+          LearningHero(
+            title: '문법 챕터',
+            description: '범위별로 학습할 내용과 진행 상태를 확인해 보세요.',
+            eyebrow: language.label,
+            art: 'login_code',
           ),
-          const SizedBox(height: 8),
-          const Text('범위별로 학습할 내용과 진행 상태를 확인해 보세요.'),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.section),
           Text('${chapters.length}개 챕터 · 예시 진행률'),
           const SizedBox(height: 12),
           for (final chapter in chapters)

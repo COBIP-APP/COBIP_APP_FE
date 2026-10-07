@@ -1,3 +1,5 @@
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,7 +21,7 @@ class PracticalChaptersScreen extends StatelessWidget {
       }
     },
     body: ListView(
-      padding: const EdgeInsets.all(24),
+      padding: AppSpacing.pagePadding(context),
       children: [
         Text(
           topic.category,

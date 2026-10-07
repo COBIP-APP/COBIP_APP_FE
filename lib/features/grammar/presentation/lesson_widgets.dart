@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_card.dart';
 import '../../../app/app_ui_tokens.dart';
 
 import 'package:flutter/material.dart';
@@ -16,14 +17,7 @@ class LessonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        side: const BorderSide(color: AppColors.border),
-      ),
+    return LearningCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_card.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
 
@@ -137,7 +138,7 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
               child: Text('검색 결과가 없어요. 다른 검색어를 입력해 주세요.'),
             ),
           for (final chapter in chapters)
-            Card(
+            LearningCard(
               margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 leading: const LearningIcon(Icons.code),
@@ -146,7 +147,9 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(chapter.description, style: AppTypography.helper),
                 ),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: grammarChapterRoutes.containsKey(chapter.id)
+                    ? const LearningCardArrow()
+                    : null,
                 onTap: grammarChapterRoutes.containsKey(chapter.id)
                     ? () => openGrammarChapter(context, _language, chapter)
                     : null,

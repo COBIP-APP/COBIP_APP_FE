@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_visuals.dart';
 import '../../../app/app_ui_tokens.dart';
 
 import 'package:flutter/material.dart';
@@ -37,45 +38,30 @@ class GrammarQuizResultScreen extends StatelessWidget {
       body: ListView(
         padding: AppSpacing.pagePadding(context).copyWith(bottom: 88),
         children: [
-          LessonCard(
-            title: '조건문 복습 완료',
-            icon: Icons.emoji_events_outlined,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          LearningHero(
+            title: '$score점',
+            eyebrow: '조건문 복습 완료',
+            art: 'sign_up_complete',
+            description: correct == questions.length
+                ? '조건문의 흐름을 모두 이해했어요!'
+                : '해설을 확인하고 헷갈린 조건을 복습해 보세요.',
+            child: Wrap(
+              spacing: 20,
+              runSpacing: 8,
               children: [
                 Text(
-                  '$score점',
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  '맞힌 문제 $correct',
+                  style: AppTypography.card.copyWith(color: AppColors.success),
                 ),
-                const SizedBox(height: 8),
                 Text(
-                  correct == questions.length
-                      ? '조건문의 흐름을 모두 이해했어요!'
-                      : '해설을 확인하고 헷갈린 조건을 복습해 보세요.',
+                  '틀린 문제 ${questions.length - correct}',
+                  style: AppTypography.card.copyWith(color: AppColors.error),
                 ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    Text(
-                      '맞힌 문제 $correct',
-                      style: const TextStyle(color: AppColors.success),
-                    ),
-                    Text(
-                      '틀린 문제 ${questions.length - correct}',
-                      style: const TextStyle(color: AppColors.error),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text('현재 풀이 결과이며 앱 종료 후에는 저장되지 않습니다.'),
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          const LearningNotice('현재 풀이 결과이며 앱 종료 후에는 저장되지 않습니다.'),
           const SizedBox(height: 24),
           Text(
             '해설 확인',

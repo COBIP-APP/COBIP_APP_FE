@@ -1,3 +1,4 @@
+import '../../../app/widgets/learning_overview_content.dart';
 import '../../../app/widgets/learning_card.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
@@ -48,33 +49,14 @@ class ProblemsHomeScreen extends StatelessWidget {
                       AppRouteNames.problemMission,
                       pathParameters: {'mission': mission.id},
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const LearningIcon(
-                                Icons.terminal_rounded,
-                                size: 48,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(child: Text(mission.language)),
-                              const LearningCardArrow(),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(mission.title, style: AppTypography.card),
-                          const SizedBox(height: 8),
-                          const Text('반복문과 기본 문법을 확인해보세요.'),
-                          const SizedBox(height: 16),
-                          const Text(
-                            '3문항 · 코드 작성 / 객관식 / 출력값 입력',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
+                    child: LearningOverviewContent(
+                      label: mission.language,
+                      title: mission.title,
+                      description: '반복문과 기본 문법을 확인해보세요.',
+                      icon: Icons.terminal_rounded,
+                      symbol: '{ }',
+                      tags: const ['코드 작성', '객관식', '출력값 입력'],
+                      footer: '3문항 · 문제 풀기',
                     ),
                   ),
                 ),

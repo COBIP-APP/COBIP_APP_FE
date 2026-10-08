@@ -22,6 +22,7 @@ class PracticalTopicCard extends StatelessWidget {
       _ => Icons.analytics_outlined,
     };
     return LearningCard(
+      emphasizedShadow: true,
       onTap: onTap,
       child: LearningOverviewContent(
         label: topic.category,

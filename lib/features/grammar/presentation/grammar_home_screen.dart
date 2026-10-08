@@ -139,6 +139,7 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
             ),
           for (final chapter in chapters)
             LearningCard(
+              emphasizedShadow: true,
               margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 contentPadding: EdgeInsets.zero,

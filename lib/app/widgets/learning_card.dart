@@ -8,10 +8,12 @@ class LearningCard extends StatelessWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.emphasizedShadow = false,
     this.margin = EdgeInsets.zero,
   });
   final Widget child;
   final VoidCallback? onTap;
+  final bool emphasizedShadow;
   final EdgeInsetsGeometry margin;
 
   @override
@@ -20,13 +22,26 @@ class LearningCard extends StatelessWidget {
     child: DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadii.card),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: .08),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        boxShadow: emphasizedShadow
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .12),
+                  blurRadius: 20,
+                  offset: const Offset(0, 7),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: .08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: Material(
         color: AppColors.surface,

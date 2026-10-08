@@ -43,6 +43,7 @@ class ProblemsHomeScreen extends StatelessWidget {
               ),
               for (final mission in problemMissions)
                 LearningCard(
+                  emphasizedShadow: true,
                   margin: const EdgeInsets.only(bottom: 16),
                   child: InkWell(
                     onTap: () => context.pushNamed(

@@ -8,7 +8,7 @@ abstract final class AppColors {
   static const background = Color(0xFFF9F8FF);
   static const surface = Colors.white;
   static const surfaceSubtle = Color(0xFFF5F2FC);
-  static const navigationBackground = Color(0xFFE2DAF3);
+  static const navigationBackground = Color(0xFFDCCFFF);
   static const navigationForeground = Color(0xFF625274);
   static const textPrimary = Color(0xFF292638);
   static const textSecondary = Color(0xFF706B7F);

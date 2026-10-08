@@ -13,7 +13,7 @@ class AppBottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border)),
+        border: Border(top: BorderSide(color: AppColors.navigationDivider)),
       ),
       child: NavigationBar(
         selectedIndex: selectedIndex,

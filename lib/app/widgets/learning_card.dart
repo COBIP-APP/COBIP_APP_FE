@@ -25,12 +25,12 @@ class LearningCard extends StatelessWidget {
         boxShadow: emphasizedShadow
             ? [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: .12),
+                  color: Colors.black.withValues(alpha: .15),
                   blurRadius: 20,
                   offset: const Offset(0, 7),
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: .05),
+                  color: Colors.black.withValues(alpha: .07),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),

@@ -1,3 +1,6 @@
+import '../../../app/widgets/learning_ui.dart';
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_router.dart';
@@ -37,16 +40,13 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
         .toList();
     return PracticalScaffold(
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: AppSpacing.pagePadding(context),
         children: [
-          Text(
-            '실무 학습',
-            style: Theme.of(context).textTheme.headlineMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+          LearningIntro(
+            title: '실무 학습',
+            lines: ['개념을 넘어 실무에 한 걸음', 'COBIA와 함께 실무 기술을 학습해보세요'],
+            icon: Icons.layers_outlined,
           ),
-          const SizedBox(height: 8),
-          const Text('개념을 넘어 실무에 한 걸음\nCOBIP와 함께 실무 기술을 학습해보세요'),
-          const SizedBox(height: 24),
           TextField(
             controller: _search,
             onChanged: (_) => setState(() {}),
@@ -59,7 +59,7 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
                 onPressed: () => setState(_search.clear),
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadii.card),
               ),
             ),
           ),

@@ -25,8 +25,11 @@ void main() {
         await tester.enterText(find.byType(TextField), '조건문');
         tester.testTextInput.hide();
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('조건문'));
-        await tester.tap(find.text('조건문'));
+        final conditionChapter = find.widgetWithText(ListTile, '조건문');
+        expect(conditionChapter, findsOneWidget);
+        await tester.ensureVisible(conditionChapter);
+        await tester.pumpAndSettle();
+        await tester.tap(conditionChapter);
         await tester.pumpAndSettle();
         expect(find.text('핵심 개념'), findsOneWidget);
         expect(find.text('문법 챕터'), findsNothing);

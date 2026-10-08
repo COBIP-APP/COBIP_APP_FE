@@ -1,3 +1,8 @@
+import '../../../app/widgets/learning_visuals.dart';
+import '../../../app/widgets/learning_card.dart';
+import '../../../app/widgets/learning_ui.dart';
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/router/app_router.dart';
@@ -16,16 +21,15 @@ class GrammarChaptersScreen extends StatelessWidget {
     return GrammarScaffold(
       title: '${language.label} 문법',
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 88),
+        padding: AppSpacing.pagePadding(context).copyWith(bottom: 88),
         children: [
-          Text(
-            '문법 챕터',
-            style: Theme.of(context).textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+          LearningHero(
+            title: '문법 챕터',
+            description: '범위별로 학습할 내용과 진행 상태를 확인해 보세요.',
+            eyebrow: language.label,
+            art: 'login_code',
           ),
-          const SizedBox(height: 8),
-          const Text('범위별로 학습할 내용과 진행 상태를 확인해 보세요.'),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.section),
           Text('${chapters.length}개 챕터 · 예시 진행률'),
           const SizedBox(height: 12),
           for (final chapter in chapters)
@@ -58,7 +62,8 @@ class _ChapterCard extends StatelessWidget {
       GrammarCategory.objects => Icons.account_tree_outlined,
       GrammarCategory.collections => Icons.data_array,
     };
-    return Card(
+    return LearningCard(
+      margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -67,11 +72,7 @@ class _ChapterCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                backgroundColor: colors.primaryContainer,
-                foregroundColor: colors.onPrimaryContainer,
-                child: Icon(icon),
-              ),
+              LearningIcon(icon, size: 48),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -89,7 +90,7 @@ class _ChapterCard extends StatelessWidget {
                       style: TextStyle(color: colors.primary),
                     ),
                     const SizedBox(height: 8),
-                    Text(chapter.description),
+                    Text(chapter.description, style: AppTypography.helper),
                     const SizedBox(height: 16),
                     Row(
                       children: [

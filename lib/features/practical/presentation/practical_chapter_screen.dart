@@ -1,3 +1,7 @@
+import '../../../app/widgets/learning_visuals.dart';
+import '../../../app/widgets/learning_ui.dart';
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -26,22 +30,16 @@ class PracticalChapterScreen extends StatelessWidget {
       isDetail: true,
       body: SingleChildScrollView(
         key: ValueKey('${topic.id}/${chapter.id}'),
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+        padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              '${topic.category} · 챕터 ${chapterIndex + 1} / ${topic.chapters.length}',
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            LearningHero(
+              title: chapter.title,
+              description: chapter.summary,
+              eyebrow:
+                  '${topic.category} · 챕터 ${chapterIndex + 1} / ${topic.chapters.length}',
             ),
-            const SizedBox(height: 12),
-            Text(
-              chapter.title,
-              style: Theme.of(context).textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(chapter.summary),
             const SizedBox(height: 24),
             _Section(
               title: '핵심 개념',
@@ -67,24 +65,7 @@ class PracticalChapterScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F2FC),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SelectableText(
-                        chapter.code,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 13,
-                          height: 1.7,
-                        ),
-                      ),
-                    ),
-                  ),
+                  LearningCode(chapter.code),
                   const SizedBox(height: 16),
                   Text(
                     chapter.explanation,
@@ -140,36 +121,6 @@ class _Section extends StatelessWidget {
   final IconData icon;
   final Widget child;
   @override
-  Widget build(BuildContext context) => Card(
-    color: Colors.white,
-    elevation: 0,
-    margin: EdgeInsets.zero,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(14),
-      side: const BorderSide(color: Color(0xFFECE8F5)),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      LearningSection(title: title, icon: icon, child: child);
 }

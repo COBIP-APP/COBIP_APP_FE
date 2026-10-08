@@ -1,3 +1,5 @@
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -37,7 +39,7 @@ class GrammarConceptScreen extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 88),
+        padding: AppSpacing.pagePadding(context).copyWith(bottom: 88),
         children: [
           LessonPosition(language: language.label),
           const SizedBox(height: 24),

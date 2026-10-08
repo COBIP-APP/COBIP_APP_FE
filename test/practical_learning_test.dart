@@ -71,7 +71,7 @@ void main() {
     await tester.tap(find.text('이전 챕터'));
     await tester.pumpAndSettle();
     expect(find.text('캐시 기본 개념'), findsOneWidget);
-    await tester.tap(find.byTooltip('COBIP 챗봇'));
+    await tester.tap(find.byTooltip('COBIA 챗봇'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('학습 계속하기'));
     await tester.pumpAndSettle();

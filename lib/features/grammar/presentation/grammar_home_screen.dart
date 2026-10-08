@@ -1,3 +1,8 @@
+import '../../../app/widgets/learning_overview_content.dart';
+import '../../../app/widgets/learning_card.dart';
+import '../../../app/widgets/learning_ui.dart';
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -40,25 +45,20 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
               .contains(query),
         )
         .toList();
-    final colors = Theme.of(context).colorScheme;
 
     return GrammarScaffold(
       title: '문법 학습',
       isOverview: true,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        padding: AppSpacing.pagePadding(context),
         children: [
-          Text(
-            '문법 학습',
-            style: Theme.of(context).textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+          LearningIntro(
+            title: '문법 학습',
+            lines: ['코드를 더 잘 이해하는 시작', 'COBIA와 함께 문법을 학습해보세요'],
+            icon: Icons.menu_book_outlined,
           ),
-          const SizedBox(height: 8),
-          const Text('코드를 더 잘 이해하는 시작'),
-          const SizedBox(height: 4),
-          const Text('COBIP와 함께 문법을 학습해보세요'),
-          const SizedBox(height: 24),
           Card(
+            color: AppColors.primarySoft,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -66,12 +66,12 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.menu_book_outlined, color: colors.primary),
+                      Icon(Icons.menu_book_outlined, color: AppColors.primary),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
                           '오늘 학습 $sampleDailyCompleted개',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: AppTypography.section,
                         ),
                       ),
                       const Text('$sampleDailyCompleted / $sampleDailyGoal'),
@@ -82,7 +82,7 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                     value: sampleDailyCompleted / sampleDailyGoal,
                   ),
                   const SizedBox(height: 8),
-                  const Text('학습 진행률은 예시 데이터입니다.'),
+                  const Text('학습 진행률은 예시 데이터입니다.', style: AppTypography.meta),
                 ],
               ),
             ),
@@ -138,12 +138,27 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
               child: Text('검색 결과가 없어요. 다른 검색어를 입력해 주세요.'),
             ),
           for (final chapter in chapters)
-            Card(
+            LearningCard(
+              emphasizedShadow: true,
+              margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
-                leading: Icon(Icons.code, color: colors.primary),
-                title: Text(chapter.title),
-                subtitle: Text(chapter.description),
-                trailing: const Icon(Icons.chevron_right),
+                contentPadding: EdgeInsets.zero,
+                title: LearningOverviewContent(
+                  label: '${_language.label} · ${chapter.category.label}',
+                  title: chapter.title,
+                  description: chapter.description,
+                  icon: switch (chapter.id) {
+                    'conditions' => Icons.call_split_rounded,
+                    'loops' => Icons.repeat_rounded,
+                    'arrays' => Icons.grid_view_rounded,
+                    'variables' => Icons.data_object_rounded,
+                    _ => Icons.code_rounded,
+                  },
+                  footer: grammarChapterRoutes.containsKey(chapter.id)
+                      ? '개념부터 예제까지 학습하기'
+                      : '문법 개념 살펴보기',
+                  enabled: grammarChapterRoutes.containsKey(chapter.id),
+                ),
                 onTap: grammarChapterRoutes.containsKey(chapter.id)
                     ? () => openGrammarChapter(context, _language, chapter)
                     : null,

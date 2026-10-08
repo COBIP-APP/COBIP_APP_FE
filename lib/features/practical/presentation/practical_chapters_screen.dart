@@ -1,3 +1,7 @@
+import '../../../app/widgets/learning_visuals.dart';
+import '../../../app/widgets/learning_card.dart';
+import '../../../app/app_ui_tokens.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,36 +23,27 @@ class PracticalChaptersScreen extends StatelessWidget {
       }
     },
     body: ListView(
-      padding: const EdgeInsets.all(24),
+      padding: AppSpacing.pagePadding(context),
       children: [
-        Text(
-          topic.category,
-          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        LearningHero(
+          title: topic.title,
+          description: topic.summary,
+          eyebrow: topic.category,
         ),
-        const SizedBox(height: 8),
-        Text(
-          topic.title,
-          style: Theme.of(context).textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Text(topic.summary),
-        const SizedBox(height: 24),
-        Text('챕터 목록', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.section),
+        Text('챕터 목록', style: AppTypography.section),
         const SizedBox(height: 8),
         const Text('궁금한 챕터부터 자유롭게 살펴보세요.'),
         const SizedBox(height: 16),
         for (var i = 0; i < topic.chapters.length; i++)
-          Card(
-            color: Colors.white,
-            elevation: 0,
+          LearningCard(
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,
               ),
-              leading: CircleAvatar(child: Text('${i + 1}'.padLeft(2, '0'))),
+              leading: ChapterNumber('${i + 1}'.padLeft(2, '0')),
               title: Text(
                 topic.chapters[i].title,
                 style: const TextStyle(fontWeight: FontWeight.bold),
@@ -57,7 +52,7 @@ class PracticalChaptersScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(topic.chapters[i].summary),
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const LearningCardArrow(),
               onTap: () => context.pushNamed(
                 AppRouteNames.practicalChapter,
                 pathParameters: {

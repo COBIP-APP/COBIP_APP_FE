@@ -40,7 +40,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('예제 3 / 3'), findsOneWidget);
       expect(find.text('퀴즈 풀기'), findsOneWidget);
-      await tester.tap(find.byTooltip('COBIP 챗봇'));
+      await tester.tap(find.byTooltip('COBIA 챗봇'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('학습 계속하기'));
       await tester.pumpAndSettle();

@@ -8,8 +8,8 @@ abstract final class AppColors {
   static const background = Color(0xFFF9F8FF);
   static const surface = Colors.white;
   static const surfaceSubtle = Color(0xFFF5F2FC);
-  static const navigationBackground = primary;
-  static const navigationForeground = Colors.white;
+  static const navigationBackground = Color(0xFFE2DAF3);
+  static const navigationForeground = Color(0xFF625274);
   static const textPrimary = Color(0xFF292638);
   static const textSecondary = Color(0xFF706B7F);
   static const border = Color(0xFFE6E1F0);
@@ -204,13 +204,15 @@ final appUiTheme = ThemeData(
     iconTheme: WidgetStateProperty.resolveWith(
       (states) => IconThemeData(
         color: states.contains(WidgetState.selected)
-            ? AppColors.navigationBackground
+            ? AppColors.primary
             : AppColors.navigationForeground,
       ),
     ),
     labelTextStyle: WidgetStateProperty.resolveWith(
       (states) => AppTypography.meta.copyWith(
-        color: AppColors.navigationForeground,
+        color: states.contains(WidgetState.selected)
+            ? AppColors.primary
+            : AppColors.navigationForeground,
         fontWeight: states.contains(WidgetState.selected)
             ? FontWeight.w700
             : FontWeight.w500,

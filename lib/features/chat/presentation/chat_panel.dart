@@ -12,7 +12,7 @@ Future<void> showChatPanel(BuildContext context) => showModalBottomSheet<void>(
   isScrollControlled: true,
   useSafeArea: true,
   showDragHandle: true,
-  backgroundColor: AppColors.surface,
+  backgroundColor: learningBackgroundColor,
   shape: const RoundedRectangleBorder(
     borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
   ),

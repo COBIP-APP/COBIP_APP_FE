@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import '../app_ui_tokens.dart';
 
 // 학습/문제/챗봇 영역 전용 시각 스타일. 전역 테마와 화면 동작은 변경하지 않습니다.
+const learningBackgroundColor = Color(0xFFFAFAFA);
+
 final learningUiTheme = appUiTheme.copyWith(
-  scaffoldBackgroundColor: AppColors.surface,
+  scaffoldBackgroundColor: learningBackgroundColor,
   appBarTheme: appUiTheme.appBarTheme.copyWith(
-    backgroundColor: AppColors.surface,
+    backgroundColor: learningBackgroundColor,
   ),
   chipTheme: appUiTheme.chipTheme.copyWith(
     backgroundColor: AppColors.surface,
@@ -32,7 +34,7 @@ final learningUiTheme = appUiTheme.copyWith(
     shape: CircleBorder(),
   ),
   bottomSheetTheme: const BottomSheetThemeData(
-    backgroundColor: AppColors.surface,
+    backgroundColor: learningBackgroundColor,
     surfaceTintColor: Colors.transparent,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

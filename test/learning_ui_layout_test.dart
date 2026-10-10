@@ -8,6 +8,8 @@ import 'package:cobip_app_fe/features/problems/presentation/problem_result_scree
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'auth_test_support.dart';
+
 void main() {
   const routes = [
     '/grammar',
@@ -34,7 +36,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await tester.pumpWidget(const CobipApp());
+      await tester.pumpLearningWidget(const CobipApp());
       for (final route in routes) {
         appRouter.go(route);
         await tester.pumpAndSettle();
@@ -76,7 +78,7 @@ void main() {
       addTearDown(tester.view.resetViewInsets);
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       appRouter.go('/grammar/java/chapters/conditions');
-      await tester.pumpWidget(const CobipApp());
+      await tester.pumpLearningWidget(const CobipApp());
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('COBIA 챗봇'));
       await tester.pumpAndSettle();
@@ -106,7 +108,7 @@ void main() {
           onRetry: () {},
         ),
       ]) {
-        await tester.pumpWidget(MaterialApp(home: screen));
+        await tester.pumpLearningWidget(MaterialApp(home: screen));
         await tester.pumpAndSettle();
         expect(
           tester.takeException(),

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../app/router/app_router.dart';
+import '../data/auth_api.dart';
 import 'auth_validators.dart';
+import 'auth_view_model.dart';
 import 'auth_widgets.dart';
+import 'email_verification_view_model.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -17,77 +21,119 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailFieldKey = GlobalKey<FormFieldState<String>>();
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
+  final _nicknameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmationController = TextEditingController();
-  bool _isCodeSent = false;
-  bool _isSendingCode = false;
-  bool _isEmailVerified = false;
+  late final EmailVerificationViewModel _verification;
+  bool get _isCodeSent => _verification.isCodeSent;
+  bool get _isSendingCode => _verification.isSending;
+  bool get _isEmailVerified => _verification.isVerified;
   bool _isServiceTermsAccepted = false;
   bool _isPrivacyTermsAccepted = false;
   bool _isSubmitting = false;
   bool _isPasswordVisible = false;
   bool _isPasswordConfirmationVisible = false;
-  String? _codeError;
+  String? _errorMessage;
+  Map<String, String> _fieldErrors = {};
 
   bool get _hasAcceptedAllTerms =>
       _isServiceTermsAccepted && _isPrivacyTermsAccepted;
   bool get _canSubmit =>
       _isEmailVerified &&
-      _passwordController.text.isNotEmpty &&
+      validateEmail(_emailController.text) == null &&
+      validateNickname(_nicknameController.text) == null &&
+      validatePassword(_passwordController.text) == null &&
       _passwordController.text == _passwordConfirmationController.text &&
       _hasAcceptedAllTerms &&
-      !_isSubmitting;
+      !_isSubmitting &&
+      !_verification.isBusy;
+
+  @override
+  void initState() {
+    super.initState();
+    _verification = EmailVerificationViewModel(
+      context.read<AuthViewModel>().api,
+      now: context.read<AuthViewModel>().now,
+    );
+    _verification.addListener(_verificationChanged);
+  }
+
+  void _verificationChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void dispose() {
+    _verification.dispose();
     _emailController.dispose();
     _codeController.dispose();
+    _nicknameController.dispose();
     _passwordController.dispose();
     _passwordConfirmationController.dispose();
     super.dispose();
   }
 
   Future<void> _sendCode() async {
-    if (_isSendingCode ||
-        _isEmailVerified ||
-        !_emailFieldKey.currentState!.validate()) {
+    if (_isSubmitting ||
+        !_emailFieldKey.currentState!.validate() ||
+        !_verification.canSend) {
       return;
     }
-    setState(() {
-      _isSendingCode = true;
-      _isCodeSent = false;
-      _codeController.clear();
-      _codeError = null;
-    });
-    // UI 미리보기입니다. 인증 시각/코드 판정/저장은 서버 계약 확정 후 연결합니다.
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    if (!mounted) return;
-    setState(() {
-      _isSendingCode = false;
-      _isCodeSent = true;
-    });
+    _codeController.clear();
+    await _verification.send();
   }
 
-  void _verifyCode() {
-    if (!_isCodeSent || _isSendingCode || _isEmailVerified) return;
-    if (!RegExp(r'^\d{6}$').hasMatch(_codeController.text)) {
-      setState(() => _codeError = '인증번호 6자리를 입력해 주세요');
-      return;
+  Future<void> _verifyCode() async {
+    if (_isSubmitting) return;
+    if (await _verification.confirm(_codeController.text) && mounted) {
+      _codeController.clear();
+      FocusScope.of(context).unfocus();
     }
-    setState(() {
-      _codeError = null;
-      _isEmailVerified = true;
-    });
-    FocusScope.of(context).unfocus();
   }
 
   Future<void> _submit() async {
     if (!_canSubmit || !_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    setState(() => _isSubmitting = true);
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    if (!mounted) return;
-    context.goNamed(AppRouteNames.signUpComplete);
+    final router = GoRouter.of(context);
+    final location = router.routeInformationProvider.value.uri;
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+      _fieldErrors = {};
+    });
+    try {
+      await context.read<AuthViewModel>().api.register(
+        email: _emailController.text.trim(),
+        nickname: _nicknameController.text.trim(),
+        password: _passwordController.text,
+        serviceTermsAgreed: _isServiceTermsAccepted,
+        privacyTermsAgreed: _isPrivacyTermsAccepted,
+      );
+      if (mounted && router.routeInformationProvider.value.uri == location) {
+        context.goNamed(AppRouteNames.signUpComplete);
+      }
+    } on AuthApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.message;
+        _fieldErrors = {...error.fieldErrors};
+        if (error.code == 'NICKNAME_ALREADY_USED') {
+          _fieldErrors['nickname'] = error.message;
+        }
+        if (error.code == 'EMAIL_ALREADY_USED') {
+          _fieldErrors['email'] = error.message;
+        }
+      });
+      if (error.code == 'EMAIL_NOT_VERIFIED') {
+        _verification.revokeVerification();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = '가입 결과를 확인하지 못했습니다. 다시 시도하거나 로그인해 주세요.');
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -116,31 +162,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
               field: TextFormField(
                 key: _emailFieldKey,
                 controller: _emailController,
-                readOnly: _isSendingCode || _isSubmitting,
+                readOnly: _isSubmitting,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.email],
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'example@email.com',
+                  errorText: _fieldErrors['email'],
                 ),
                 validator: validateEmail,
-                onChanged: (_) {
-                  if (_isCodeSent || _isEmailVerified) {
-                    setState(() {
-                      _isCodeSent = false;
-                      _isEmailVerified = false;
-                      _codeController.clear();
-                      _codeError = null;
-                    });
-                  }
+                onChanged: (value) {
+                  _codeController.clear();
+                  _verification.emailChanged(value);
+                  setState(() => _fieldErrors.remove('email'));
                 },
               ),
               action: OutlinedButton(
-                onPressed: _isEmailVerified || _isSendingCode || _isSubmitting
+                onPressed: !_verification.canSend || _isSubmitting
                     ? null
                     : _sendCode,
                 child: AuthButtonLabel(
-                  label: _isCodeSent ? '재전송' : '인증 요청',
+                  label: _verification.resendSeconds > 0
+                      ? '${_verification.resendSeconds}초 후 재전송'
+                      : _isCodeSent
+                      ? '재전송'
+                      : '인증 요청',
                   isLoading: _isSendingCode,
                 ),
               ),
@@ -153,7 +199,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               field: TextField(
                 key: const Key('signUpCodeField'),
                 controller: _codeController,
-                enabled: _isCodeSent && !_isEmailVerified && !_isSendingCode,
+                enabled: _verification.canConfirm && !_isSubmitting,
                 maxLength: 6,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
@@ -161,21 +207,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   hintText: '인증번호 6자리',
-                  errorText: _codeError,
+                  errorText: _verification.codeError,
                   counterText: '',
                 ),
-                onChanged: (_) {
-                  if (_codeError != null) setState(() => _codeError = null);
-                },
               ),
               action: OutlinedButton(
-                onPressed: _isCodeSent && !_isEmailVerified && !_isSendingCode
+                onPressed: _verification.canConfirm && !_isSubmitting
                     ? _verifyCode
                     : null,
-                child: Text(_isEmailVerified ? '인증 완료' : '확인'),
+                child: AuthButtonLabel(
+                  label: _isEmailVerified ? '인증 완료' : '확인',
+                  isLoading: _verification.isConfirming,
+                ),
               ),
             ),
           ),
+          if (_verification.isCodeSent)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '인증번호 유효시간 ${_verification.codeSeconds}초',
+                style: AppTypography.helper,
+              ),
+            ),
+          if (_verification.errorMessage case final String message)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                message,
+                style: AppTypography.helper.copyWith(color: AppColors.error),
+              ),
+            ),
           if (_isEmailVerified)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -194,15 +256,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           const SizedBox(height: 16),
           AuthLabeledField(
+            label: '닉네임',
+            child: TextFormField(
+              key: const Key('signUpNicknameField'),
+              controller: _nicknameController,
+              readOnly: _isSubmitting,
+              textInputAction: TextInputAction.next,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              decoration: InputDecoration(
+                hintText: '닉네임을 입력해 주세요',
+                helperText: '앞뒤 공백 제외 2~50자',
+                errorText: _fieldErrors['nickname'],
+              ),
+              validator: validateNickname,
+              onChanged: (_) => setState(() {
+                _fieldErrors.remove('nickname');
+                _errorMessage = null;
+              }),
+            ),
+          ),
+          const SizedBox(height: 16),
+          AuthLabeledField(
             label: '비밀번호',
             child: TextFormField(
               key: const Key('signUpPasswordField'),
               controller: _passwordController,
+              readOnly: _isSubmitting,
               obscureText: !_isPasswordVisible,
               textInputAction: TextInputAction.next,
               autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
                 hintText: '비밀번호를 입력해 주세요',
+                helperText: '8~64자',
+                errorText: _fieldErrors['password'],
                 suffixIcon: IconButton(
                   tooltip: _isPasswordVisible ? '비밀번호 숨기기' : '비밀번호 표시',
                   onPressed: () =>
@@ -214,9 +300,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
               ),
-              validator: (value) =>
-                  value == null || value.isEmpty ? '비밀번호를 입력해 주세요' : null,
-              onChanged: (_) => setState(() {}),
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: validatePassword,
+              onChanged: (_) => setState(() => _fieldErrors.remove('password')),
             ),
           ),
           const SizedBox(height: 16),
@@ -225,6 +311,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: TextFormField(
               key: const Key('signUpPasswordConfirmationField'),
               controller: _passwordConfirmationController,
+              readOnly: _isSubmitting,
               obscureText: !_isPasswordConfirmationVisible,
               textInputAction: TextInputAction.done,
               autofillHints: const [AutofillHints.newPassword],
@@ -268,10 +355,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     value: _hasAcceptedAllTerms,
-                    onChanged: (value) => setState(() {
-                      _isServiceTermsAccepted = value ?? false;
-                      _isPrivacyTermsAccepted = value ?? false;
-                    }),
+                    onChanged: _isSubmitting
+                        ? null
+                        : (value) => setState(() {
+                            _isServiceTermsAccepted = value ?? false;
+                            _isPrivacyTermsAccepted = value ?? false;
+                          }),
                     title: const Text('전체 동의', style: AppTypography.card),
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
@@ -297,16 +386,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ),
           const SizedBox(height: 24),
+          if (_errorMessage case final String message)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                message,
+                style: AppTypography.helper.copyWith(color: AppColors.error),
+              ),
+            ),
           FilledButton(
             key: const Key('signUpSubmitButton'),
             onPressed: _canSubmit ? _submit : null,
             child: AuthButtonLabel(label: '가입하기', isLoading: _isSubmitting),
           ),
           TextButton(
-            onPressed: () => context.goNamed(AppRouteNames.login),
+            onPressed: _isSubmitting
+                ? null
+                : () => context.goNamed(AppRouteNames.login),
             child: const Text('이미 계정이 있으신가요? 로그인'),
           ),
-          const AuthPreviewNotice(),
         ],
       ),
     ),
@@ -319,7 +417,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ValueChanged<bool?> onChanged,
   ) => Row(
     children: [
-      Checkbox(value: value, onChanged: onChanged),
+      Checkbox(value: value, onChanged: _isSubmitting ? null : onChanged),
       Expanded(
         child: Text(
           label,
@@ -327,10 +425,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
       ),
       TextButton(
-        onPressed: () => context.pushNamed(
-          AppRouteNames.terms,
-          pathParameters: {'type': type},
-        ),
+        onPressed: _isSubmitting
+            ? null
+            : () => context.pushNamed(
+                AppRouteNames.terms,
+                pathParameters: {'type': type},
+              ),
         child: const Text('보기'),
       ),
     ],

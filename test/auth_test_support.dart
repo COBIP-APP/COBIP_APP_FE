@@ -1,10 +1,14 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/features/auth/data/auth_api.dart';
 import 'package:cobip_app_fe/features/auth/data/token_store.dart';
 import 'package:cobip_app_fe/features/auth/presentation/auth_view_model.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 const testUser = {
   'userId': 1,
@@ -122,4 +126,37 @@ Future<AuthViewModel> testAuth({
     await auth.login('member@example.com', 'test-password-123');
   }
   return auth;
+}
+
+extension AuthWidgetTester on WidgetTester {
+  Future<void> advanceAuthTime(Finder screen, Duration duration) async {
+    final screenElement = element(screen);
+    final adapter =
+        screenElement.read<AuthViewModel>().api.dio.httpClientAdapter
+            as TestAuthAdapter;
+    adapter.elapsed += duration;
+    await pump(const Duration(seconds: 1));
+  }
+
+  Future<void> pumpWithAuth(
+    Widget widget, {
+    bool authenticated = false,
+    AuthViewModel? auth,
+  }) async {
+    final session =
+        auth ?? (await runAsync(() => testAuth(authenticated: authenticated)))!;
+    if (auth == null) addTearDown(session.dispose);
+    await pumpWidget(
+      widget is CobipApp
+          ? CobipApp(
+              key: ObjectKey(session),
+              auth: session,
+              router: widget.router,
+            )
+          : ChangeNotifierProvider.value(value: session, child: widget),
+    );
+  }
+
+  Future<void> pumpLearningWidget(Widget widget) =>
+      pumpWithAuth(widget, authenticated: true);
 }

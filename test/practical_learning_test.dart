@@ -5,6 +5,8 @@ import 'package:cobip_app_fe/features/practical/data/practical_sample_data.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'auth_test_support.dart';
+
 void main() {
   Future<void> open(WidgetTester tester, String path) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -12,7 +14,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     appRouter.go(path);
-    await tester.pumpWidget(const CobipApp());
+    await tester.pumpLearningWidget(const CobipApp());
     await tester.pumpAndSettle();
   }
 

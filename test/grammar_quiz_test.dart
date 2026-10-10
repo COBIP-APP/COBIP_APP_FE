@@ -3,6 +3,8 @@ import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'auth_test_support.dart';
+
 void main() {
   testWidgets('답 선택과 해설, 오답 채점 후 학습 목록으로 돌아간다', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -10,7 +12,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     appRouter.go('/grammar/java/chapters/conditions/example');
-    await tester.pumpWidget(const CobipApp());
+    await tester.pumpLearningWidget(const CobipApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('다음 예제'));
     await tester.pumpAndSettle();
@@ -86,7 +88,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     appRouter.go('/grammar/python/chapters/conditions/example/quiz');
-    await tester.pumpWidget(const CobipApp());
+    await tester.pumpLearningWidget(const CobipApp());
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const ValueKey('answer-1')));
     await tester.pumpAndSettle();

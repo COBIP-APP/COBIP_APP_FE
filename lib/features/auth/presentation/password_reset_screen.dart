@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../app/router/app_router.dart';
 import 'auth_validators.dart';
+import 'auth_view_model.dart';
 import 'auth_widgets.dart';
+import 'email_verification_view_model.dart';
 
 enum _PasswordResetStep { email, verification, newPassword }
 
@@ -22,18 +25,36 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
   final _passwordController = TextEditingController();
   final _passwordConfirmationController = TextEditingController();
   _PasswordResetStep _step = _PasswordResetStep.email;
-  bool _isLoading = false;
+  late final EmailVerificationViewModel _verification;
+  bool get _isLoading => _verification.isBusy;
+  bool _isSaving = false;
   bool _isPasswordVisible = false;
   bool _isPasswordConfirmationVisible = false;
-  String? _codeError;
 
   bool get _canSavePassword =>
-      _passwordController.text.isNotEmpty &&
+      validatePassword(_passwordController.text) == null &&
       _passwordController.text == _passwordConfirmationController.text &&
+      _verification.hasResetGrant &&
       !_isLoading;
 
   @override
+  void initState() {
+    super.initState();
+    _verification = EmailVerificationViewModel(
+      context.read<AuthViewModel>().api,
+      passwordReset: true,
+      now: context.read<AuthViewModel>().now,
+    );
+    _verification.addListener(_verificationChanged);
+  }
+
+  void _verificationChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _verification.dispose();
     _emailController.dispose();
     _codeController.dispose();
     _passwordController.dispose();
@@ -42,52 +63,54 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
   }
 
   Future<void> _sendCode() async {
-    if (_isLoading || !_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-      _step = _PasswordResetStep.email;
-      _codeController.clear();
-    });
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-      _step = _PasswordResetStep.verification;
-      _codeController.clear();
-      _codeError = null;
-    });
-  }
-
-  void _verifyCode() {
-    if (_step != _PasswordResetStep.verification || _isLoading) return;
-    if (!RegExp(r'^\d{6}$').hasMatch(_codeController.text)) {
-      setState(() => _codeError = '인증번호 6자리를 입력해 주세요');
+    if (_isLoading ||
+        !_formKey.currentState!.validate() ||
+        !_verification.canSend) {
       return;
     }
-    setState(() {
-      _codeError = null;
-      _step = _PasswordResetStep.newPassword;
-    });
-    FocusScope.of(context).unfocus();
+    _codeController.clear();
+    if (await _verification.send() && mounted) {
+      setState(() => _step = _PasswordResetStep.verification);
+    }
+  }
+
+  Future<void> _verifyCode() async {
+    if (_step != _PasswordResetStep.verification || _isLoading) return;
+    if (await _verification.confirm(_codeController.text) && mounted) {
+      _codeController.clear();
+      setState(() => _step = _PasswordResetStep.newPassword);
+      FocusScope.of(context).unfocus();
+    }
   }
 
   Future<void> _savePassword() async {
     if (!_canSavePassword || !_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 350));
+    setState(() => _isSaving = true);
+    final router = GoRouter.of(context);
+    final location = router.routeInformationProvider.value.uri;
+    final auth = context.read<AuthViewModel>();
+    final succeeded = await _verification.completeReset(
+      _passwordController.text,
+    );
+    if (succeeded) await auth.clearSession();
     if (!mounted) return;
-    context.goNamed(AppRouteNames.passwordResetComplete);
+    setState(() => _isSaving = false);
+    if (succeeded && router.routeInformationProvider.value.uri == location) {
+      context.goNamed(AppRouteNames.passwordResetComplete);
+    }
   }
 
   void _goBack() {
+    if (_isSaving) return;
     FocusScope.of(context).unfocus();
+    _verification.discardResetGrant();
     if (_step == _PasswordResetStep.newPassword) {
       setState(() {
         _step = _PasswordResetStep.verification;
         _codeController.clear();
-        _codeError = null;
+        _passwordController.clear();
+        _passwordConfirmationController.clear();
       });
     } else {
       context.goNamed(AppRouteNames.login);
@@ -149,24 +172,28 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
-          readOnly: _isLoading,
+          readOnly: _isSaving,
           decoration: const InputDecoration(hintText: 'example@email.com'),
           validator: validateEmail,
-          onChanged: (_) {
+          onChanged: (value) {
+            _verification.emailChanged(value);
             if (_step == _PasswordResetStep.verification) {
               setState(() {
                 _step = _PasswordResetStep.email;
                 _codeController.clear();
-                _codeError = null;
               });
             }
           },
         ),
         action: OutlinedButton(
-          onPressed: _isLoading ? null : _sendCode,
+          onPressed: _verification.canSend ? _sendCode : null,
           child: AuthButtonLabel(
-            label: _step == _PasswordResetStep.verification ? '재전송' : '인증번호 받기',
-            isLoading: _isLoading,
+            label: _verification.resendSeconds > 0
+                ? '${_verification.resendSeconds}초 후 재전송'
+                : _step == _PasswordResetStep.verification
+                ? '재전송'
+                : '인증번호 받기',
+            isLoading: _verification.isSending,
           ),
         ),
       ),
@@ -179,7 +206,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
       child: TextField(
         key: const Key('resetCodeField'),
         controller: _codeController,
-        enabled: _step == _PasswordResetStep.verification && !_isLoading,
+        enabled: _verification.canConfirm,
         keyboardType: TextInputType.number,
         textInputAction: TextInputAction.done,
         onSubmitted: (_) => _verifyCode(),
@@ -187,29 +214,39 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: InputDecoration(
           hintText: '인증번호 6자리',
-          errorText: _codeError,
+          errorText: _verification.codeError,
           counterText: '',
         ),
-        onChanged: (_) {
-          setState(() => _codeError = null);
-        },
       ),
     ),
     const SizedBox(height: 8),
-    const Text('인증번호를 입력하고 확인해 주세요.', style: AppTypography.helper),
+    Text(
+      _verification.isCodeSent
+          ? '인증번호 유효시간 ${_verification.codeSeconds}초'
+          : '인증번호를 입력하고 확인해 주세요.',
+      style: AppTypography.helper,
+    ),
+    if (_verification.errorMessage case final String message)
+      Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          message,
+          style: AppTypography.helper.copyWith(color: AppColors.error),
+        ),
+      ),
     const SizedBox(height: 32),
     FilledButton(
-      onPressed: _step == _PasswordResetStep.verification && !_isLoading
-          ? _verifyCode
-          : null,
-      child: const Text('인증 확인'),
+      onPressed: _verification.canConfirm ? _verifyCode : null,
+      child: AuthButtonLabel(
+        label: '인증 확인',
+        isLoading: _verification.isConfirming,
+      ),
     ),
     const SizedBox(height: 16),
     TextButton(
-      onPressed: () => context.goNamed(AppRouteNames.login),
+      onPressed: _isSaving ? null : () => context.goNamed(AppRouteNames.login),
       child: const Text('로그인으로 돌아가기'),
     ),
-    const AuthPreviewNotice(),
   ];
 
   List<Widget> _newPasswordStep(BuildContext context) => [
@@ -238,8 +275,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
       isVisible: _isPasswordVisible,
       onVisibilityChanged: () =>
           setState(() => _isPasswordVisible = !_isPasswordVisible),
-      validator: (value) =>
-          value == null || value.isEmpty ? '새 비밀번호를 입력해 주세요' : null,
+      validator: validatePassword,
     ),
     const SizedBox(height: 24),
     _passwordField(
@@ -269,6 +305,14 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
         ),
       ),
     const SizedBox(height: 40),
+    if (_verification.errorMessage case final String message)
+      Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Text(
+          message,
+          style: AppTypography.helper.copyWith(color: AppColors.error),
+        ),
+      ),
     FilledButton(
       onPressed: _canSavePassword ? _savePassword : null,
       child: AuthButtonLabel(label: '비밀번호 변경', isLoading: _isLoading),
@@ -279,7 +323,8 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
       textAlign: TextAlign.center,
       style: AppTypography.helper,
     ),
-    const AuthPreviewNotice(),
+    if (!_verification.hasResetGrant)
+      TextButton(onPressed: _goBack, child: const Text('인증번호 다시 요청')),
   ];
 
   Widget _passwordField({
@@ -298,6 +343,8 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
               : 'newPasswordConfirmationField',
         ),
         controller: controller,
+        readOnly: _isLoading,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         obscureText: !isVisible,
         textInputAction: controller == _passwordController
             ? TextInputAction.next
@@ -311,6 +358,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
         },
         decoration: InputDecoration(
           hintText: label,
+          helperText: controller == _passwordController ? '8~64자' : null,
           errorText:
               controller == _passwordConfirmationController &&
                   controller.text.isNotEmpty &&

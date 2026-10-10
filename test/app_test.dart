@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/app_ui_tokens.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
@@ -10,11 +12,16 @@ import 'package:cobip_app_fe/features/auth/presentation/terms_screen.dart';
 import 'package:cobip_app_fe/features/home/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:cobip_app_fe/features/auth/presentation/auth_view_model.dart';
+import 'package:dio/dio.dart';
+
+import 'auth_test_support.dart';
 
 void main() {
   testWidgets('로그인 화면에서 비밀번호 찾기로 이동한다', (tester) async {
     appRouter.go('/login');
-    await tester.pumpWidget(const CobipApp());
+    await tester.pumpWithAuth(const CobipApp());
 
     expect(find.text('다시 만나 반가워요'), findsOneWidget);
 
@@ -25,12 +32,13 @@ void main() {
   });
 
   testWidgets('비밀번호 찾기 인증과 새 비밀번호 일치를 검증한다', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: PasswordResetScreen()));
+    await tester.pumpWithAuth(const MaterialApp(home: PasswordResetScreen()));
 
     await tester.enterText(
       find.byKey(const Key('resetEmailField')),
       'member@example.com',
     );
+    await tester.pump();
     await tester.tap(find.text('인증번호 받기'));
     await tester.pumpAndSettle();
 
@@ -53,7 +61,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.text('인증 확인'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('새 비밀번호를 설정해 주세요'), findsOneWidget);
 
     await tester.enterText(find.byType(TextFormField).first, 'password');
@@ -85,12 +93,13 @@ void main() {
   });
 
   testWidgets('회원가입 버튼은 필수 조건이 모두 충족될 때 활성화된다', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: SignUpScreen()));
+    await tester.pumpWithAuth(const MaterialApp(home: SignUpScreen()));
 
     await tester.enterText(
       find.byType(TextFormField).first,
       'member@example.com',
     );
+    await tester.pump();
     await tester.tap(find.text('인증 요청'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('signUpCodeField')), '12ab34');
@@ -100,7 +109,7 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('signUpCodeField')), '123456');
     await tester.tap(find.text('확인'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.drag(find.byType(ListView), const Offset(0, -600));
     await tester.pump();
 
@@ -108,6 +117,17 @@ void main() {
       find.byKey(const Key('signUpSubmitButton')),
     );
     expect(submitButton.onPressed, isNull);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('signUpNicknameField')),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('signUpNicknameField')),
+      '테스트학습자',
+    );
 
     await tester.enterText(
       find.byKey(const Key('signUpPasswordField')),
@@ -163,6 +183,20 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('signUpCodeField')), '123');
     tester.testTextInput.hide();
+    await tester.advanceAuthTime(
+      find.byType(SignUpScreen),
+      const Duration(seconds: 61),
+    );
+    final adapter =
+        tester
+                .element(find.byType(SignUpScreen))
+                .read<AuthViewModel>()
+                .api
+                .dio
+                .httpClientAdapter
+            as TestAuthAdapter;
+    final resend = Completer<ResponseBody>();
+    adapter.handle = (_) => resend.future;
     await tester.tap(find.text('재전송'));
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -173,11 +207,18 @@ void main() {
           .text,
       isEmpty,
     );
+    resend.complete(
+      jsonResponse({
+        'message': '메일함을 확인해 주세요.',
+        'expiresInSeconds': 300,
+        'resendAfterSeconds': 60,
+      }, 202),
+    );
     await tester.pumpAndSettle();
   });
 
   testWidgets('메인화면은 빈 상태와 실패 후 재시도를 표시한다', (tester) async {
-    await tester.pumpWidget(
+    await tester.pumpWithAuth(
       const MaterialApp(
         home: HomeScreen(
           key: ValueKey('emptyHome'),
@@ -187,7 +228,7 @@ void main() {
     );
     expect(find.text('아직 시작한 학습이 없어요'), findsOneWidget);
 
-    await tester.pumpWidget(
+    await tester.pumpWithAuth(
       const MaterialApp(
         home: HomeScreen(
           key: ValueKey('errorHome'),
@@ -229,7 +270,7 @@ void main() {
           tester.view.devicePixelRatio = 1;
           addTearDown(tester.view.resetPhysicalSize);
           addTearDown(tester.view.resetDevicePixelRatio);
-          await tester.pumpWidget(
+          await tester.pumpWithAuth(
             MaterialApp(
               builder: (context, child) => MediaQuery(
                 data: MediaQuery.of(context).copyWith(
@@ -256,7 +297,7 @@ void main() {
   }
 
   testWidgets('로그인 공통 토큰과 링크 순서가 컨벤션과 일치한다', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+    await tester.pumpWithAuth(const MaterialApp(home: LoginScreen()));
     final theme = Theme.of(tester.element(find.byType(TextFormField).first));
     expect(theme.colorScheme.primary, AppColors.primary);
     expect(theme.scaffoldBackgroundColor, AppColors.background);
@@ -277,7 +318,7 @@ void main() {
   testWidgets('회원가입 완료는 홈이 아닌 로그인으로 이동한다', (tester) async {
     final router = createAppRouter(initialLocation: '/sign-up/complete');
     addTearDown(router.dispose);
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWithAuth(MaterialApp.router(routerConfig: router));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('로그인하기'));
     await tester.tap(find.text('로그인하기'));
@@ -290,7 +331,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(
+    await tester.pumpWithAuth(
       MaterialApp(
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context)
@@ -372,7 +413,10 @@ void main() {
   testWidgets('홈 이어하기와 세 추천 카드는 기존 경로로 연결된다', (tester) async {
     final router = createAppRouter(initialLocation: '/home');
     addTearDown(router.dispose);
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWithAuth(
+      MaterialApp.router(routerConfig: router),
+      authenticated: true,
+    );
     await tester.pumpAndSettle();
     expect(find.text('완료 1 / 3 단계'), findsOneWidget);
     expect(

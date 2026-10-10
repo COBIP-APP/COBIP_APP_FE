@@ -9,7 +9,9 @@ import '../../features/practical/presentation/practical_home_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../../features/auth/presentation/auth_view_model.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/password_reset_complete_screen.dart';
 import '../../features/auth/presentation/password_reset_screen.dart';
@@ -94,6 +96,41 @@ final appRouter = createAppRouter();
 
 GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
   initialLocation: initialLocation,
+  redirect: (context, state) {
+    final auth = context.read<AuthViewModel?>();
+    final path = state.uri.path;
+    const publicPaths = [
+      '/login',
+      '/sign-up',
+      '/sign-up/complete',
+      '/password-reset',
+      '/password-reset/complete',
+    ];
+    final isPublic = publicPaths.contains(path) || path.startsWith('/terms/');
+    if (auth?.isRestoring == true) {
+      return path == '/session-loading'
+          ? null
+          : '/session-loading?from=${Uri.encodeComponent(state.uri.toString())}';
+    }
+    if (path == '/session-loading') {
+      final from = state.uri.queryParameters['from'] ?? '/home';
+      final destination = Uri.tryParse(from);
+      if (auth?.isAuthenticated != true) return '/login';
+      return destination != null &&
+              !destination.hasAuthority &&
+              from.startsWith('/') &&
+              !publicPaths.contains(destination.path) &&
+              destination.path != '/session-loading'
+          ? from
+          : '/home';
+    }
+    if (!isPublic && auth?.isAuthenticated != true) return '/login';
+    if (auth?.isAuthenticated == true &&
+        (path == '/login' || path == '/sign-up')) {
+      return '/home';
+    }
+    return null;
+  },
   errorBuilder: (context, state) => Scaffold(
     body: Center(
       child: FilledButton(
@@ -103,6 +140,11 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
     ),
   ),
   routes: [
+    GoRoute(
+      path: '/session-loading',
+      builder: (_, _) =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+    ),
     GoRoute(
       path: '/chat',
       name: AppRouteNames.chat,

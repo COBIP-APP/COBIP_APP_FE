@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'auth_test_support.dart';
+
 void main() {
   for (final fromList in [false, true]) {
     for (final systemBack in [false, true]) {
@@ -29,7 +31,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
 
-        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.pumpLearningWidget(
+          MaterialApp.router(routerConfig: router),
+        );
         await tester.pumpAndSettle();
         await tester.tap(find.text('Python'));
         await tester.pumpAndSettle();

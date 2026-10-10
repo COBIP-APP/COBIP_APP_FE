@@ -3,6 +3,8 @@ import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'auth_test_support.dart';
+
 void main() {
   testWidgets('홈에서 문법으로 이동하고 검색과 언어 선택을 유지한다', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -10,7 +12,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     appRouter.go('/home');
-    await tester.pumpWidget(const CobipApp());
+    await tester.pumpLearningWidget(const CobipApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('문법'));
     await tester.pumpAndSettle();

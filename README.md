@@ -1,6 +1,6 @@
 # COBIP App FE
 
-COBIP Android 앱의 Flutter 프로젝트입니다. 인증·회원가입·비밀번호 재설정은 백엔드 API를 사용하며, 학습 화면의 샘플 데이터는 기존 팀 구현을 유지합니다.
+COBIP Android 앱의 Flutter 프로젝트입니다. 인증·회원가입·비밀번호 재설정과 메인의 공개 학습·진도 조회는 백엔드 API를 사용합니다. 문법·실무·문제 등 다른 팀원의 학습 상세 화면은 기존 구현을 유지합니다.
 
 ## 개발 환경
 
@@ -28,6 +28,8 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
 프로젝트 내부 SDK를 사용하는 경우 `.tools/flutter/bin/flutter.bat`와 `.tools/flutter/bin/dart.bat`를 사용하고 `PUB_CACHE`, `APPDATA`, `GRADLE_USER_HOME`은 기존 `.tools` 설정을 유지합니다. SDK·캐시가 루트 안에 있으면 소스 포맷 검사는 `dart format --output=none --set-exit-if-changed lib test`로 범위를 제한할 수 있습니다.
 
 인증 계약, 변경 범위와 실제 서버 검증 보류 항목은 [인증 연동 작업 기록](docs/auth-api-integration.md)을 참고합니다.
+
+메인의 조회 API, 빈 상태·오류 처리와 학습 상세 이동의 남은 경계는 [메인 API 연동 작업 기록](docs/home-api-integration.md)을 참고합니다.
 
 ## 팀 규칙
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../app/router/app_router.dart';
+import 'auth_view_model.dart';
 import 'auth_validators.dart';
 import 'auth_widgets.dart';
 
@@ -29,10 +31,29 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_isLoading || !_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
-    // 서버 연결 전에는 화면 이동만 확인하는 UI 미리보기입니다.
-    await Future<void>.delayed(const Duration(milliseconds: 350));
+    final router = GoRouter.of(context);
+    final location = router.routeInformationProvider.value.uri;
+    var cancelled = false;
+    void locationChanged() {
+      if (router.routeInformationProvider.value.uri != location) {
+        cancelled = true;
+      }
+    }
+
+    router.routeInformationProvider.addListener(locationChanged);
+    final bool succeeded;
+    try {
+      succeeded = await context.read<AuthViewModel>().login(
+        _emailController.text.trim(),
+        _passwordController.text,
+        isCurrent: () => mounted && !cancelled,
+      );
+    } finally {
+      router.routeInformationProvider.removeListener(locationChanged);
+    }
     if (!mounted) return;
-    context.goNamed(AppRouteNames.home);
+    setState(() => _isLoading = false);
+    if (succeeded && !cancelled) context.goNamed(AppRouteNames.home);
   }
 
   @override
@@ -96,6 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               icon: Icons.mail_outline,
                               child: TextFormField(
                                 controller: _emailController,
+                                readOnly: _isLoading,
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
                                 autofillHints: const [AutofillHints.email],
@@ -111,6 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               icon: Icons.lock_outline,
                               child: TextFormField(
                                 controller: _passwordController,
+                                readOnly: _isLoading,
                                 obscureText: !_isPasswordVisible,
                                 textInputAction: TextInputAction.done,
                                 onFieldSubmitted: (_) => _submit(),
@@ -139,10 +162,25 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            TextButton(
-                              onPressed: () => context.pushNamed(
-                                AppRouteNames.passwordReset,
+                            if (context.watch<AuthViewModel>().errorMessage
+                                case final String message)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                child: Text(
+                                  message,
+                                  style: AppTypography.helper.copyWith(
+                                    color: AppColors.error,
+                                  ),
+                                ),
                               ),
+                            TextButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => context.pushNamed(
+                                      AppRouteNames.passwordReset,
+                                    ),
                               child: const Text('비밀번호 찾기'),
                             ),
                             const SizedBox(height: 16),
@@ -155,11 +193,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 8),
                             TextButton(
-                              onPressed: () =>
-                                  context.pushNamed(AppRouteNames.signUp),
+                              onPressed: _isLoading
+                                  ? null
+                                  : () =>
+                                        context.pushNamed(AppRouteNames.signUp),
                               child: const Text('회원가입 하기'),
                             ),
-                            const AuthPreviewNotice(),
                           ],
                         ),
                       ),

@@ -184,19 +184,6 @@ class AuthButtonLabel extends StatelessWidget {
       : Text(label, textAlign: TextAlign.center);
 }
 
-class AuthPreviewNotice extends StatelessWidget {
-  const AuthPreviewNotice({super.key});
-  @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.only(top: 16),
-    child: Text(
-      'UI 미리보기 · 실제 인증은 아직 연결되지 않았습니다.',
-      textAlign: TextAlign.center,
-      style: AppTypography.meta,
-    ),
-  );
-}
-
 class AuthCompletionBody extends StatelessWidget {
   const AuthCompletionBody({
     super.key,
@@ -248,7 +235,6 @@ class AuthCompletionBody extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: AppTypography.helper,
                 ),
-                const AuthPreviewNotice(),
               ],
             ),
             Padding(

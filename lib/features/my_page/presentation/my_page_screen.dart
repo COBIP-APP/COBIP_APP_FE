@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../app/router/app_router.dart';
+import '../../auth/presentation/auth_view_model.dart';
 
 class MyPageScreen extends StatelessWidget {
   const MyPageScreen({super.key});
@@ -311,14 +313,16 @@ class MyPageScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('닉네임: 영진'),
+            Text(
+              '닉네임: ${context.watch<AuthViewModel>().user?.nickname ?? "-"}',
+            ),
             const SizedBox(height: 12),
-            const Text('이메일: yju@example.com'),
+            Text('이메일: ${context.watch<AuthViewModel>().user?.email ?? "-"}'),
             const SizedBox(height: 12),
-            const Text('가입일: 2026.09.30'),
+            const Text('가입일: 서버 정보 미제공'),
             const SizedBox(height: 16),
             Text(
-              '화면 구성용 임시 정보입니다. 변경 기능은 추후 연결됩니다.',
+              '로그인한 계정 정보입니다. 프로필 변경 기능은 추후 연결됩니다.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -343,6 +347,13 @@ class MyPageScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      const SizedBox(height: 16),
+      OutlinedButton(
+        onPressed: context.watch<AuthViewModel>().isBusy
+            ? null
+            : () => context.read<AuthViewModel>().logout(),
+        child: const Text('로그아웃'),
       ),
     ],
   );
@@ -401,18 +412,26 @@ class MyPageScreen extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
-                    '영진',
+                    context.watch<AuthViewModel>().user?.nickname ?? '-',
                     style: text.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  _badge(context, '학습자'),
+                  _badge(
+                    context,
+                    context.watch<AuthViewModel>().user?.role == 'ADMIN'
+                        ? '관리자'
+                        : '학습자',
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text('✉ yju@example.com', style: text.bodySmall),
+              Text(
+                '✉ ${context.watch<AuthViewModel>().user?.email ?? "-"}',
+                style: text.bodySmall,
+              ),
               const SizedBox(height: 4),
-              Text('가입일 2026.09.30', style: text.bodySmall),
+              Text('가입일 정보 미제공', style: text.bodySmall),
             ],
           ),
         ),

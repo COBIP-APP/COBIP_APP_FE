@@ -48,6 +48,9 @@ class TestAuthAdapter implements HttpClientAdapter {
   ) async {
     requests.add(options);
     if (handle != null) return handle!(options);
+    if (options.method == 'GET' && options.path == '/api/templates') {
+      return jsonResponse([], 200);
+    }
     if (options.path.endsWith('/send')) {
       return jsonResponse({
         'message': '메일함을 확인해 주세요.',

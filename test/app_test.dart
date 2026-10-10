@@ -218,31 +218,91 @@ void main() {
   });
 
   testWidgets('메인화면은 빈 상태와 실패 후 재시도를 표시한다', (tester) async {
+    final adapter = TestAuthAdapter();
+    final auth = (await tester.runAsync(
+      () => testAuth(authenticated: true, adapter: adapter),
+    ))!;
+    addTearDown(auth.dispose);
     await tester.pumpWithAuth(
-      const MaterialApp(
-        home: HomeScreen(
-          key: ValueKey('emptyHome'),
-          initialContentState: HomeContentState.empty,
-        ),
-      ),
+      const MaterialApp(home: HomeScreen(key: ValueKey('emptyHome'))),
+      auth: auth,
     );
-    expect(find.text('아직 시작한 학습이 없어요'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('등록된 학습이 없어요'), findsOneWidget);
 
+    adapter.handle = (_) async => jsonResponse({'status': 503}, 503);
     await tester.pumpWithAuth(
-      const MaterialApp(
-        home: HomeScreen(
-          key: ValueKey('errorHome'),
-          initialContentState: HomeContentState.error,
-        ),
-      ),
+      const MaterialApp(home: HomeScreen(key: ValueKey('errorHome'))),
+      auth: auth,
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('학습 정보를 불러오지 못했어요'), findsOneWidget);
 
+    adapter.handle = (_) async => jsonResponse([], 200);
     await tester.tap(find.text('다시 시도'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(find.text('학습 추천'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('등록된 학습이 없어요'), findsOneWidget);
+    expect(find.text('학습 정보를 불러오지 못했어요'), findsNothing);
+    expect(
+      adapter.requests.where((request) => request.path == '/api/templates'),
+      hasLength(3),
+    );
+  });
+
+  testWidgets('계정 전환 뒤 늦은 이전 계정 응답을 홈에 표시하지 않는다', (tester) async {
+    final adapter = TestAuthAdapter();
+    final auth = (await tester.runAsync(
+      () => testAuth(authenticated: true, adapter: adapter),
+    ))!;
+    addTearDown(auth.dispose);
+    final oldResponse = Completer<ResponseBody>();
+    adapter.handle = (options) async {
+      if (options.path == '/api/auth/login') {
+        return jsonResponse({
+          ...testTokens(2),
+          'user': {...testUser, 'userId': 2},
+        }, 200);
+      }
+      if (options.path == '/api/templates') {
+        if (options.headers['Authorization'] == 'Bearer test-access-1') {
+          return oldResponse.future;
+        }
+        return jsonResponse([
+          {'id': 43, 'title': '새 계정 학습', 'published': true},
+        ], 200);
+      }
+      return jsonResponse({'status': 404}, 404);
+    };
+    await tester.pumpWithAuth(
+      const MaterialApp(home: HomeScreen()),
+      auth: auth,
+    );
+    await tester.pumpAndSettle();
+    expect(adapter.requests.last.path, '/api/templates');
+    expect(
+      await tester.runAsync(
+        () => auth.login('other@example.com', 'password-123'),
+      ),
+      isTrue,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('새 계정 학습'), findsOneWidget);
+    expect(find.text('아직 시작한 학습이 없어요'), findsOneWidget);
+    oldResponse.complete(
+      jsonResponse([
+        {'id': 42, 'title': '이전 계정 학습', 'published': true},
+      ], 200),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('새 계정 학습'), findsOneWidget);
+    expect(find.text('이전 계정 학습'), findsNothing);
+    expect(
+      adapter.requests.any(
+        (request) => request.path == '/api/users/2/progress/templates/43',
+      ),
+      isTrue,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   for (final layout in [
@@ -281,6 +341,7 @@ void main() {
               ),
               home: screen,
             ),
+            authenticated: screen is HomeScreen,
           );
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
@@ -410,46 +471,141 @@ void main() {
     );
   });
 
-  testWidgets('홈 이어하기와 세 추천 카드는 기존 경로로 연결된다', (tester) async {
+  testWidgets('홈은 서버 학습과 위치를 표시하고 샘플 상세로 이동하지 않는다', (tester) async {
+    final adapter = TestAuthAdapter();
+    final auth = (await tester.runAsync(
+      () => testAuth(authenticated: true, adapter: adapter),
+    ))!;
+    addTearDown(auth.dispose);
+    adapter.handle = (options) async => options.path == '/api/templates'
+        ? jsonResponse([
+            {
+              'id': 42,
+              'title': '서버에서 받은 학습',
+              'summary': '서버에서 받은 설명',
+              'categoryCode': 'GRAMMAR',
+              'categoryName': '문법 학습',
+              'languageCode': 'python',
+              'languageName': 'Python',
+              'published': true,
+            },
+          ], 200)
+        : jsonResponse({
+            'userId': 1,
+            'templateId': 42,
+            'lastSectionId': 101,
+            'startedAt': '2026-10-01T09:00:00Z',
+            'lastStudiedAt': '2026-10-10T10:00:00Z',
+            'completedAt': null,
+          }, 200);
     final router = createAppRouter(initialLocation: '/home');
     addTearDown(router.dispose);
     await tester.pumpWithAuth(
       MaterialApp.router(routerConfig: router),
-      authenticated: true,
+      auth: auth,
     );
     await tester.pumpAndSettle();
-    expect(find.text('완료 1 / 3 단계'), findsOneWidget);
+    expect(find.text('서버에서 받은 학습'), findsNWidgets(2));
+    expect(find.text('마지막 위치: 섹션 101'), findsOneWidget);
+    expect(find.text('학습 중'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.text('현재 학습 기록은 UI 확인용 예시입니다.'), findsNothing);
     expect(
-      tester
-          .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
-          .value,
-      1 / 3,
+      adapter.requests.any(
+        (request) =>
+            request.path == '/api/users/1/progress/templates/42' &&
+            request.headers['Authorization'] == 'Bearer test-access-1',
+      ),
+      isTrue,
     );
-    await tester.tap(find.text('이어하기 →'));
+    await tester.tap(find.text('학습 상세 연결 준비 중'));
     await tester.pumpAndSettle();
-    expect(
-      router.routerDelegate.currentConfiguration.last.route.name,
-      AppRouteNames.grammarExample,
+    expect(find.text('학습 상세 화면의 서버 연동은 준비 중입니다.'), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, '/home');
+    ScaffoldMessenger.of(tester.element(find.byType(HomeScreen)))
+        .removeCurrentSnackBar();
+    await tester.pumpAndSettle();
+    expect(find.text('학습 상세 화면의 서버 연동은 준비 중입니다.'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text('서버에서 받은 학습').last,
+      200,
+      scrollable: find.byType(Scrollable).first,
     );
-    for (final entry in [
-      ('조건문 기본 원리', AppRouteNames.grammar),
-      ('실무 기술 학습', AppRouteNames.practical),
-      ('문제로 복습하기', AppRouteNames.problems),
-    ]) {
-      router.go('/home');
+    await tester.drag(
+      find.byKey(const Key('homeContentList')),
+      const Offset(0, -140),
+    );
+    await tester.pumpAndSettle();
+    final recommendation = find.text('서버에서 받은 학습').last.hitTestable();
+    expect(recommendation, findsOneWidget);
+    await tester.tap(recommendation);
+    await tester.pumpAndSettle();
+    expect(find.text('학습 상세 화면의 서버 연동은 준비 중입니다.'), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, '/home');
+  });
+
+  for (final (size, textScale) in [
+    (const Size(320, 640), 2.0),
+    (const Size(640, 320), 1.0),
+  ]) {
+    testWidgets('서버 학습이 있는 홈 $size 글씨 $textScale에서 넘침이 없다', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final adapter = TestAuthAdapter();
+      final auth = (await tester.runAsync(
+        () => testAuth(authenticated: true, adapter: adapter),
+      ))!;
+      addTearDown(auth.dispose);
+      adapter.handle = (options) async => options.path == '/api/templates'
+          ? jsonResponse([
+              {
+                'id': 42,
+                'title': '서버 학습의 긴 제목으로 반응형 배치를 확인합니다',
+                'summary': '서버에서 받은 긴 설명으로 작은 화면의 줄바꿈을 확인합니다.',
+                'categoryName': '프로그래밍 문법',
+                'languageName': 'Python',
+                'published': true,
+              },
+            ], 200)
+          : jsonResponse({
+              'userId': 1,
+              'templateId': 42,
+              'lastSectionId': 101,
+              'startedAt': '2026-10-01T09:00:00Z',
+              'lastStudiedAt': '2026-10-10T10:00:00Z',
+              'completedAt': '2026-10-10T10:00:00Z',
+            }, 200);
+      await tester.pumpWithAuth(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+          home: const HomeScreen(),
+        ),
+        auth: auth,
+      );
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text(entry.$1),
+        find.text('학습 완료'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text(entry.$1));
-      await tester.pumpAndSettle();
-      expect(
-        router.routerDelegate.currentConfiguration.last.route.name,
-        entry.$2,
+      expect(find.text('학습 완료'), findsOneWidget);
+      expect(find.text('마지막 위치: 섹션 101'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.scrollUntilVisible(
+        find.text('서버 학습의 긴 제목으로 반응형 배치를 확인합니다').last,
+        200,
+        scrollable: find.byType(Scrollable).first,
       );
-    }
-  });
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('학습 정보를 불러오지 못했어요'), findsNothing);
+    });
+  }
 }

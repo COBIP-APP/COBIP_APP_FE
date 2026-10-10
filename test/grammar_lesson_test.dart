@@ -5,6 +5,8 @@ import 'package:cobip_app_fe/features/grammar/presentation/lesson_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'auth_test_support.dart';
+
 void main() {
   for (final language in GrammarLanguage.values) {
     testWidgets('${language.label} 조건문 개념과 예제 이동 및 전체 목록 복귀', (tester) async {
@@ -13,7 +15,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       appRouter.go('/grammar/${language.id}/chapters?category=control');
-      await tester.pumpWidget(const CobipApp());
+      await tester.pumpLearningWidget(const CobipApp());
       await tester.pumpAndSettle();
       expect(find.text('개념 학습하기 ›'), findsOneWidget);
       await tester.tap(find.text('조건문'));
@@ -62,7 +64,7 @@ void main() {
 
   testWidgets('예제 직접 진입도 개념으로 복귀하고 잘못된 언어는 문법 홈으로 이동한다', (tester) async {
     appRouter.go('/grammar/python/chapters/conditions/example');
-    await tester.pumpWidget(const CobipApp());
+    await tester.pumpLearningWidget(const CobipApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('개념 다시 보기'));
     await tester.pumpAndSettle();

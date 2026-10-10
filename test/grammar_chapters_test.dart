@@ -3,6 +3,8 @@ import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'auth_test_support.dart';
+
 void main() {
   for (final language in ['java', 'python', 'javascript']) {
     for (final useSystemBack in [false, true]) {
@@ -14,7 +16,7 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
         appRouter.go('/grammar');
-        await tester.pumpWidget(const CobipApp());
+        await tester.pumpLearningWidget(const CobipApp());
         await tester.pumpAndSettle();
         final label = {
           'java': 'Java',
@@ -60,7 +62,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     appRouter.go('/grammar');
-    await tester.pumpWidget(const CobipApp());
+    await tester.pumpLearningWidget(const CobipApp());
     await tester.pumpAndSettle();
     await tester.tap(find.text('Python'));
     await tester.enterText(find.byType(TextField), 'elif');
@@ -92,7 +94,7 @@ void main() {
 
   testWidgets('잘못된 언어는 복귀하고 기존 카테고리 주소도 전체 목록을 표시한다', (tester) async {
     appRouter.go('/grammar/unknown/chapters');
-    await tester.pumpWidget(const CobipApp());
+    await tester.pumpLearningWidget(const CobipApp());
     await tester.pumpAndSettle();
     expect(find.text('문법 학습'), findsOneWidget);
 

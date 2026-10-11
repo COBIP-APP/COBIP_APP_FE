@@ -1,7 +1,7 @@
 import '../../features/chat/presentation/chat_screen.dart';
-import '../../features/problems/data/problem_sample_data.dart';
+
 import '../../features/problems/presentation/problems_home_screen.dart';
-import '../../features/problems/presentation/problem_mission_screen.dart';
+import '../../features/problems/presentation/question_preview_screen.dart';
 
 import '../../features/practical/presentation/practical_chapters_screen.dart';
 import '../../features/practical/presentation/practical_home_screen.dart';
@@ -113,13 +113,9 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
         GoRoute(
           path: ':mission',
           name: AppRouteNames.problemMission,
-          redirect: (context, state) =>
-              ProblemMission.fromId(state.pathParameters['mission']) == null
-              ? '/problems'
-              : null,
-          builder: (context, state) => ProblemMissionScreen(
+          builder: (context, state) => QuestionPreviewScreen(
             key: ValueKey(state.pathParameters['mission']),
-            mission: ProblemMission.fromId(state.pathParameters['mission'])!,
+            questionId: int.tryParse(state.pathParameters['mission']!) ?? -1,
           ),
         ),
       ],

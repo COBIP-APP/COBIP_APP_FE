@@ -75,6 +75,8 @@ void main() {
     await tester.pumpAndSettle();
     for (final id in [1000, 1001, 1002]) {
       expect(store.latest(id), isNotNull);
+      final explanation = store.question(id)!.explanation!;
+      expect(find.text(explanation), findsNothing);
       final result = find.byKey(ValueKey('result-$id'));
       await reveal(tester, result);
       expect(
@@ -90,18 +92,67 @@ void main() {
         (decoration.border! as Border).top.color,
         id == 1001 ? AppColors.error : AppColors.success,
       );
+      final toggle = find.byKey(ValueKey('explanation-toggle-$id'));
+      await reveal(tester, toggle);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.text(explanation), findsOneWidget);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.text(explanation), findsNothing);
     }
+    expect(find.text('학습 끝내기'), findsNothing);
     expect(find.text('다음 문제'), findsNothing);
     await reveal(tester, find.text('다시 풀기'));
     await tester.tap(find.text('다시 풀기'));
     await tester.pumpAndSettle();
     expect(find.text('모든 문제를 풀고 한 번에 답을 확인해 보세요. (0 / 3)'), findsOneWidget);
+    expect(find.text('풀이 보기'), findsNothing);
     await reveal(tester, find.text('학습으로 돌아가기'));
     await tester.tap(find.text('학습으로 돌아가기'));
     await tester.pumpAndSettle();
     expect(find.text('학습을 마쳤어요'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  for (final entry in {'java': 111, 'python': 121, 'javascript': 131}.entries) {
+    testWidgets('${entry.key} 모두 정답이면 학습 끝내기로 해당 언어 목록에 돌아간다', (tester) async {
+      final router = createAppRouter(
+        initialLocation: '/grammar-practice/${entry.value}',
+      );
+      addTearDown(router.dispose);
+      await tester.pumpLearningWidget(CobipApp(router: router));
+      await tester.pumpAndSettle();
+      final store = tester
+          .element(find.byType(GrammarPracticeScreen))
+          .read<LearningPreviewStore>();
+      final questions = store.questions.where(
+        (q) => q.relatedTemplateId == entry.value,
+      );
+      for (final question in questions) {
+        final option = find.byKey(
+          ValueKey('choice-${question.id}-${previewAnswerKeys[question.id]}'),
+        );
+        await reveal(tester, option);
+        await tester.tap(option);
+        await tester.pumpAndSettle();
+      }
+      await reveal(tester, find.text('답 확인'));
+      await tester.tap(find.text('답 확인'));
+      await tester.pumpAndSettle();
+      expect(find.text('다시 풀기'), findsNothing);
+      await reveal(tester, find.text('학습 끝내기'));
+      await tester.tap(find.text('학습 끝내기'));
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/grammar/${entry.key}/chapters',
+      );
+      expect(find.byType(GrammarPracticeScreen), findsNothing);
+      expect(find.text('문법 챕터'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('예제 부모 목차는 하위 예제를 보여주고 선택하면 이동한다', (tester) async {
     final router = createAppRouter(
@@ -149,6 +200,11 @@ void main() {
       await tester.tap(find.text('답 확인'));
       await tester.pumpAndSettle();
       await reveal(tester, find.byKey(const ValueKey('result-1002')));
+      final toggle = find.byKey(const ValueKey('explanation-toggle-1002'));
+      await reveal(tester, toggle);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      await reveal(tester, find.text('풀이 접기'));
       expect(tester.takeException(), isNull);
     });
     testWidgets('목차 닫기는 위치를 보존하고 선택은 이동한다 $size', (tester) async {

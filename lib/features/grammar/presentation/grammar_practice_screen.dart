@@ -6,6 +6,7 @@ import '../../../app/app_ui_tokens.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/widgets/learning_visuals.dart';
 import '../../learning/data/learning_models.dart';
+import '../../learning/data/learning_preview_data.dart' show previewLanguages;
 import '../../learning/presentation/learning_preview_store.dart';
 import '../../learning/presentation/learning_preview_widgets.dart';
 import 'grammar_scaffold.dart';
@@ -21,6 +22,7 @@ class GrammarPracticeScreen extends StatefulWidget {
 class _GrammarPracticeScreenState extends State<GrammarPracticeScreen> {
   final _scroll = ScrollController();
   final _answers = <int, String>{};
+  final _expandedExplanations = <int>{};
   Map<int, LearningSubmission> _results = {};
   bool _busy = false;
   String? _error;
@@ -162,7 +164,28 @@ class _GrammarPracticeScreenState extends State<GrammarPracticeScreen> {
                   ),
                   if (graded && question.explanation?.isNotEmpty == true) ...[
                     const SizedBox(height: 8),
-                    Text(question.explanation!, style: AppTypography.body),
+                    OutlinedButton.icon(
+                      key: ValueKey('explanation-toggle-${question.id}'),
+                      onPressed: () => setState(() {
+                        if (!_expandedExplanations.add(question.id)) {
+                          _expandedExplanations.remove(question.id);
+                        }
+                      }),
+                      icon: Icon(
+                        _expandedExplanations.contains(question.id)
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                      ),
+                      label: Text(
+                        _expandedExplanations.contains(question.id)
+                            ? '풀이 접기'
+                            : '풀이 보기',
+                      ),
+                    ),
+                    if (_expandedExplanations.contains(question.id)) ...[
+                      const SizedBox(height: 12),
+                      Text(question.explanation!, style: AppTypography.body),
+                    ],
                   ],
                 ],
               ),
@@ -182,6 +205,18 @@ class _GrammarPracticeScreenState extends State<GrammarPracticeScreen> {
     final answered = questions
         .where((q) => _answers[q.id]?.trim().isNotEmpty == true)
         .length;
+    final allCorrect =
+        questions.isNotEmpty &&
+        questions.every((question) {
+          final result = _results[question.id];
+          return result?.gradingStatus == 'COMPLETED' &&
+              result?.score != null &&
+              result!.score! >= question.passScore;
+        });
+    final template = store.template(widget.templateId);
+    final language = previewLanguages
+        .where((language) => language.id == template?.languageId)
+        .firstOrNull;
     return GrammarScaffold(
       title: '학습 확인 문제',
       body: PreviewContent(
@@ -195,7 +230,7 @@ class _GrammarPracticeScreenState extends State<GrammarPracticeScreen> {
               Text(
                 _results.isEmpty
                     ? '모든 문제를 풀고 한 번에 답을 확인해 보세요. ($answered / ${questions.length})'
-                    : '각 문제 아래에서 결과와 해설을 확인해 보세요.',
+                    : '결과를 확인하고, 풀이가 궁금하면 ‘풀이 보기’를 눌러 주세요.',
                 style: AppTypography.body,
               ),
               const SizedBox(height: 20),
@@ -214,11 +249,21 @@ class _GrammarPracticeScreenState extends State<GrammarPracticeScreen> {
                       : null,
                   child: Text(_busy ? '확인 중…' : '답 확인'),
                 )
+              else if (allCorrect)
+                FilledButton(
+                  onPressed: () => context.go(
+                    language == null
+                        ? '/grammar'
+                        : '/grammar/${language.code.toLowerCase()}/chapters',
+                  ),
+                  child: const Text('학습 끝내기'),
+                )
               else
                 OutlinedButton(
                   onPressed: () {
                     setState(() {
                       _answers.clear();
+                      _expandedExplanations.clear();
                       _results = {};
                       _error = null;
                       _attempt++;

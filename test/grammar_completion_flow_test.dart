@@ -1,8 +1,10 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
+import 'package:cobip_app_fe/app/app_ui_tokens.dart';
 import 'package:cobip_app_fe/features/grammar/presentation/grammar_lesson_screen.dart';
+import 'package:cobip_app_fe/features/grammar/presentation/grammar_practice_screen.dart';
+import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
-import 'package:cobip_app_fe/features/problems/presentation/question_preview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +21,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('완료 저장 실패는 학습에 남고 성공 후에만 연결 문제를 순서대로 푼다', (tester) async {
+  testWidgets('학습 완료 후 세 문제를 함께 풀고 한 번에 정오답을 확인한다', (tester) async {
     final router = createAppRouter(
       initialLocation: '/grammar/java/chapters/111?section=11105',
     );
@@ -44,26 +46,56 @@ void main() {
     expect(find.text('학습 목차'), findsNothing);
     await tester.tap(find.text('문제 풀기'));
     await tester.pumpAndSettle();
+    expect(find.byType(GrammarPracticeScreen), findsOneWidget);
+    await reveal(tester, find.text('답 확인'));
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '답 확인'))
+          .onPressed,
+      isNull,
+    );
+    await tester.drag(find.byType(ListView).last, const Offset(0, 3000));
+    await tester.pumpAndSettle();
     for (final id in [1000, 1001, 1002]) {
-      expect(
-        tester
-            .widget<QuestionPreviewScreen>(find.byType(QuestionPreviewScreen))
-            .questionId,
-        id,
-      );
-      await reveal(tester, find.byKey(const ValueKey('choice-A')));
-      await tester.tap(find.byKey(const ValueKey('choice-A')));
-      await reveal(tester, find.text('답안 제출'));
-      await tester.tap(find.text('답안 제출'));
+      final correctKey = previewAnswerKeys[id]!;
+      final choice = id == 1001 ? (correctKey == 'A' ? 'B' : 'A') : correctKey;
+      final option = find.byKey(ValueKey('choice-$id-$choice'));
+      await reveal(tester, option);
+      await tester.tap(option);
       await tester.pumpAndSettle();
+      expect(store.latest(id), isNull);
+    }
+    await reveal(tester, find.text('답 확인'));
+    store.failNextAction = true;
+    await tester.tap(find.text('답 확인'));
+    await tester.pumpAndSettle();
+    expect(find.text('답안을 확인하지 못했어요. 선택한 답은 유지되니 다시 눌러 주세요.'), findsOneWidget);
+    await reveal(tester, find.text('답 확인'));
+    await tester.tap(find.text('답 확인'));
+    await tester.pumpAndSettle();
+    for (final id in [1000, 1001, 1002]) {
       expect(store.latest(id), isNotNull);
-      if (id != 1002) {
-        await reveal(tester, find.text('다음 문제'));
-        await tester.tap(find.text('다음 문제'));
-        await tester.pumpAndSettle();
-      }
+      final result = find.byKey(ValueKey('result-$id'));
+      await reveal(tester, result);
+      expect(
+        find.descendant(
+          of: result,
+          matching: find.text(id == 1001 ? '오답' : '정답'),
+        ),
+        findsOneWidget,
+      );
+      final decoration =
+          tester.widget<Container>(result).decoration! as BoxDecoration;
+      expect(
+        (decoration.border! as Border).top.color,
+        id == 1001 ? AppColors.error : AppColors.success,
+      );
     }
     expect(find.text('다음 문제'), findsNothing);
+    await reveal(tester, find.text('다시 풀기'));
+    await tester.tap(find.text('다시 풀기'));
+    await tester.pumpAndSettle();
+    expect(find.text('모든 문제를 풀고 한 번에 답을 확인해 보세요. (0 / 3)'), findsOneWidget);
     await reveal(tester, find.text('학습으로 돌아가기'));
     await tester.tap(find.text('학습으로 돌아가기'));
     await tester.pumpAndSettle();
@@ -71,7 +103,54 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('예제 부모 목차는 하위 예제를 보여주고 선택하면 이동한다', (tester) async {
+    final router = createAppRouter(
+      initialLocation: '/grammar/java/chapters/111?section=11102',
+    );
+    addTearDown(router.dispose);
+    await tester.pumpLearningWidget(CobipApp(router: router));
+    await tester.pumpAndSettle();
+    expect(find.text('예제 목차'), findsOneWidget);
+    for (final id in [11103, 11104, 11105]) {
+      await reveal(tester, find.byKey(ValueKey('example-$id')));
+    }
+    await tester.tap(find.byKey(const ValueKey('example-11105')));
+    await tester.pumpAndSettle();
+    expect(find.text('5 / 5 목차'), findsOneWidget);
+    expect(
+      tester
+          .element(find.byType(GrammarLessonScreen))
+          .read<LearningPreviewStore>()
+          .progress(111)!
+          .lastSectionId,
+      11105,
+    );
+  });
+
   for (final size in [const Size(320, 640), const Size(640, 320)]) {
+    testWidgets('함께 푸는 문제의 큰 글씨 배치 $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final router = createAppRouter(initialLocation: '/grammar-practice/111');
+      addTearDown(router.dispose);
+      await tester.pumpLearningWidget(CobipApp(router: router));
+      await tester.pumpAndSettle();
+      for (final id in [1000, 1001, 1002]) {
+        final option = find.byKey(ValueKey('choice-$id-A'));
+        await reveal(tester, option);
+        await tester.tap(option);
+        await tester.pumpAndSettle();
+      }
+      await reveal(tester, find.text('답 확인'));
+      await tester.tap(find.text('답 확인'));
+      await tester.pumpAndSettle();
+      await reveal(tester, find.byKey(const ValueKey('result-1002')));
+      expect(tester.takeException(), isNull);
+    });
     testWidgets('목차 닫기는 위치를 보존하고 선택은 이동한다 $size', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;

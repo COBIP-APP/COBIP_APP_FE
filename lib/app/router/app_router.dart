@@ -21,6 +21,7 @@ import '../../features/grammar/data/grammar_sample_data.dart';
 import '../../features/grammar/presentation/grammar_chapters_screen.dart';
 import '../../features/grammar/presentation/grammar_home_screen.dart';
 import '../../features/grammar/presentation/grammar_lesson_screen.dart';
+import '../../features/grammar/presentation/grammar_practice_screen.dart';
 import '../../features/learning/presentation/template_preview_screen.dart';
 
 import '../../features/home/presentation/home_screen.dart';
@@ -115,9 +116,6 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
           builder: (context, state) => QuestionPreviewScreen(
             key: ValueKey(state.pathParameters['mission']),
             questionId: int.tryParse(state.pathParameters['mission']!) ?? -1,
-            lessonTemplateId: int.tryParse(
-              state.uri.queryParameters['lesson'] ?? '',
-            ),
           ),
         ),
       ],
@@ -155,6 +153,13 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/grammar-practice/:template',
+      builder: (context, state) => GrammarPracticeScreen(
+        key: ValueKey(state.pathParameters['template']),
+        templateId: int.tryParse(state.pathParameters['template']!) ?? -1,
+      ),
     ),
     GoRoute(
       path: '/grammar',

@@ -186,9 +186,8 @@ class _GrammarLessonScreenState extends State<GrammarLessonScreen> {
                     const SizedBox(height: 24),
                     if (questions.isNotEmpty)
                       FilledButton(
-                        onPressed: () => context.push(
-                          '/problems/${questions.first.id}?lesson=${item.id}',
-                        ),
+                        onPressed: () =>
+                            context.push('/grammar-practice/${item.id}'),
                         child: const Text('문제 풀기'),
                       ),
                     const SizedBox(height: 12),
@@ -207,6 +206,7 @@ class _GrammarLessonScreenState extends State<GrammarLessonScreen> {
                   else ...[
                     LearningSection(
                       title: section.title,
+                      emphasizedShadow: true,
                       label: '${index + 1} / ${sections.length} 목차',
                       icon: Icons.menu_book_outlined,
                       child: Column(
@@ -220,39 +220,70 @@ class _GrammarLessonScreenState extends State<GrammarLessonScreen> {
                           ],
                           if ((section.body?.isEmpty ?? true) &&
                               (section.exampleCode?.isEmpty ?? true) &&
-                              section.media.isEmpty)
+                              section.media.isEmpty &&
+                              section.children.isEmpty)
                             const Text('아직 등록된 내용이 없어요.'),
                           PreviewMediaList(items: section.media),
+                          if (section.children.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            const Text('예제 목차', style: AppTypography.card),
+                            const SizedBox(height: 8),
+                            for (final child in section.children)
+                              ListTile(
+                                key: ValueKey('example-${child.id}'),
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(child.title),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: _busy ? null : () => _save(child),
+                              ),
+                          ],
                         ],
                       ),
                     ),
                     PreviewMediaList(items: item.media),
                     const SizedBox(height: 20),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: index > 0
+                                ? OutlinedButton(
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _save(sections[index - 1]),
+                                    child: const Text('이전 목차'),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: index < sections.length - 1
+                                ? FilledButton(
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _save(sections[index + 1]),
+                                    child: const Text('다음 목차'),
+                                  )
+                                : FilledButton(
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _save(section, completed: true),
+                                    child: const Text('학습 완료'),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        if (index > 0)
-                          OutlinedButton(
-                            onPressed: _busy
-                                ? null
-                                : () => _save(sections[index - 1]),
-                            child: const Text('이전 목차'),
-                          ),
-                        if (index < sections.length - 1)
-                          FilledButton(
-                            onPressed: _busy
-                                ? null
-                                : () => _save(sections[index + 1]),
-                            child: const Text('다음 목차'),
-                          )
-                        else
-                          FilledButton(
-                            onPressed: _busy
-                                ? null
-                                : () => _save(section, completed: true),
-                            child: const Text('학습 완료'),
-                          ),
                         if (progress == null)
                           OutlinedButton(
                             onPressed: _busy ? null : () => _save(section),

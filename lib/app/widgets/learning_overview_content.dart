@@ -14,12 +14,14 @@ class LearningOverviewContent extends StatelessWidget {
     required this.footer,
     this.tags = const [],
     this.enabled = true,
+    this.action,
   });
 
   final String label, title, description, footer;
   final IconData icon;
   final List<String> tags;
   final bool enabled;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -65,53 +67,56 @@ class LearningOverviewContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                ExcludeSemantics(
-                  child: SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 4,
-                          right: 0,
-                          child: Transform.rotate(
-                            angle: .12,
+                if (action != null)
+                  action!
+                else
+                  ExcludeSemantics(
+                    child: SizedBox(
+                      width: 64,
+                      height: 64,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: 4,
+                            right: 0,
+                            child: Transform.rotate(
+                              angle: .12,
+                              child: Container(
+                                width: 54,
+                                height: 54,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primarySoft,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 0,
+                            left: 0,
                             child: Container(
                               width: 54,
                               height: 54,
                               decoration: BoxDecoration(
-                                color: AppColors.primarySoft,
+                                color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          child: Container(
-                            width: 54,
-                            height: 54,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: .18,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(
+                                      alpha: .18,
+                                    ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
                                   ),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
+                                ],
+                              ),
+                              child: Icon(icon, color: Colors.white, size: 28),
                             ),
-                            child: Icon(icon, color: Colors.white, size: 28),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 12),

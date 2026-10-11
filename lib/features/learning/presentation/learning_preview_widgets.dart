@@ -119,28 +119,20 @@ class TemplatePreviewCard extends StatelessWidget {
     return LearningCard(
       emphasizedShadow: true,
       margin: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            onTap: () => context.push(templateLocation(item)),
-            child: LearningOverviewContent(
-              label:
-                  '${languageName(item.languageId)} · ${categoryName(item.categoryId)}',
-              title: item.title,
-              description: item.summary,
-              icon: item.categoryId == 1
-                  ? Icons.menu_book_outlined
-                  : Icons.layers_outlined,
-              tags: [item.difficulty.label, progress?.label ?? '미시작'],
-              footer: progress == null ? '학습 살펴보기' : '이어서 학습하기',
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: BookmarkButton(templateId: item.id),
-          ),
-        ],
+      child: InkWell(
+        onTap: () => context.push(templateLocation(item)),
+        child: LearningOverviewContent(
+          label:
+              '${languageName(item.languageId)} · ${categoryName(item.categoryId)}',
+          title: item.title,
+          description: item.summary,
+          icon: item.categoryId == 1
+              ? Icons.menu_book_outlined
+              : Icons.layers_outlined,
+          action: BookmarkButton(templateId: item.id),
+          footer:
+              '${item.difficulty.label} · ${progress?.label ?? '미시작'} · ${progress == null ? '학습하기' : '이어하기'}',
+        ),
       ),
     );
   }

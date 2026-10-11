@@ -14,12 +14,14 @@ class GrammarScaffold extends StatelessWidget {
     required this.body,
     this.isOverview = false,
     this.footer,
+    this.actions,
   });
 
   final String title;
   final Widget body;
   final bool isOverview;
   final Widget? footer;
+  final List<Widget>? actions;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +32,7 @@ class GrammarScaffold extends StatelessWidget {
             ? null
             : AppBar(
                 title: Text(title),
+                actions: actions,
                 leading: IconButton(
                   tooltip: '뒤로가기',
                   icon: const Icon(Icons.arrow_back),

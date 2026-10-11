@@ -1,7 +1,7 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
-import 'package:cobip_app_fe/features/learning/presentation/template_preview_screen.dart';
+import 'package:cobip_app_fe/features/grammar/presentation/grammar_lesson_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -23,12 +23,16 @@ void main() {
   testWidgets('하위 목차 저장, 완료, 재진입 이어하기와 다시 학습', (tester) async {
     await open(tester, '/grammar/java/chapters/111');
     final store = tester
-        .element(find.byType(TemplatePreviewScreen))
+        .element(find.byType(GrammarLessonScreen))
         .read<LearningPreviewStore>();
     expect(store.progress(111), isNull);
+    expect(find.text('학습 목차'), findsNothing);
+    expect(find.text('연결된 문제'), findsNothing);
+    await tester.tap(find.byTooltip('목차'));
+    await tester.pumpAndSettle();
     await tester.dragUntilVisible(
       find.byKey(const ValueKey('section-11105')).hitTestable(),
-      find.byType(ListView).first,
+      find.byType(ListView).last,
       const Offset(0, -200),
     );
     await tester.tap(find.byKey(const ValueKey('section-11105')));

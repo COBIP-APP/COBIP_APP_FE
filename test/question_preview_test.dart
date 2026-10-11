@@ -98,6 +98,8 @@ void main() {
     await reveal(tester, find.text('관련 학습 · 조건문'));
     await tester.tap(find.text('관련 학습 · 조건문'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('목차'));
+    await tester.pumpAndSettle();
     final tile = tester.widget<ListTile>(
       find.byKey(const ValueKey('section-11103')),
     );

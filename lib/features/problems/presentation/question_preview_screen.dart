@@ -12,8 +12,13 @@ import '../../learning/presentation/learning_preview_widgets.dart';
 import 'submission_preview_result.dart';
 
 class QuestionPreviewScreen extends StatefulWidget {
-  const QuestionPreviewScreen({super.key, required this.questionId});
+  const QuestionPreviewScreen({
+    super.key,
+    required this.questionId,
+    this.lessonTemplateId,
+  });
   final int questionId;
+  final int? lessonTemplateId;
   @override
   State<QuestionPreviewScreen> createState() => _QuestionPreviewScreenState();
 }
@@ -67,6 +72,18 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
         ? _choice != null
         : _answer.text.trim().isNotEmpty;
     final resultVisible = latest != null && !_editing;
+    final lessonQuestions = widget.lessonTemplateId == null
+        ? <LearningQuestion>[]
+        : store.questions
+              .where((q) => q.relatedTemplateId == widget.lessonTemplateId)
+              .toList();
+    final lessonIndex = lessonQuestions.indexWhere(
+      (q) => q.id == widget.questionId,
+    );
+    final nextQuestion =
+        lessonIndex >= 0 && lessonIndex + 1 < lessonQuestions.length
+        ? lessonQuestions[lessonIndex + 1]
+        : null;
     final related = item?.relatedTemplateId == null
         ? null
         : store.template(item!.relatedTemplateId!);
@@ -221,6 +238,15 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                         ],
                         if (resultVisible) ...[
                           const SizedBox(height: 20),
+                          if (nextQuestion != null) ...[
+                            FilledButton(
+                              onPressed: () => context.replace(
+                                '/problems/${nextQuestion.id}?lesson=${widget.lessonTemplateId}',
+                              ),
+                              child: const Text('다음 문제'),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                           FilledButton(
                             onPressed: () => setState(() {
                               _editing = true;
@@ -251,7 +277,9 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                           onPressed: () => context.canPop()
                               ? context.pop()
                               : context.go('/problems'),
-                          child: const Text('목록으로 돌아가기'),
+                          child: Text(
+                            lessonIndex >= 0 ? '학습으로 돌아가기' : '목록으로 돌아가기',
+                          ),
                         ),
                       ],
                     ),

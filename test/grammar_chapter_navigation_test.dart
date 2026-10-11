@@ -1,4 +1,4 @@
-import 'package:cobip_app_fe/features/learning/presentation/template_preview_screen.dart';
+import 'package:cobip_app_fe/features/grammar/presentation/grammar_lesson_screen.dart';
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:flutter/material.dart';
@@ -31,11 +31,12 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           tester
-              .widget<TemplatePreviewScreen>(find.byType(TemplatePreviewScreen))
+              .widget<GrammarLessonScreen>(find.byType(GrammarLessonScreen))
               .templateId,
           entry.$3,
         );
-        expect(find.text('학습 목차'), findsOneWidget);
+        expect(find.byTooltip('목차'), findsOneWidget);
+        expect(find.text('학습 목차'), findsNothing);
         if (systemBack) {
           await tester.binding.handlePopRoute();
         } else {

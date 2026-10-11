@@ -19,7 +19,7 @@ void main() {
     addTearDown(router.dispose);
     await tester.pumpLearningWidget(CobipApp(router: router));
     await tester.pumpAndSettle();
-    final answer = find.byKey(const ValueKey('question-answer'));
+    final answer = find.byKey(const ValueKey('answer-2000'));
     await tester.dragUntilVisible(
       answer.hitTestable(),
       find.byType(ListView),

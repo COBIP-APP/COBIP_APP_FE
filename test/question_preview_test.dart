@@ -39,30 +39,55 @@ void main() {
     final store = tester
         .element(find.byType(QuestionPreviewScreen))
         .read<LearningPreviewStore>();
-    await reveal(tester, find.text('답안 제출'));
+    await reveal(tester, find.text('답 확인'));
     expect(
       tester
-          .widget<FilledButton>(find.widgetWithText(FilledButton, '답안 제출'))
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '답 확인'))
           .onPressed,
       isNull,
     );
-    final key = previewAnswerKeys[2001]!;
-    await reveal(tester, find.byKey(ValueKey('choice-$key')), up: true);
-    await tester.tap(find.byKey(ValueKey('choice-$key')));
-    await reveal(tester, find.text('답안 제출'));
-    await tester.tap(find.text('답안 제출'));
+    final key = previewAnswerKeys[2001] == 'A' ? 'B' : 'A';
+    await reveal(tester, find.byKey(ValueKey('choice-2001-$key')), up: true);
+    await tester.tap(find.byKey(ValueKey('choice-2001-$key')));
+    await reveal(tester, find.text('답 확인'));
+    await tester.tap(find.text('답 확인'));
     await tester.pumpAndSettle();
-    expect(store.latest(2001)!.score, 100);
-    expect(find.text('채점 완료'), findsOneWidget);
+    expect(store.latest(2001)!.score, 0);
+    expect(find.text('오답'), findsOneWidget);
+    final explanation = store.question(2001)!.explanation!;
+    expect(find.text(explanation), findsNothing);
+    await reveal(tester, find.text('풀이 보기'));
+    await tester.tap(find.text('풀이 보기'));
+    await tester.pumpAndSettle();
+    expect(find.text(explanation), findsOneWidget);
     await reveal(tester, find.text('다시 풀기'));
     await tester.tap(find.text('다시 풀기'));
     await tester.pumpAndSettle();
     await reveal(tester, find.text('최근 제출 결과 보기'));
     await tester.tap(find.text('최근 제출 결과 보기'));
     await tester.pumpAndSettle();
-    await reveal(tester, find.text('채점 완료'), up: true);
-    expect(store.latest(2001)!.score, 100);
+    await reveal(tester, find.text('오답'), up: true);
+    expect(store.latest(2001)!.score, 0);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('정답은 초록 결과를 표시하고 문제 끝내기로 목록에 돌아간다', (tester) async {
+    await open(tester, '/problems/2001');
+    final option = find.byKey(
+      ValueKey('choice-2001-${previewAnswerKeys[2001]}'),
+    );
+    await reveal(tester, option);
+    await tester.tap(option);
+    await reveal(tester, find.text('답 확인'));
+    await tester.tap(find.text('답 확인'));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('정답'));
+    expect(find.text('오답'), findsNothing);
+    expect(find.text('풀이 접기'), findsNothing);
+    await reveal(tester, find.text('문제 끝내기'));
+    await tester.tap(find.text('문제 끝내기'));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuestionPreviewScreen), findsNothing);
   });
 
   for (final id in [2000, 2002]) {
@@ -71,7 +96,7 @@ void main() {
       final store = tester
           .element(find.byType(QuestionPreviewScreen))
           .read<LearningPreviewStore>();
-      final field = find.byKey(const ValueKey('question-answer'));
+      final field = find.byKey(ValueKey('answer-$id'));
       await reveal(tester, field);
       await tester.enterText(field, '직접 작성한 답안');
       tester.testTextInput.hide();

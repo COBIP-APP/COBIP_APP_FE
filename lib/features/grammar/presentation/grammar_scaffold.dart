@@ -26,7 +26,15 @@ class GrammarScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: learningUiTheme,
+      data: learningUiTheme.copyWith(
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: learningUiTheme.outlinedButtonTheme.style!.copyWith(
+            elevation: const WidgetStatePropertyAll(3),
+            shadowColor: const WidgetStatePropertyAll(Colors.black26),
+            surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          ),
+        ),
+      ),
       child: Scaffold(
         appBar: isOverview
             ? null

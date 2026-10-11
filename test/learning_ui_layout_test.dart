@@ -1,7 +1,7 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
-import 'package:cobip_app_fe/features/problems/presentation/question_preview_screen.dart';
+import 'package:cobip_app_fe/features/learning/presentation/template_preview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -64,7 +64,7 @@ void main() {
     (const Size(320, 640), 2.0, 240.0),
     (const Size(640, 320), 1.0, 140.0),
   ]) {
-    testWidgets('문제 결과와 챗봇 키보드 $size 글자 $scale', (tester) async {
+    testWidgets('문제 결과와 학습 챗봇 키보드 $size 글자 $scale', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       tester.platformDispatcher.textScaleFactorTestValue = scale;
@@ -72,7 +72,9 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       addTearDown(tester.view.resetViewInsets);
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      final router = createAppRouter(initialLocation: '/problems/2000');
+      final router = createAppRouter(
+        initialLocation: '/grammar/java/chapters/111',
+      );
       addTearDown(router.dispose);
       await tester.pumpLearningWidget(CobipApp(router: router));
       await tester.pumpAndSettle();
@@ -87,13 +89,22 @@ void main() {
       await tester.tap(find.byTooltip('챗봇 닫기'));
       await tester.pumpAndSettle();
       final store = tester
-          .element(find.byType(QuestionPreviewScreen))
+          .element(find.byType(TemplatePreviewScreen))
           .read<LearningPreviewStore>();
       for (final (id, answer) in [(2000, '직접 작성한 코드\nprint(1)'), (2001, 'D')]) {
         final pending = store.submit(id, answer);
         await tester.pump(const Duration(seconds: 1));
         await pending;
         router.go('/problems/$id');
+        await tester.pumpAndSettle();
+        expect(find.byTooltip('COBIA 챗봇'), findsNothing);
+        final recentResult = find.text('최근 제출 결과 보기');
+        await tester.dragUntilVisible(
+          recentResult.hitTestable(),
+          find.byType(ListView).first,
+          const Offset(0, -150),
+        );
+        await tester.tap(recentResult);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         for (var i = 0; i < 5; i++) {

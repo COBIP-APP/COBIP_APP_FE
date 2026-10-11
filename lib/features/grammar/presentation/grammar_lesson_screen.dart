@@ -175,6 +175,7 @@ class _GrammarLessonScreenState extends State<GrammarLessonScreen> {
                   if (_finished) ...[
                     LearningSection(
                       title: '학습을 마쳤어요',
+                      emphasizedShadow: true,
                       icon: Icons.check_circle_outline,
                       child: Text(
                         questions.isEmpty

@@ -33,6 +33,7 @@ void main() {
       final store = tester
           .element(find.byType(TemplatePreviewScreen))
           .read<LearningPreviewStore>();
+      expect(find.byTooltip('COBIA 챗봇'), findsOneWidget);
       expect(find.text('문제 풀기'), findsNothing);
       await reveal(tester, find.text('본문 읽기 완료'));
       await tester.tap(find.text('본문 읽기 완료'));
@@ -42,6 +43,7 @@ void main() {
       await tester.tap(find.text('문제 풀기'));
       await tester.pumpAndSettle();
       expect(find.byType(LearningPracticeScreen), findsOneWidget);
+      expect(find.byTooltip('COBIA 챗봇'), findsNothing);
       final questions = store.questions.where((q) => q.relatedTemplateId == id);
       expect(questions.length, 3);
       for (final question in questions) {

@@ -104,6 +104,7 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
         : templateListLocation(template);
     return LearningDetailScaffold(
       title: '학습 확인 문제',
+      showChat: false,
       fallbackLocation: listLocation,
       body: PreviewContent(
         child: ListView(

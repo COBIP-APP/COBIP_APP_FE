@@ -11,10 +11,12 @@ class LearningDetailScaffold extends StatelessWidget {
     required this.body,
     required this.fallbackLocation,
     this.actions,
+    this.showChat = true,
   });
   final String title, fallbackLocation;
   final Widget body;
   final List<Widget>? actions;
+  final bool showChat;
 
   @override
   Widget build(BuildContext context) => Theme(
@@ -39,12 +41,14 @@ class LearningDetailScaffold extends StatelessWidget {
         ),
       ),
       body: SafeArea(child: LearningBody(child: body)),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'COBIA 챗봇',
-        shape: const CircleBorder(),
-        onPressed: () => showChatPanel(context),
-        child: const Icon(Icons.smart_toy_outlined),
-      ),
+      floatingActionButton: showChat
+          ? FloatingActionButton(
+              tooltip: 'COBIA 챗봇',
+              shape: const CircleBorder(),
+              onPressed: () => showChatPanel(context),
+              child: const Icon(Icons.smart_toy_outlined),
+            )
+          : null,
     ),
   );
 }

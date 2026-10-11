@@ -1,6 +1,5 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
-import 'package:cobip_app_fe/features/chat/presentation/chat_panel.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
 import 'package:cobip_app_fe/features/problems/presentation/question_preview_screen.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +9,7 @@ import 'package:provider/provider.dart';
 import 'auth_test_support.dart';
 
 void main() {
-  testWidgets('챗봇을 열고 닫아도 문제 답안과 대화 내용을 유지한다', (tester) async {
+  testWidgets('문제 풀이에서 챗봇 없이 답안을 작성한다', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -27,27 +26,13 @@ void main() {
     );
     await tester.enterText(answer, 'for (int i = 1; i <= 5; i++) {}');
     tester.testTextInput.hide();
-    await tester.tap(find.byTooltip('COBIA 챗봇'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const ValueKey('chat-input')), '반복문 알려줘');
-    await tester.pump();
-    await tester.tap(find.byTooltip('메시지 보내기'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('반복문은 같은 작업'), findsOneWidget);
-    await tester.enterText(find.byKey(const ValueKey('chat-input')), '작성 중');
-    await tester.tap(find.byTooltip('챗봇 닫기'));
-    await tester.pumpAndSettle();
+    expect(find.byTooltip('COBIA 챗봇'), findsNothing);
     expect(
       tester.widget<TextField>(answer).controller!.text,
       'for (int i = 1; i <= 5; i++) {}',
     );
-    await tester.tap(find.byTooltip('COBIA 챗봇'));
-    await tester.pumpAndSettle();
-    expect(find.text('작성 중'), findsOneWidget);
     expect(router.routeInformationProvider.value.uri.path, '/problems/2000');
-    await tester.tap(find.text('학습 계속하기'));
-    await tester.pumpAndSettle();
-    expect(find.byType(ChatPanel), findsNothing);
     final store = tester
         .element(find.byType(QuestionPreviewScreen))
         .read<LearningPreviewStore>();

@@ -81,6 +81,7 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
               '';
     return LearningDetailScaffold(
       title: '문제 풀이',
+      showChat: false,
       fallbackLocation: '/problems',
       body: PreviewContent(
         child: item == null

@@ -6,6 +6,7 @@ import '../features/auth/data/auth_api.dart';
 import '../features/auth/data/token_store.dart';
 import '../features/auth/presentation/auth_view_model.dart';
 import '../features/chat/presentation/chat_view_model.dart';
+import '../features/learning/presentation/learning_preview_store.dart';
 import 'router/app_router.dart';
 
 class CobipApp extends StatefulWidget {
@@ -48,6 +49,12 @@ class _CobipAppState extends State<CobipApp> {
       providers: [
         ChangeNotifierProvider.value(value: _auth),
         ChangeNotifierProvider(create: (_) => ChatViewModel()),
+        ChangeNotifierProxyProvider<AuthViewModel, LearningPreviewStore>(
+          create: (context) => LearningPreviewStore()
+            ..bindUser(context.read<AuthViewModel>().user?.userId)
+            ..load(),
+          update: (_, auth, store) => store!..bindUser(auth.user?.userId),
+        ),
       ],
       child: MaterialApp.router(
         title: 'COBIA',

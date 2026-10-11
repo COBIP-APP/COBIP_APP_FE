@@ -52,8 +52,9 @@ class LearningPreviewStore extends ChangeNotifier {
   Future<void> _wait() async {
     final generation = _generation;
     await Future<void>.delayed(delay);
-    if (_disposed || generation != _generation)
+    if (_disposed || generation != _generation) {
       throw StateError('Session changed');
+    }
     if (failNextAction) {
       failNextAction = false;
       throw StateError('Preview failure');
@@ -103,11 +104,13 @@ class LearningPreviewStore extends ChangeNotifier {
 
   Future<LearningSubmission> submit(int questionId, String answer) async {
     final item = question(questionId);
-    if (item == null || answer.trim().isEmpty)
+    if (item == null || answer.trim().isEmpty) {
       throw StateError('Invalid answer');
+    }
     if (item.questionType == LearningQuestionType.multipleChoice &&
-        !item.choiceOptions.any((c) => c.key == answer))
+        !item.choiceOptions.any((c) => c.key == answer)) {
       throw StateError('Invalid choice');
+    }
     await _wait();
     final now = DateTime.now();
     final isChoice = item.questionType == LearningQuestionType.multipleChoice;

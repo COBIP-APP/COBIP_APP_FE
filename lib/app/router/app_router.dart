@@ -21,9 +21,8 @@ import '../../features/auth/presentation/terms_screen.dart';
 import '../../features/grammar/data/grammar_sample_data.dart';
 import '../../features/grammar/presentation/grammar_chapters_screen.dart';
 import '../../features/grammar/presentation/grammar_home_screen.dart';
-import '../../features/grammar/presentation/grammar_quiz_screen.dart';
-import '../../features/grammar/presentation/grammar_concept_screen.dart';
-import '../../features/grammar/presentation/grammar_example_screen.dart';
+import '../../features/learning/presentation/template_preview_screen.dart';
+
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my_page/presentation/my_page_screen.dart';
 
@@ -47,49 +46,6 @@ abstract final class AppRouteNames {
   static const grammarConcept = 'grammar-concept';
   static const grammarExample = 'grammar-example';
   static const grammarQuiz = 'grammar-quiz';
-}
-
-// 새 챕터의 상세 경로를 여기에 등록하면 메인과 전체 목록에 함께 연결됩니다.
-final grammarChapterRoutes = <String, GoRoute>{
-  'conditions': GoRoute(
-    path: 'conditions',
-    name: AppRouteNames.grammarConcept,
-    routes: [
-      GoRoute(
-        path: 'example',
-        name: AppRouteNames.grammarExample,
-        routes: [
-          GoRoute(
-            path: 'quiz',
-            name: AppRouteNames.grammarQuiz,
-            builder: (context, state) => GrammarQuizScreen(
-              language: GrammarLanguage.fromId(
-                state.pathParameters['language']!,
-              )!,
-            ),
-          ),
-        ],
-        builder: (context, state) => GrammarExampleScreen(
-          language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
-        ),
-      ),
-    ],
-    builder: (context, state) => GrammarConceptScreen(
-      language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
-    ),
-  ),
-};
-
-void openGrammarChapter(
-  BuildContext context,
-  GrammarLanguage language,
-  GrammarChapter chapter,
-) {
-  final route = grammarChapterRoutes[chapter.id];
-  if (route == null) return;
-  FocusScope.of(context).unfocus();
-  // 중첩 경로가 메인 → 전체 목록 → 상세의 뒤로가기 순서를 구성합니다.
-  context.goNamed(route.name!, pathParameters: {'language': language.id});
 }
 
 final appRouter = createAppRouter();
@@ -229,7 +185,20 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
         GoRoute(
           path: ':language/chapters',
           name: AppRouteNames.grammarChapters,
-          routes: grammarChapterRoutes.values.toList(),
+          routes: [
+            GoRoute(
+              path: ':template',
+              name: AppRouteNames.grammarConcept,
+              builder: (context, state) => TemplatePreviewScreen(
+                key: ValueKey(state.uri.toString()),
+                templateId:
+                    int.tryParse(state.pathParameters['template']!) ?? -1,
+                sectionId: int.tryParse(
+                  state.uri.queryParameters['section'] ?? '',
+                ),
+              ),
+            ),
+          ],
           redirect: (context, state) =>
               GrammarLanguage.fromId(state.pathParameters['language']!) == null
               ? '/grammar'

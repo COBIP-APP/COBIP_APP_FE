@@ -8,6 +8,25 @@ void main() {
   setUp(() => store = LearningPreviewStore(delay: Duration.zero)..bindUser(1));
   tearDown(() => store.dispose());
 
+  test('정답 기록은 이후 오답에도 유지되고 계정 변경 시 초기화된다', () async {
+    final correct = previewAnswerKeys[2001]!;
+    final wrong = correct == 'A' ? 'B' : 'A';
+    store.failNextAction = true;
+    await expectLater(store.submit(2001, correct), throwsStateError);
+    expect(store.solved(2001), isFalse);
+    expect(store.latest(2001), isNull);
+    await store.submit(2001, wrong);
+    expect(store.solved(2001), isFalse);
+    await store.submit(2001, correct);
+    expect(store.solved(2001), isTrue);
+    await store.submit(2001, wrong);
+    expect(store.latest(2001)!.score, 0);
+    expect(store.solved(2001), isTrue);
+    store.bindUser(2);
+    expect(store.solved(2001), isFalse);
+    expect(store.latest(2001), isNull);
+  });
+
   test('목차 이동은 완료 상태를 보존하고 다시 학습은 완료를 해제한다', () async {
     await store.saveProgress(111, 11101, completed: true);
     final started = store.progress(111)!.startedAt;

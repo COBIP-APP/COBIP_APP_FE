@@ -164,8 +164,15 @@ class QuestionPreviewCard extends StatelessWidget {
   final LearningQuestion item;
   @override
   Widget build(BuildContext context) {
-    final latest = context.watch<LearningPreviewStore>().latest(item.id);
+    final store = context.watch<LearningPreviewStore>();
+    final latest = store.latest(item.id);
+    final solved = store.solved(item.id);
     return LearningCard(
+      backgroundColor: solved
+          ? AppColors.completedSurface
+          : latest != null
+          ? AppColors.inProgressSurface
+          : AppColors.surface,
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () => context.push('/problems/${item.id}'),
@@ -176,11 +183,23 @@ class QuestionPreviewCard extends StatelessWidget {
           description: '통과 기준 ${item.passScore}점',
           icon: Icons.terminal_rounded,
           tags: [item.difficulty.label],
-          footer: latest == null
+          footerIcon: solved
+              ? Icons.check_circle
+              : latest != null
+              ? Icons.edit_note
+              : null,
+          footerColor: solved
+              ? AppColors.success
+              : latest != null
+              ? AppColors.warning
+              : null,
+          footer: solved
+              ? '맞힌 문제 · 다시 풀기'
+              : latest == null
               ? '문제 풀기'
               : latest.pending
-              ? '채점 대기 · 제출 확인'
-              : '${latest.score}점 · 결과 확인',
+              ? '채점 대기 · 다시 풀기'
+              : '제출한 문제 · 다시 풀기',
         ),
       ),
     );

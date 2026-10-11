@@ -1,5 +1,8 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
+import 'package:cobip_app_fe/app/app_ui_tokens.dart';
+import 'package:cobip_app_fe/app/widgets/learning_card.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_preview_widgets.dart';
 import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
 import 'package:cobip_app_fe/features/problems/presentation/question_preview_screen.dart';
@@ -32,6 +35,29 @@ void main() {
       Offset(0, up ? 200 : -200),
     );
     await tester.pumpAndSettle();
+  }
+
+  Future<void> reopen(WidgetTester tester, int id, Color background) async {
+    await reveal(tester, find.text('목록으로 돌아가기'));
+    await tester.tap(find.text('목록으로 돌아가기'));
+    await tester.pumpAndSettle();
+    final card = find.byWidgetPredicate(
+      (w) => w is QuestionPreviewCard && w.item.id == id,
+    );
+    await reveal(tester, card);
+    expect(
+      tester
+          .widget<LearningCard>(
+            find.descendant(of: card, matching: find.byType(LearningCard)),
+          )
+          .backgroundColor,
+      background,
+    );
+    final question = tester.widget<QuestionPreviewCard>(card).item;
+    await tester.tap(find.text(question.prompt));
+    await tester.pumpAndSettle();
+    expect(find.byKey(ValueKey('result-$id')), findsNothing);
+    expect(find.text('풀이 보기'), findsNothing);
   }
 
   testWidgets('객관식은 한 문제씩 채점하고 최근 제출 결과를 다시 보여준다', (tester) async {
@@ -68,6 +94,14 @@ void main() {
     await tester.pumpAndSettle();
     await reveal(tester, find.text('오답'), up: true);
     expect(store.latest(2001)!.score, 0);
+    await reopen(tester, 2001, AppColors.inProgressSurface);
+    await reveal(tester, find.text('답 확인'));
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '답 확인'))
+          .onPressed,
+      isNull,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -88,6 +122,30 @@ void main() {
     await tester.tap(find.text('문제 끝내기'));
     await tester.pumpAndSettle();
     expect(find.byType(QuestionPreviewScreen), findsNothing);
+    final card = find.byWidgetPredicate(
+      (w) => w is QuestionPreviewCard && w.item.id == 2001,
+    );
+    await reveal(tester, card);
+    expect(
+      tester
+          .widget<LearningCard>(
+            find.descendant(of: card, matching: find.byType(LearningCard)),
+          )
+          .backgroundColor,
+      AppColors.completedSurface,
+    );
+    await tester.tap(
+      find.text(tester.widget<QuestionPreviewCard>(card).item.prompt),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('result-2001')), findsNothing);
+    await reveal(tester, find.text('답 확인'));
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '답 확인'))
+          .onPressed,
+      isNull,
+    );
   });
 
   for (final id in [2000, 2002]) {
@@ -114,6 +172,9 @@ void main() {
       expect(store.latest(id)!.score, isNull);
       expect(find.text('채점 대기'), findsOneWidget);
       expect(find.text('0점'), findsNothing);
+      await reopen(tester, id, AppColors.inProgressSurface);
+      await reveal(tester, field);
+      expect(tester.widget<TextField>(field).controller!.text, isEmpty);
       expect(tester.takeException(), isNull);
     });
   }

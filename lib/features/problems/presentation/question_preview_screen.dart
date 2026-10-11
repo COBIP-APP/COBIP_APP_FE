@@ -22,7 +22,7 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
   String _answer = '';
   String? _error;
   bool _busy = false;
-  bool _editing = false;
+  bool _editing = true;
 
   @override
   void dispose() {

@@ -19,6 +19,7 @@ class LearningPreviewStore extends ChangeNotifier {
   final _progress = <int, LearningProgress>{};
   final _bookmarks = <int>{};
   final _submissions = <int, LearningSubmission>{};
+  final _solvedQuestions = <int>{};
   int? _userId;
   int _generation = 0;
   int _submissionId = 0;
@@ -33,6 +34,7 @@ class LearningPreviewStore extends ChangeNotifier {
     _progress.clear();
     _bookmarks.clear();
     _submissions.clear();
+    _solvedQuestions.clear();
   }
 
   Future<void> load() async {
@@ -68,6 +70,7 @@ class LearningPreviewStore extends ChangeNotifier {
   LearningProgress? progress(int id) => _progress[id];
   bool bookmarked(int id) => _bookmarks.contains(id);
   LearningSubmission? latest(int id) => _submissions[id];
+  bool solved(int id) => _solvedQuestions.contains(id);
 
   Future<void> toggleBookmark(int id) async {
     await _wait();
@@ -141,6 +144,11 @@ class LearningPreviewStore extends ChangeNotifier {
           : null,
     );
     _submissions[questionId] = result;
+    if (result.gradingStatus == 'COMPLETED' &&
+        result.score != null &&
+        result.score! >= item.passScore) {
+      _solvedQuestions.add(questionId);
+    }
     notifyListeners();
     return result;
   }

@@ -26,7 +26,11 @@ void main() {
     expect(find.text('COBIA와 함께 문법을 학습해보세요'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsNothing);
 
+    await tester.tap(find.byTooltip('필터'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Python'));
+    await tester.tap(find.text('적용'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'elif');
     await tester.pumpAndSettle();
     expect(find.text('조건문'), findsOneWidget);

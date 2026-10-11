@@ -10,6 +10,7 @@ import '../../learning/data/learning_models.dart';
 import '../../learning/data/learning_preview_data.dart';
 import '../../learning/presentation/learning_preview_store.dart';
 import '../../learning/presentation/learning_preview_widgets.dart';
+import '../../learning/presentation/learning_filter_sheet.dart';
 
 class ProblemsHomeScreen extends StatefulWidget {
   const ProblemsHomeScreen({super.key});
@@ -18,6 +19,13 @@ class ProblemsHomeScreen extends StatefulWidget {
 }
 
 class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
+  final _search = TextEditingController();
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
   int? _languageId;
   LearningQuestionType? _type;
   bool _submittedOnly = false;
@@ -28,6 +36,9 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
         .where(
           (q) =>
               q.categoryId == 3 &&
+              q.prompt.toLowerCase().contains(
+                _search.text.trim().toLowerCase(),
+              ) &&
               (_languageId == null || q.languageId == _languageId) &&
               (_type == null || q.questionType == _type) &&
               (!_submittedOnly || store.latest(q.id) != null),
@@ -64,50 +75,50 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                     lines: ['배운 개념을 직접 확인해보세요.', '코드 작성과 간단한 문제로 기초를 다져요.'],
                     icon: Icons.terminal_rounded,
                   ),
-                  previewNotice,
-                  const SizedBox(height: 20),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      ChoiceChip(
-                        label: const Text('전체 언어'),
-                        selected: _languageId == null,
-                        onSelected: (_) => setState(() => _languageId = null),
-                      ),
-                      for (final language in previewLanguages)
-                        ChoiceChip(
-                          label: Text(language.name),
-                          selected: _languageId == language.id,
-                          onSelected: (_) =>
-                              setState(() => _languageId = language.id),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      ChoiceChip(
-                        label: const Text('전체 유형'),
-                        selected: _type == null,
-                        onSelected: (_) => setState(() => _type = null),
-                      ),
-                      for (final type in LearningQuestionType.values)
-                        ChoiceChip(
-                          label: Text(type.label),
-                          selected: _type == type,
-                          onSelected: (_) => setState(() => _type = type),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  FilterChip(
-                    label: const Text('제출한 문제만 보기'),
-                    selected: _submittedOnly,
-                    onSelected: (value) =>
-                        setState(() => _submittedOnly = value),
+                  LearningListToolbar(
+                    controller: _search,
+                    hint: '문제 검색',
+                    summary:
+                        '${_languageId == null ? '전체 언어' : languageName(_languageId)} · ${_type?.label ?? '전체 유형'}${_submittedOnly ? ' · 제출한 문제' : ''}',
+                    filtered:
+                        _languageId != null || _type != null || _submittedOnly,
+                    onChanged: () => setState(() {}),
+                    onFilter: () async {
+                      final result = await showLearningFilters(
+                        context,
+                        groups: [
+                          LearningFilterGroup('language', '언어', {
+                            'all': '전체 언어',
+                            for (final l in previewLanguages) '${l.id}': l.name,
+                          }),
+                          LearningFilterGroup('type', '문제 유형', {
+                            'all': '전체 유형',
+                            for (final t in LearningQuestionType.values)
+                              t.code: t.label,
+                          }),
+                        ],
+                        current: LearningFilterValues({
+                          'language': _languageId?.toString() ?? 'all',
+                          'type': _type?.code ?? 'all',
+                        }, markedOnly: _submittedOnly),
+                        defaults: const LearningFilterValues({
+                          'language': 'all',
+                          'type': 'all',
+                        }),
+                        markedLabel: '제출한 문제만 보기',
+                      );
+                      if (result != null && mounted) {
+                        setState(() {
+                          _languageId = int.tryParse(
+                            result.selections['language']!,
+                          );
+                          _type = LearningQuestionType.values
+                              .where((t) => t.code == result.selections['type'])
+                              .firstOrNull;
+                          _submittedOnly = result.markedOnly;
+                        });
+                      }
+                    },
                   ),
                   const SizedBox(height: 20),
                   if (items.isEmpty)

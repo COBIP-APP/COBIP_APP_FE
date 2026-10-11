@@ -23,11 +23,14 @@ void main() {
       2,
     );
     await tester.dragUntilVisible(
-      find.widgetWithText(ChoiceChip, 'DB').hitTestable(),
+      find.byTooltip('필터').hitTestable(),
       find.byType(ListView),
       const Offset(0, -150),
     );
+    await tester.tap(find.byTooltip('필터'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, 'DB'));
+    await tester.tap(find.text('적용'));
     await tester.pumpAndSettle();
     final store = tester
         .element(find.byType(NavigationBar))

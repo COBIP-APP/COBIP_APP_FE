@@ -11,7 +11,11 @@ void main() {
     addTearDown(router.dispose);
     await tester.pumpLearningWidget(CobipApp(router: router));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('필터'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Python'));
+    await tester.tap(find.text('적용'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'elif');
     tester.testTextInput.hide();
     await tester.dragUntilVisible(

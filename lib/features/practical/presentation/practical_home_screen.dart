@@ -8,6 +8,7 @@ import '../../learning/data/learning_preview_data.dart';
 import '../../learning/presentation/learning_preview_store.dart';
 import '../../learning/presentation/learning_preview_widgets.dart';
 import 'practical_scaffold.dart';
+import '../../learning/presentation/learning_filter_sheet.dart';
 
 class PracticalHomeScreen extends StatefulWidget {
   const PracticalHomeScreen({super.key});
@@ -50,49 +51,35 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
               lines: ['개념을 넘어 실무에 한 걸음', 'COBIA와 함께 실무 기술을 학습해보세요'],
               icon: Icons.layers_outlined,
             ),
-            previewNotice,
-            const SizedBox(height: 20),
-            TextField(
+            LearningListToolbar(
               controller: _search,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: '주제 또는 키워드 검색',
-                helperText: '현재 목록에서 검색해요.',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  tooltip: '검색어 지우기',
-                  icon: const Icon(Icons.close),
-                  onPressed: () => setState(_search.clear),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadii.card),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('전체'),
-                  selected: _categoryId == null,
-                  onSelected: (_) => setState(() => _categoryId = null),
-                ),
-                for (final category in categories)
-                  ChoiceChip(
-                    label: Text(category.name),
-                    selected: _categoryId == category.id,
-                    onSelected: (_) =>
-                        setState(() => _categoryId = category.id),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            FilterChip(
-              label: const Text('북마크만 보기'),
-              selected: _bookmarksOnly,
-              onSelected: (value) => setState(() => _bookmarksOnly = value),
+              hint: '주제 또는 키워드 검색',
+              summary:
+                  '${_categoryId == null ? '전체 분류' : categoryName(_categoryId!)}${_bookmarksOnly ? ' · 북마크' : ''}',
+              filtered: _categoryId != null || _bookmarksOnly,
+              onChanged: () => setState(() {}),
+              onFilter: () async {
+                final result = await showLearningFilters(
+                  context,
+                  groups: [
+                    LearningFilterGroup('category', '분류', {
+                      'all': '전체',
+                      for (final c in categories) '${c.id}': c.name,
+                    }),
+                  ],
+                  current: LearningFilterValues({
+                    'category': _categoryId?.toString() ?? 'all',
+                  }, markedOnly: _bookmarksOnly),
+                  defaults: const LearningFilterValues({'category': 'all'}),
+                  markedLabel: '북마크만 보기',
+                );
+                if (result != null && mounted) {
+                  setState(() {
+                    _categoryId = int.tryParse(result.selections['category']!);
+                    _bookmarksOnly = result.markedOnly;
+                  });
+                }
+              },
             ),
             const SizedBox(height: 20),
             if (items.isEmpty)

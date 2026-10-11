@@ -74,11 +74,14 @@ void main() {
     await tester.tap(find.byTooltip('뒤로가기'));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
-      find.text('북마크만 보기').hitTestable(),
+      find.byTooltip('필터').hitTestable(),
       find.byType(ListView).first,
       const Offset(0, -200),
     );
+    await tester.tap(find.byTooltip('필터'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('북마크만 보기'));
+    await tester.tap(find.text('적용'));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
       find.text('반복문').hitTestable(),

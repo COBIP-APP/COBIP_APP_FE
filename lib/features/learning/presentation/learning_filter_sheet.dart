@@ -199,13 +199,33 @@ class LearningListToolbar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          IconButton.outlined(
-            tooltip: '필터',
-            onPressed: onFilter,
-            style: IconButton.styleFrom(
-              backgroundColor: filtered ? AppColors.primarySoft : null,
+          Tooltip(
+            message: '필터',
+            child: Semantics(
+              selected: filtered,
+              child: FilledButton.icon(
+                onPressed: onFilter,
+                style: FilledButton.styleFrom(
+                  backgroundColor: filtered
+                      ? AppColors.primary
+                      : AppColors.primarySoft,
+                  foregroundColor: filtered
+                      ? AppColors.surface
+                      : AppColors.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
+                  elevation: 2,
+                  shadowColor: AppColors.primary.withValues(alpha: .25),
+                ),
+                icon: Icon(
+                  filtered ? Icons.filter_alt : Icons.filter_alt_outlined,
+                  size: 20,
+                ),
+                label: const Text('필터'),
+              ),
             ),
-            icon: const Icon(Icons.tune),
           ),
         ],
       ),

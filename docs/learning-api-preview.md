@@ -1,0 +1,58 @@
+# 학습 API 연동 전 화면 미리보기
+
+2026-10-11 기준. BE `develop`의 `docs/learning-api.md`, `docs/auth-fe-alignment.md`, `ContentDtos.java`, `ActivityDtos.java`를 기준으로 화면에 필요한 데이터와 흐름을 정리했다. 실제 학습 API 호출은 추가하지 않았다. 기존 인증·홈의 서버 연동과 챗봇 예시 동작은 그대로다.
+
+## 확인할 화면
+
+| 영역 | 확인할 기능 |
+| --- | --- |
+| 문법 | Java/Python/JavaScript, 현재 목록 검색, 북마크 필터, 학습별 난이도·상태 |
+| 학습 상세 | 설명, 계층 목차, 본문·예제 코드, 이전/다음 목차, 마지막 위치 저장·이어하기, 완료·다시 학습, 연결된 문제 |
+| 실무 | 캐시·DB·네트워크·로그 하위 분류, 검색·북마크, 공통 학습 상세 |
+| 문제 | 언어·유형 필터, 제출한 문제 필터, 객관식·코드 설명·코드 작성의 개별 입력 |
+| 제출 결과 | 제출 답안, 최근 제출 시각, 점수·통과 기준·피드백·해설, 재제출, 관련 학습 목차 이동 |
+
+색상·글꼴·여백 토큰과 공통 카드·버튼·코드 박스·하단 메뉴 디자인은 기존 것을 사용한다. 고정된 오늘 목표/퍼센트, 3문항 묶음 결과, 예제 코드 문자열 비교 채점은 제거했다. API는 마지막 목차와 완료 시각을 제공하므로 진행 상태는 미시작·학습 중·완료로 표시한다.
+
+## 더미 데이터와 상태
+
+- `lib/features/learning/data/learning_models.dart`: 화면에 쓰는 API 필드의 타입. 전체 응답 DTO나 JSON 역직렬화 구현은 아니다.
+- `lib/features/learning/data/learning_preview_data.dart`: 기존 작성 콘텐츠를 템플릿·목차·문제 구조로 변환한 로컬 자료. ID는 미리보기 전용이며 서버 요청에 사용하면 안 된다.
+- `lib/features/learning/presentation/learning_preview_store.dart`: 북마크, 학습 위치, 완료, 문제별 최근 제출을 메모리에 저장한다. 앱을 완전히 종료하거나 계정을 바꾸면 기록이 초기화된다. 계정 변경 전 시작한 요청은 반영하지 않는다.
+- 학습 상세를 여는 것만으로 기록을 쓰지 않는다. 목차 선택/이동, 저장 또는 완료 버튼이 위치를 기록한다. 완료된 학습에서 목차를 이동해도 완료는 유지하며, 다시 학습하기로 해제한다.
+- 객관식은 로컬 가짜 채점 테이블로 `COMPLETED/DB`와 100점 또는 0점을 반환한다. 정답 키는 화면용 문제 모델에 없다.
+- 코드 작성·설명은 BE 현 구현처럼 `PENDING`, 점수·피드백 없음으로 남는다. 자동 AI 채점이나 코드 실행은 하지 않는다.
+- 재제출은 문제별 최근 결과 한 건을 교체한다. 제출 이력 전체를 제공하는 것처럼 표시하지 않는다.
+- `failNextAction`은 개발/테스트용 실패 주입이다. 로딩 실패 재시도, 북마크/학습 저장 실패, 답안 제출 실패 시 입력 보존을 확인할 수 있다.
+
+미리보기에는 언어별 변수·조건문·반복문 학습이 있다. 반복문은 빈 목차 안내를 확인하는 사례다. 조건문에는 부모/자식 목차와 연결 문제가 있다. 실무는 언어가 없는 학습 사례다. 캐시 첫 목차에는 첨부 자료 준비 안내가 있다.
+
+## 다음 API 연결 때 확인할 계약
+
+| 현재 화면 | 연결할 API |
+| --- | --- |
+| 언어·분류 | `GET /api/languages`, `GET /api/categories` |
+| 학습 목록·상세 | `GET /api/templates`, `GET /api/templates/{id}` |
+| 학습 위치·완료 | `GET/PUT /api/users/{userId}/progress/templates/{id}`, 필요 시 `GET /api/users/me/progress` |
+| 북마크 | `GET /api/users/{userId}/bookmarks`, `PUT/DELETE /api/users/{userId}/bookmarks/templates/{id}` |
+| 문제 목록·상세 | `GET /api/questions`, `GET /api/questions/{id}` |
+| 제출·최근 결과 | `POST /api/questions/{id}/submissions`, `GET /api/questions/{id}/submissions/latest?userId=...` |
+
+실제 연결은 기존 인증 Dio를 재사용하고 인증 사용자 ID를 사용한다. 카테고리/언어 ID는 서버 목록에서 매핑한다. 특히 실무 상위 카테고리 필터는 하위 카테고리를 자동 포함하지 않으므로 자식 분류도 조회해야 한다. 검색·유형·제출 여부 필터는 현재 불러온 목록에서 적용하는 FE 기능이다.
+
+목차의 `body`, `exampleCode`, `children`을 그대로 표현한다. 개념/예제/출력값이라는 별도 API 필드는 만들지 않았다. 객관식 `choiceOptions`는 BE에서 JSON 배열까지만 정의되어 있어 현재 `{key, text}` 형태를 내부 미리보기 규칙으로 사용하며 실제 요소 형식은 합의가 필요하다.
+
+미디어는 `objectKey`만 있고 공개 URL/다운로드 계약이 없다. 해당 값을 URL로 요청하지 않으며 첨부 자료 안내만 표시한다. 실제 이미지 표시·업로드는 URL 계약 후 연결한다. `criteriaResults`의 내부 구조와 `aiModelVersion`을 활용한 AI 상세 결과는 AI 계약이 결정된 후 추가한다. 챗봇 API와 관리자 화면은 이번 범위에 포함하지 않았다.
+
+## 경로와 검증
+
+- 문법: `/grammar/{java|python|javascript}/chapters/{templateId}`
+- 실무: `/practical/{categoryId}/templates/{templateId}`
+- 학습 목차 지정: 위 상세 주소의 `?section={sectionId}`
+- 문제: `/problems/{questionId}`
+
+기존 `conditions/example/quiz`, `cache/chapters/basics`, `java-basics` 등 샘플 전용 상세 주소는 새 ID 경로로 교체했다. 인증·홈·마이페이지·챗봇 경로는 유지한다.
+
+검증은 상태 단위 테스트, 학습·문제 위젯 테스트, 기존 인증/홈 회귀 테스트, 320px/큰 글씨/가로 화면의 학습·결과·챗봇 레이아웃 테스트로 구성한다. 명령은 `flutter analyze`, `flutter test`다.
+
+로컬 검증 결과: 테스트 145개 통과, Android debug APK 빌드 성공. 기존 에뮬레이터에 APK를 업데이트하고 실제 렌더링도 확인했다. 학습 API 요청이나 BE 파일·DB 변경은 추가하지 않았다.

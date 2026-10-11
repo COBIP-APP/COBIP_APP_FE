@@ -14,6 +14,25 @@ const previewNotice = LearningNotice(
   '미리보기 · 예시 데이터이며, 학습 기록은 앱을 실행하는 동안만 유지됩니다.',
 );
 
+// The API provides an objectKey, not a public/download URL. Never load it as a URL.
+class PreviewMediaList extends StatelessWidget {
+  const PreviewMediaList({super.key, required this.items});
+  final List<LearningMedia> items;
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      for (final item in items)
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: LearningNotice(
+            '${item.altText ?? item.originalName}\n첨부 자료는 준비 중입니다.',
+            icon: Icons.image_outlined,
+          ),
+        ),
+    ],
+  );
+}
+
 String languageName(int? id) =>
     previewLanguages.where((l) => l.id == id).firstOrNull?.name ?? '언어 공통';
 String categoryName(int id) =>

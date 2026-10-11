@@ -1,3 +1,5 @@
+> 2026-10-11: 학습·문제 화면의 최신 구조와 동작은 [API 연동 전 미리보기](learning-api-preview.md)를 참고하세요. 아래 내용은 이전 화면 구현 기록입니다.
+
 # 학습 화면 디자인 정리
 
 기준 브랜치: develop `80bf6a9` / 작업 브랜치: `feature/learning-ui-revision`

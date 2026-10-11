@@ -32,7 +32,7 @@ class SubmissionPreviewResult extends StatelessWidget {
               ? '채점 대기'
               : complete
               ? '채점 완료'
-              : '채점 상태 확인 필요',
+              : '채점 실패',
           icon: submission.pending
               ? Icons.hourglass_empty
               : Icons.fact_check_outlined,
@@ -42,6 +42,11 @@ class SubmissionPreviewResult extends StatelessWidget {
               if (submission.pending)
                 const Text(
                   '답안을 받았어요. 아직 점수와 피드백이 없습니다.',
+                  style: AppTypography.body,
+                ),
+              if (!submission.pending && !complete)
+                const Text(
+                  '채점을 완료하지 못했어요. 제출한 답안을 확인하고 다시 제출해 주세요.',
                   style: AppTypography.body,
                 ),
               if (complete && submission.score != null) ...[

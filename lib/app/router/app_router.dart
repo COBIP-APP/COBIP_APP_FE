@@ -43,8 +43,6 @@ abstract final class AppRouteNames {
   static const grammar = 'grammar';
   static const grammarChapters = 'grammar-chapters';
   static const grammarConcept = 'grammar-concept';
-  static const grammarExample = 'grammar-example';
-  static const grammarQuiz = 'grammar-quiz';
 }
 
 final appRouter = createAppRouter();

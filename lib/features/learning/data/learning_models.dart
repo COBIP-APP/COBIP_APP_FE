@@ -14,6 +14,19 @@ class LearningCategory {
   final int? parentId;
 }
 
+class LearningMedia {
+  const LearningMedia({
+    required this.id,
+    required this.originalName,
+    required this.objectKey,
+    this.altText,
+  });
+  final int id;
+  final String originalName;
+  final String objectKey;
+  final String? altText;
+}
+
 enum LearningDifficulty {
   easy('EASY', '쉬움'),
   normal('NORMAL', '보통'),
@@ -31,6 +44,7 @@ class TemplateSection {
     this.parentId,
     this.body,
     this.exampleCode,
+    this.media = const [],
     this.children = const [],
   });
   final int id;
@@ -38,6 +52,7 @@ class TemplateSection {
   final String title;
   final String? body;
   final String? exampleCode;
+  final List<LearningMedia> media;
   final List<TemplateSection> children;
   Iterable<TemplateSection> get flattened sync* {
     yield this;
@@ -57,6 +72,7 @@ class LearningTemplate {
     this.languageId,
     this.difficulty = LearningDifficulty.easy,
     required this.sections,
+    this.media = const [],
   });
   final int id;
   final String title;
@@ -66,6 +82,7 @@ class LearningTemplate {
   final int? languageId;
   final LearningDifficulty difficulty;
   final List<TemplateSection> sections;
+  final List<LearningMedia> media;
   List<TemplateSection> get allSections =>
       sections.expand((s) => s.flattened).toList();
 }
@@ -101,6 +118,7 @@ class LearningQuestion {
     this.explanation,
     this.difficulty = LearningDifficulty.easy,
     this.passScore = 60,
+    this.media = const [],
   });
   final int id;
   final String prompt;
@@ -114,6 +132,7 @@ class LearningQuestion {
   final String? explanation;
   final LearningDifficulty difficulty;
   final int passScore;
+  final List<LearningMedia> media;
 }
 
 class LearningProgress {
@@ -155,7 +174,7 @@ class LearningSubmission {
   final String? selectedChoiceKey;
   final String? answerText;
   final String? sourceCode;
-  final int? score;
+  final num? score;
   final String? feedback;
   bool get pending => gradingStatus == 'PENDING';
 }

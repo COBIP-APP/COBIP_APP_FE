@@ -112,6 +112,7 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
                   ),
                 const SizedBox(height: 16),
                 if (_error != null) LearningNotice(_error!),
+                PreviewMediaList(items: item.media),
                 if (sections.isEmpty)
                   const LearningNotice('아직 등록된 목차가 없어요.')
                 else ...[
@@ -158,8 +159,10 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
                           LearningCode(section.exampleCode!),
                         ],
                         if ((section.body?.isEmpty ?? true) &&
-                            (section.exampleCode?.isEmpty ?? true))
+                            (section.exampleCode?.isEmpty ?? true) &&
+                            section.media.isEmpty)
                           const Text('아직 등록된 내용이 없어요.'),
+                        PreviewMediaList(items: section.media),
                       ],
                     ),
                   ),

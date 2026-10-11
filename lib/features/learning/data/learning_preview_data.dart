@@ -40,6 +40,16 @@ final previewTemplates = <LearningTemplate>[
             body:
                 '${practicalTopics[i].chapters[j].summary}\n\n${practicalTopics[i].chapters[j].points.map((p) => '• $p').join('\n\n')}\n\n${practicalTopics[i].chapters[j].explanation}',
             exampleCode: practicalTopics[i].chapters[j].code,
+            media: i == 0 && j == 0
+                ? const [
+                    LearningMedia(
+                      id: 9001,
+                      originalName: 'cache-flow.png',
+                      objectKey: 'preview/cache-flow.png',
+                      altText: '캐시 요청 흐름 참고 이미지',
+                    ),
+                  ]
+                : const [],
           ),
       ],
     ),

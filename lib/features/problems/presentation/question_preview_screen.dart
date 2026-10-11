@@ -50,8 +50,9 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
       setState(() => _editing = false);
       if (_scroll.hasClients) _scroll.jumpTo(0);
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => _error = '답안을 제출하지 못했어요. 입력한 내용은 유지되니 다시 시도해 주세요.');
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -113,6 +114,7 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Text(item.prompt, style: AppTypography.body),
+                                PreviewMediaList(items: item.media),
                                 if (item.codeSnippet?.isNotEmpty == true) ...[
                                   const SizedBox(height: 16),
                                   LearningCode(item.codeSnippet!),

@@ -5,6 +5,7 @@ import 'package:cobip_app_fe/features/learning/presentation/template_preview_scr
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+
 import 'auth_test_support.dart';
 
 void main() {
@@ -21,22 +22,40 @@ void main() {
 
   testWidgets('하위 목차 저장, 완료, 재진입 이어하기와 다시 학습', (tester) async {
     await open(tester, '/grammar/java/chapters/111');
-    final store = tester.element(find.byType(TemplatePreviewScreen)).read<LearningPreviewStore>();
+    final store = tester
+        .element(find.byType(TemplatePreviewScreen))
+        .read<LearningPreviewStore>();
     expect(store.progress(111), isNull);
-    await tester.dragUntilVisible(find.byKey(const ValueKey('section-11105')).hitTestable(), find.byType(ListView).first, const Offset(0, -200));
+    await tester.dragUntilVisible(
+      find.byKey(const ValueKey('section-11105')).hitTestable(),
+      find.byType(ListView).first,
+      const Offset(0, -200),
+    );
     await tester.tap(find.byKey(const ValueKey('section-11105')));
     await tester.pumpAndSettle();
     expect(store.progress(111)!.lastSectionId, 11105);
-    await tester.dragUntilVisible(find.text('학습 완료').hitTestable(), find.byType(ListView).first, const Offset(0, -200));
+    await tester.dragUntilVisible(
+      find.text('학습 완료').hitTestable(),
+      find.byType(ListView).first,
+      const Offset(0, -200),
+    );
     await tester.tap(find.text('학습 완료'));
     await tester.pumpAndSettle();
     expect(store.progress(111)!.label, '완료');
     await tester.tap(find.byTooltip('뒤로가기'));
     await tester.pumpAndSettle();
-    await tester.dragUntilVisible(find.text('조건문').hitTestable(), find.byType(ListView).first, const Offset(0, -200));
+    await tester.dragUntilVisible(
+      find.text('조건문').hitTestable(),
+      find.byType(ListView).first,
+      const Offset(0, -200),
+    );
     await tester.tap(find.text('조건문'));
     await tester.pumpAndSettle();
-    await tester.dragUntilVisible(find.text('다시 학습하기').hitTestable(), find.byType(ListView).first, const Offset(0, -200));
+    await tester.dragUntilVisible(
+      find.text('다시 학습하기').hitTestable(),
+      find.byType(ListView).first,
+      const Offset(0, -200),
+    );
     await tester.tap(find.text('다시 학습하기'));
     await tester.pumpAndSettle();
     expect(store.progress(111)!.label, '학습 중');
@@ -54,10 +73,18 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('뒤로가기'));
     await tester.pumpAndSettle();
-    await tester.dragUntilVisible(find.text('북마크만 보기').hitTestable(), find.byType(ListView).first, const Offset(0, -200));
+    await tester.dragUntilVisible(
+      find.text('북마크만 보기').hitTestable(),
+      find.byType(ListView).first,
+      const Offset(0, -200),
+    );
     await tester.tap(find.text('북마크만 보기'));
     await tester.pumpAndSettle();
-    await tester.dragUntilVisible(find.text('반복문').hitTestable(), find.byType(ListView).first, const Offset(0, -200));
+    await tester.dragUntilVisible(
+      find.text('반복문').hitTestable(),
+      find.byType(ListView).first,
+      const Offset(0, -200),
+    );
     expect(find.text('조건문'), findsNothing);
     expect(find.text('반복문'), findsOneWidget);
   });
@@ -68,4 +95,3 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 }
-

@@ -1,6 +1,8 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:cobip_app_fe/app/app_ui_tokens.dart';
+import 'package:cobip_app_fe/app/widgets/learning_card.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_preview_widgets.dart';
 import 'package:cobip_app_fe/features/grammar/presentation/grammar_lesson_screen.dart';
 import 'package:cobip_app_fe/features/grammar/presentation/grammar_practice_screen.dart';
 import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
@@ -21,7 +23,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('학습 완료 후 세 문제를 함께 풀고 한 번에 정오답을 확인한다', (tester) async {
+  testWidgets('본문만 읽거나 오답이 있으면 완료하지 않고 세 문제 결과를 함께 확인한다', (tester) async {
     final router = createAppRouter(
       initialLocation: '/grammar/java/chapters/111?section=11105',
     );
@@ -33,16 +35,17 @@ void main() {
         .read<LearningPreviewStore>();
     expect(find.text(store.template(111)!.description), findsNothing);
     expect(find.text('문제 풀기'), findsNothing);
-    await reveal(tester, find.text('학습 완료'));
+    await reveal(tester, find.text('본문 읽기 완료'));
     store.failNextAction = true;
-    await tester.tap(find.text('학습 완료'));
+    await tester.tap(find.text('본문 읽기 완료'));
     await tester.pumpAndSettle();
-    expect(store.progress(111), isNull);
+    expect(store.progress(111)!.completedAt, isNull);
     expect(find.text('문제 풀기'), findsNothing);
-    await reveal(tester, find.text('학습 완료'));
-    await tester.tap(find.text('학습 완료'));
+    await reveal(tester, find.text('본문 읽기 완료'));
+    await tester.tap(find.text('본문 읽기 완료'));
     await tester.pumpAndSettle();
-    expect(find.text('학습을 마쳤어요'), findsOneWidget);
+    expect(find.text('본문을 다 읽었어요'), findsOneWidget);
+    expect(store.progress(111)!.completedAt, isNull);
     expect(find.text('학습 목차'), findsNothing);
     await tester.tap(find.text('문제 풀기'));
     await tester.pumpAndSettle();
@@ -102,6 +105,7 @@ void main() {
       expect(find.text(explanation), findsNothing);
     }
     expect(find.text('학습 끝내기'), findsNothing);
+    expect(store.progress(111)!.completedAt, isNull);
     expect(find.text('다음 문제'), findsNothing);
     await reveal(tester, find.text('다시 풀기'));
     await tester.tap(find.text('다시 풀기'));
@@ -111,7 +115,7 @@ void main() {
     await reveal(tester, find.text('학습으로 돌아가기'));
     await tester.tap(find.text('학습으로 돌아가기'));
     await tester.pumpAndSettle();
-    expect(find.text('학습을 마쳤어요'), findsOneWidget);
+    expect(find.text('본문을 다 읽었어요'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -162,6 +166,26 @@ void main() {
       expect(store.progress(entry.value)!.completedAt, isNotNull);
       await reveal(tester, find.textContaining('학습 완료 · 복습하기'));
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      final card = find.byWidgetPredicate(
+        (w) => w is TemplatePreviewCard && w.item.id == entry.value,
+      );
+      expect(
+        tester
+            .widget<LearningCard>(
+              find.descendant(of: card, matching: find.byType(LearningCard)),
+            )
+            .borderColor,
+        AppColors.success,
+      );
+      if (entry.key == 'java') {
+        await tester.tap(find.text('조건문'));
+        await tester.pumpAndSettle();
+        await reveal(tester, find.text('다시 학습하기'));
+        await tester.tap(find.text('다시 학습하기'));
+        await tester.pumpAndSettle();
+        expect(store.progress(entry.value)!.completedAt, isNull);
+        expect(store.progress(entry.value)!.lastSectionId, 11101);
+      }
       expect(tester.takeException(), isNull);
     });
   }
@@ -239,7 +263,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('목차 닫기'));
       await tester.pumpAndSettle();
-      expect(store.progress(111), isNull);
+      expect(store.progress(111)!.lastSectionId, 11101);
+      expect(store.progress(111)!.completedAt, isNull);
       await tester.tap(find.byTooltip('목차'));
       await tester.pumpAndSettle();
       await reveal(tester, find.byKey(const ValueKey('section-11105')));

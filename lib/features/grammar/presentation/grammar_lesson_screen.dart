@@ -27,9 +27,14 @@ class _GrammarLessonScreenState extends State<GrammarLessonScreen> {
   int? _selectedId;
   bool _finished = false;
   bool _busy = false;
+  bool _entryRequested = false;
   String? _error;
 
-  Future<void> _save(TemplateSection section, {bool? completed}) async {
+  Future<void> _save(
+    TemplateSection section, {
+    bool? completed,
+    bool finishReading = false,
+  }) async {
     setState(() {
       _busy = true;
       _error = null;
@@ -43,7 +48,7 @@ class _GrammarLessonScreenState extends State<GrammarLessonScreen> {
       if (!mounted) return;
       setState(() {
         _selectedId = section.id;
-        _finished = completed == true;
+        _finished = finishReading || completed == true;
       });
       if (_scroll.hasClients) _scroll.jumpTo(0);
     } catch (_) {
@@ -147,6 +152,14 @@ class _GrammarLessonScreenState extends State<GrammarLessonScreen> {
     final questions = store.questions
         .where((q) => q.relatedTemplateId == widget.templateId)
         .toList();
+    if (!_entryRequested &&
+        store.state == PreviewLoadState.ready &&
+        section != null) {
+      _entryRequested = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _save(section);
+      });
+    }
     return GrammarScaffold(
       title: item?.title ?? '문법 학습',
       actions: item == null
@@ -174,7 +187,7 @@ class _GrammarLessonScreenState extends State<GrammarLessonScreen> {
                   ],
                   if (_finished) ...[
                     LearningSection(
-                      title: '학습을 마쳤어요',
+                      title: questions.isEmpty ? '학습을 마쳤어요' : '본문을 다 읽었어요',
                       emphasizedShadow: true,
                       icon: Icons.check_circle_outline,
                       child: Text(
@@ -273,8 +286,16 @@ class _GrammarLessonScreenState extends State<GrammarLessonScreen> {
                                 : FilledButton(
                                     onPressed: _busy
                                         ? null
-                                        : () => _save(section, completed: true),
-                                    child: const Text('학습 완료'),
+                                        : () => _save(
+                                            section,
+                                            completed: questions.isEmpty
+                                                ? true
+                                                : null,
+                                            finishReading: true,
+                                          ),
+                                    child: Text(
+                                      questions.isEmpty ? '학습 완료' : '본문 읽기 완료',
+                                    ),
                                   ),
                           ),
                         ),

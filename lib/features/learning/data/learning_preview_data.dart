@@ -4,6 +4,7 @@ import '../../grammar/data/grammar_sample_data.dart';
 import '../../practical/data/practical_sample_data.dart';
 import '../../problems/data/problem_sample_data.dart';
 import 'learning_models.dart';
+import 'practical_quiz_preview_data.dart';
 
 // Existing authored sample text is adapted into the BE template/section shape.
 // IDs belong only to the preview. They must never be sent to the live server.
@@ -160,6 +161,23 @@ final previewQuestions = <LearningQuestion>[
         ],
         explanation: conditionQuestions(language)[i].explanation,
       ),
+  for (var i = 0; i < practicalQuizSamples.length; i++)
+    LearningQuestion(
+      id: 3000 + i,
+      prompt: practicalQuizSamples[i].prompt,
+      questionType: LearningQuestionType.multipleChoice,
+      categoryId: practicalQuizSamples[i].templateId - 197,
+      relatedTemplateId: practicalQuizSamples[i].templateId,
+      relatedSectionId: practicalQuizSamples[i].templateId * 100 + 1,
+      choiceOptions: [
+        for (var j = 0; j < practicalQuizSamples[i].choices.length; j++)
+          LearningChoice(
+            String.fromCharCode(65 + j),
+            practicalQuizSamples[i].choices[j],
+          ),
+      ],
+      explanation: practicalQuizSamples[i].explanation,
+    ),
   for (var i = 0; i < problemMissions.length; i++) ...[
     LearningQuestion(
       id: 2000 + i * 10,
@@ -197,6 +215,8 @@ final previewQuestions = <LearningQuestion>[
 
 // Fake server-side answer table. Public question models expose no correct key.
 final previewAnswerKeys = <int, String>{
+  for (var i = 0; i < practicalQuizSamples.length; i++)
+    3000 + i: practicalQuizSamples[i].answer,
   for (final language in GrammarLanguage.values)
     for (var i = 0; i < conditionQuestions(language).length; i++)
       1000 + language.index * 10 + i: String.fromCharCode(

@@ -23,6 +23,7 @@ import '../../features/grammar/presentation/grammar_home_screen.dart';
 import '../../features/grammar/presentation/grammar_lesson_screen.dart';
 import '../../features/grammar/presentation/grammar_practice_screen.dart';
 import '../../features/learning/presentation/template_preview_screen.dart';
+import '../../features/learning/presentation/learning_practice_screen.dart';
 
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my_page/presentation/my_page_screen.dart';
@@ -153,6 +154,13 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/learning-practice/:template',
+      builder: (context, state) => LearningPracticeScreen(
+        key: ValueKey(state.pathParameters['template']),
+        templateId: int.tryParse(state.pathParameters['template']!) ?? -1,
+      ),
     ),
     GoRoute(
       path: '/grammar-practice/:template',

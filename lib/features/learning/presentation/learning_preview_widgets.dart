@@ -40,6 +40,9 @@ String categoryName(int id) =>
 String templateLocation(LearningTemplate item) => item.categoryId == 1
     ? '/grammar/${previewLanguages.firstWhere((l) => l.id == item.languageId).code.toLowerCase()}/chapters/${item.id}'
     : '/practical/${item.categoryId}/templates/${item.id}';
+String templateListLocation(LearningTemplate item) => item.categoryId == 1
+    ? '/grammar/${previewLanguages.firstWhere((l) => l.id == item.languageId).code.toLowerCase()}/chapters'
+    : '/practical/${item.categoryId}/templates';
 String previewDate(DateTime value) =>
     '${value.month}/${value.day} ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
 
@@ -116,14 +119,13 @@ class TemplatePreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = context.watch<LearningPreviewStore>().progress(item.id);
-    final grammarCompleted =
-        item.categoryId == 1 && progress?.completedAt != null;
-    final grammarStarted = item.categoryId == 1 && progress != null;
+    final completed = progress?.completedAt != null;
+    final started = progress != null;
     return LearningCard(
       emphasizedShadow: true,
-      backgroundColor: grammarCompleted
+      backgroundColor: completed
           ? AppColors.completedSurface
-          : grammarStarted
+          : started
           ? AppColors.inProgressSurface
           : AppColors.surface,
       margin: const EdgeInsets.only(bottom: 16),
@@ -138,17 +140,17 @@ class TemplatePreviewCard extends StatelessWidget {
               ? Icons.menu_book_outlined
               : Icons.layers_outlined,
           action: BookmarkButton(templateId: item.id),
-          footerIcon: grammarCompleted
+          footerIcon: completed
               ? Icons.check_circle
-              : grammarStarted
+              : started
               ? Icons.play_circle_outline
               : null,
-          footerColor: grammarCompleted
+          footerColor: completed
               ? AppColors.success
-              : grammarStarted
+              : started
               ? AppColors.warning
               : null,
-          footer: grammarCompleted
+          footer: completed
               ? '${item.difficulty.label} · 학습 완료 · 복습하기'
               : '${item.difficulty.label} · ${progress?.label ?? '미시작'} · ${progress == null ? '학습하기' : '이어하기'}',
         ),

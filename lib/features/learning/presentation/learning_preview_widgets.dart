@@ -121,12 +121,11 @@ class TemplatePreviewCard extends StatelessWidget {
     final grammarStarted = item.categoryId == 1 && progress != null;
     return LearningCard(
       emphasizedShadow: true,
-      borderColor: grammarCompleted
-          ? AppColors.success
+      backgroundColor: grammarCompleted
+          ? AppColors.completedSurface
           : grammarStarted
-          ? AppColors.inProgress
-          : AppColors.border,
-      borderWidth: grammarStarted ? 1.5 : 1,
+          ? AppColors.inProgressSurface
+          : AppColors.surface,
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () => context.push(templateLocation(item)),

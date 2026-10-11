@@ -174,8 +174,8 @@ void main() {
             .widget<LearningCard>(
               find.descendant(of: card, matching: find.byType(LearningCard)),
             )
-            .borderColor,
-        AppColors.success,
+            .backgroundColor,
+        AppColors.completedSurface,
       );
       if (entry.key == 'java') {
         await tester.tap(find.text('조건문'));

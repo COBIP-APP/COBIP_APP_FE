@@ -23,7 +23,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('첫 목차와 중간 학습을 저장하고 본문만 읽은 학습은 노란 테두리로 이어간다', (tester) async {
+  testWidgets('첫 목차와 중간 학습을 저장하고 본문만 읽은 학습은 연한 노란 배경으로 이어간다', (tester) async {
     await open(tester, '/grammar/java/chapters/111');
     final store = tester
         .element(find.byType(GrammarLessonScreen))
@@ -78,8 +78,8 @@ void main() {
           .widget<LearningCard>(
             find.descendant(of: card, matching: find.byType(LearningCard)),
           )
-          .borderColor,
-      AppColors.inProgress,
+          .backgroundColor,
+      AppColors.inProgressSurface,
     );
     await tester.tap(find.text('조건문'));
     await tester.pumpAndSettle();

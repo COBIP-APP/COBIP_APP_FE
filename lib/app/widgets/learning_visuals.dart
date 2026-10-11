@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_ui_tokens.dart';
+import 'learning_card.dart';
 
 class LearningCodeFrame extends StatelessWidget {
   const LearningCodeFrame({super.key, required this.child});
@@ -139,15 +140,16 @@ class LearningSection extends StatelessWidget {
     required this.icon,
     required this.child,
     this.label,
+    this.emphasizedShadow = false,
   });
   final String title;
   final String? label;
   final IconData icon;
   final Widget child;
+  final bool emphasizedShadow;
   @override
-  Widget build(BuildContext context) => Card(
-    clipBehavior: Clip.antiAlias,
-    child: Column(
+  Widget build(BuildContext context) {
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
@@ -187,8 +189,11 @@ class LearningSection extends StatelessWidget {
         ),
         Padding(padding: const EdgeInsets.all(16), child: child),
       ],
-    ),
-  );
+    );
+    return emphasizedShadow
+        ? LearningCard(emphasizedShadow: true, child: content)
+        : Card(clipBehavior: Clip.antiAlias, child: content);
+  }
 }
 
 class LearningNotice extends StatelessWidget {

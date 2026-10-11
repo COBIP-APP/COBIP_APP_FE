@@ -21,17 +21,6 @@ class ProblemMission {
   final String choiceExplanation;
   final String outputCode;
   final String outputAnswer;
-  bool matchesSampleCode(String code) =>
-      code.replaceAll('\r\n', '\n').trim() == sampleCode.trim();
-
-  String get title => '$language 기초 미션';
-
-  static ProblemMission? fromId(String? id) {
-    for (final mission in problemMissions) {
-      if (mission.id == id) return mission;
-    }
-    return null;
-  }
 }
 
 const problemMissions = [

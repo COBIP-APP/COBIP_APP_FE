@@ -1,3 +1,5 @@
+> 2026-10-11: 학습·문제 화면의 최신 구조와 동작은 [API 연동 전 미리보기](learning-api-preview.md)를 참고하세요. 아래 내용은 이전 화면 구현 기록입니다.
+
 # 실무 학습 화면
 
 문법 화면에서 이어지는 `feature/practical-learning-screens` 브랜치에서 작업합니다.

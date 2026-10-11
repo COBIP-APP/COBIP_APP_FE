@@ -1,3 +1,5 @@
+> 2026-10-11: 학습·문제 화면의 최신 구조와 동작은 [API 연동 전 미리보기](learning-api-preview.md)를 참고하세요. 아래 내용은 이전 화면 구현 기록입니다.
+
 # 문제 풀이와 챗봇 패널
 
 최신 develop의 실무·마이페이지 병합 내용에서 `feature/problems-chat-panel`을 생성했습니다.
@@ -36,4 +38,3 @@
 
 - `test/problems_chat_test.dart`: 문제 진입·답안 입력·결과 복귀, 대화/임시 입력 유지, 빈 메시지 비활성화, 작은 화면과 키보드, 잘못된 경로 검증.
 - `docs/screenshots/problems-home.png`, `problem-mission.png`, `problem-result.png`, `chat-panel.png`는 한글 폰트를 적용한 위젯 렌더링 이미지입니다. 실제 Android 캡처와는 차이가 있습니다.
-

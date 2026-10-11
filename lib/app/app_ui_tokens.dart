@@ -17,6 +17,8 @@ abstract final class AppColors {
   static const success = Color(0xFF23815A);
   static const error = Color(0xFFC33F60);
   static const warning = Color(0xFF8A5A12);
+  static const inProgressSurface = Color(0xFFFFFDE7);
+  static const completedSurface = Color(0xFFEDFFF2);
 }
 
 abstract final class AppSpacing {

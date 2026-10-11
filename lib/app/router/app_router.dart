@@ -1,9 +1,8 @@
 import '../../features/chat/presentation/chat_screen.dart';
-import '../../features/problems/data/problem_sample_data.dart';
+
 import '../../features/problems/presentation/problems_home_screen.dart';
-import '../../features/problems/presentation/problem_mission_screen.dart';
-import '../../features/practical/presentation/practical_chapter_screen.dart';
-import '../../features/practical/data/practical_sample_data.dart';
+import '../../features/problems/presentation/question_preview_screen.dart';
+
 import '../../features/practical/presentation/practical_chapters_screen.dart';
 import '../../features/practical/presentation/practical_home_screen.dart';
 
@@ -21,9 +20,11 @@ import '../../features/auth/presentation/terms_screen.dart';
 import '../../features/grammar/data/grammar_sample_data.dart';
 import '../../features/grammar/presentation/grammar_chapters_screen.dart';
 import '../../features/grammar/presentation/grammar_home_screen.dart';
-import '../../features/grammar/presentation/grammar_quiz_screen.dart';
-import '../../features/grammar/presentation/grammar_concept_screen.dart';
-import '../../features/grammar/presentation/grammar_example_screen.dart';
+import '../../features/grammar/presentation/grammar_lesson_screen.dart';
+import '../../features/grammar/presentation/grammar_practice_screen.dart';
+import '../../features/learning/presentation/template_preview_screen.dart';
+import '../../features/learning/presentation/learning_practice_screen.dart';
+
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my_page/presentation/my_page_screen.dart';
 
@@ -45,51 +46,6 @@ abstract final class AppRouteNames {
   static const grammar = 'grammar';
   static const grammarChapters = 'grammar-chapters';
   static const grammarConcept = 'grammar-concept';
-  static const grammarExample = 'grammar-example';
-  static const grammarQuiz = 'grammar-quiz';
-}
-
-// 새 챕터의 상세 경로를 여기에 등록하면 메인과 전체 목록에 함께 연결됩니다.
-final grammarChapterRoutes = <String, GoRoute>{
-  'conditions': GoRoute(
-    path: 'conditions',
-    name: AppRouteNames.grammarConcept,
-    routes: [
-      GoRoute(
-        path: 'example',
-        name: AppRouteNames.grammarExample,
-        routes: [
-          GoRoute(
-            path: 'quiz',
-            name: AppRouteNames.grammarQuiz,
-            builder: (context, state) => GrammarQuizScreen(
-              language: GrammarLanguage.fromId(
-                state.pathParameters['language']!,
-              )!,
-            ),
-          ),
-        ],
-        builder: (context, state) => GrammarExampleScreen(
-          language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
-        ),
-      ),
-    ],
-    builder: (context, state) => GrammarConceptScreen(
-      language: GrammarLanguage.fromId(state.pathParameters['language']!)!,
-    ),
-  ),
-};
-
-void openGrammarChapter(
-  BuildContext context,
-  GrammarLanguage language,
-  GrammarChapter chapter,
-) {
-  final route = grammarChapterRoutes[chapter.id];
-  if (route == null) return;
-  FocusScope.of(context).unfocus();
-  // 중첩 경로가 메인 → 전체 목록 → 상세의 뒤로가기 순서를 구성합니다.
-  context.goNamed(route.name!, pathParameters: {'language': language.id});
 }
 
 final appRouter = createAppRouter();
@@ -158,13 +114,9 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
         GoRoute(
           path: ':mission',
           name: AppRouteNames.problemMission,
-          redirect: (context, state) =>
-              ProblemMission.fromId(state.pathParameters['mission']) == null
-              ? '/problems'
-              : null,
-          builder: (context, state) => ProblemMissionScreen(
+          builder: (context, state) => QuestionPreviewScreen(
             key: ValueKey(state.pathParameters['mission']),
-            mission: ProblemMission.fromId(state.pathParameters['mission'])!,
+            questionId: int.tryParse(state.pathParameters['mission']!) ?? -1,
           ),
         ),
       ],
@@ -177,49 +129,45 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
     GoRoute(
       path: '/practical',
       name: AppRouteNames.practical,
+      builder: (context, state) => const PracticalHomeScreen(),
       routes: [
         GoRoute(
-          path: ':topic/chapters',
+          path: ':topic/templates',
           name: AppRouteNames.practicalChapters,
+          builder: (context, state) => PracticalChaptersScreen(
+            categoryId: int.tryParse(state.pathParameters['topic']!) ?? -1,
+          ),
           routes: [
             GoRoute(
-              path: ':chapter',
+              path: ':template',
               name: AppRouteNames.practicalChapter,
-              redirect: (context, state) {
-                final topic = PracticalTopic.fromId(
-                  state.pathParameters['topic'],
-                );
-                if (topic == null) return '/practical';
-                return topic.chapters.any(
-                      (chapter) =>
-                          chapter.id == state.pathParameters['chapter'],
-                    )
-                    ? null
-                    : '/practical/${topic.id}/chapters';
-              },
-              builder: (context, state) {
-                final topic = PracticalTopic.fromId(
-                  state.pathParameters['topic'],
-                )!;
-                return PracticalChapterScreen(
-                  topic: topic,
-                  chapterIndex: topic.chapters.indexWhere(
-                    (chapter) => chapter.id == state.pathParameters['chapter'],
-                  ),
-                );
-              },
+              builder: (context, state) => TemplatePreviewScreen(
+                key: ValueKey(state.uri.toString()),
+                practical: true,
+                templateId:
+                    int.tryParse(state.pathParameters['template']!) ?? -1,
+                sectionId: int.tryParse(
+                  state.uri.queryParameters['section'] ?? '',
+                ),
+              ),
             ),
           ],
-          redirect: (context, state) =>
-              PracticalTopic.fromId(state.pathParameters['topic']) == null
-              ? '/practical'
-              : null,
-          builder: (context, state) => PracticalChaptersScreen(
-            topic: PracticalTopic.fromId(state.pathParameters['topic'])!,
-          ),
         ),
       ],
-      builder: (context, state) => const PracticalHomeScreen(),
+    ),
+    GoRoute(
+      path: '/learning-practice/:template',
+      builder: (context, state) => LearningPracticeScreen(
+        key: ValueKey(state.pathParameters['template']),
+        templateId: int.tryParse(state.pathParameters['template']!) ?? -1,
+      ),
+    ),
+    GoRoute(
+      path: '/grammar-practice/:template',
+      builder: (context, state) => GrammarPracticeScreen(
+        key: ValueKey(state.pathParameters['template']),
+        templateId: int.tryParse(state.pathParameters['template']!) ?? -1,
+      ),
     ),
     GoRoute(
       path: '/grammar',
@@ -229,7 +177,20 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
         GoRoute(
           path: ':language/chapters',
           name: AppRouteNames.grammarChapters,
-          routes: grammarChapterRoutes.values.toList(),
+          routes: [
+            GoRoute(
+              path: ':template',
+              name: AppRouteNames.grammarConcept,
+              builder: (context, state) => GrammarLessonScreen(
+                key: ValueKey(state.uri.toString()),
+                templateId:
+                    int.tryParse(state.pathParameters['template']!) ?? -1,
+                sectionId: int.tryParse(
+                  state.uri.queryParameters['section'] ?? '',
+                ),
+              ),
+            ),
+          ],
           redirect: (context, state) =>
               GrammarLanguage.fromId(state.pathParameters['language']!) == null
               ? '/grammar'

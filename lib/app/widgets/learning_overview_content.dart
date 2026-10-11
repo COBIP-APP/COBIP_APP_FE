@@ -14,12 +14,18 @@ class LearningOverviewContent extends StatelessWidget {
     required this.footer,
     this.tags = const [],
     this.enabled = true,
+    this.action,
+    this.footerIcon,
+    this.footerColor,
   });
 
   final String label, title, description, footer;
   final IconData icon;
   final List<String> tags;
   final bool enabled;
+  final Widget? action;
+  final IconData? footerIcon;
+  final Color? footerColor;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -65,53 +71,56 @@ class LearningOverviewContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                ExcludeSemantics(
-                  child: SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 4,
-                          right: 0,
-                          child: Transform.rotate(
-                            angle: .12,
+                if (action != null)
+                  action!
+                else
+                  ExcludeSemantics(
+                    child: SizedBox(
+                      width: 64,
+                      height: 64,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: 4,
+                            right: 0,
+                            child: Transform.rotate(
+                              angle: .12,
+                              child: Container(
+                                width: 54,
+                                height: 54,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primarySoft,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 0,
+                            left: 0,
                             child: Container(
                               width: 54,
                               height: 54,
                               decoration: BoxDecoration(
-                                color: AppColors.primarySoft,
+                                color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          child: Container(
-                            width: 54,
-                            height: 54,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: .18,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(
+                                      alpha: .18,
+                                    ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
                                   ),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
+                                ],
+                              ),
+                              child: Icon(icon, color: Colors.white, size: 28),
                             ),
-                            child: Icon(icon, color: Colors.white, size: 28),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -144,12 +153,25 @@ class LearningOverviewContent extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              enabled ? Icons.auto_stories_outlined : Icons.menu_book_outlined,
+              footerIcon ??
+                  (enabled
+                      ? Icons.auto_stories_outlined
+                      : Icons.menu_book_outlined),
               size: 18,
-              color: AppColors.primary,
+              color: footerColor ?? AppColors.primary,
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text(footer, style: AppTypography.meta)),
+            Expanded(
+              child: Text(
+                footer,
+                style: footerColor == null
+                    ? AppTypography.meta
+                    : AppTypography.meta.copyWith(
+                        color: footerColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+              ),
+            ),
             if (enabled) ...[
               const SizedBox(width: 12),
               const LearningCardArrow(),

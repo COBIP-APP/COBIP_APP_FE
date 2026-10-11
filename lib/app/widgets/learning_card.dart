@@ -10,11 +10,13 @@ class LearningCard extends StatelessWidget {
     this.onTap,
     this.emphasizedShadow = false,
     this.margin = EdgeInsets.zero,
+    this.backgroundColor = AppColors.surface,
   });
   final Widget child;
   final VoidCallback? onTap;
   final bool emphasizedShadow;
   final EdgeInsetsGeometry margin;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -44,7 +46,7 @@ class LearningCard extends StatelessWidget {
               ],
       ),
       child: Material(
-        color: AppColors.surface,
+        color: backgroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.card),
           side: const BorderSide(color: AppColors.border),

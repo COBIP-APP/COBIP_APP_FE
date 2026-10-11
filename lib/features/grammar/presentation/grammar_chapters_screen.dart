@@ -1,114 +1,41 @@
-import '../../../app/widgets/learning_visuals.dart';
-import '../../../app/widgets/learning_card.dart';
-import '../../../app/widgets/learning_ui.dart';
-import '../../../app/app_ui_tokens.dart';
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../../app/router/app_router.dart';
-
+import '../../../app/app_ui_tokens.dart';
+import '../../../app/widgets/learning_visuals.dart';
+import '../../learning/presentation/learning_preview_store.dart';
+import '../../learning/presentation/learning_preview_widgets.dart';
 import '../data/grammar_sample_data.dart';
 import 'grammar_scaffold.dart';
 
 class GrammarChaptersScreen extends StatelessWidget {
   const GrammarChaptersScreen({super.key, required this.language});
-
   final GrammarLanguage language;
-
   @override
   Widget build(BuildContext context) {
-    final chapters = grammarSampleChapters[language]!;
+    final items = context
+        .watch<LearningPreviewStore>()
+        .templates
+        .where((t) => t.categoryId == 1 && t.languageId == language.index + 1)
+        .toList();
     return GrammarScaffold(
       title: '${language.label} 문법',
-      body: ListView(
-        padding: AppSpacing.pagePadding(context).copyWith(bottom: 88),
-        children: [
-          LearningHero(
-            title: '문법 챕터',
-            description: '범위별로 학습할 내용과 진행 상태를 확인해 보세요.',
-            eyebrow: language.label,
-            art: 'login_code',
-          ),
-          const SizedBox(height: AppSpacing.section),
-          Text('${chapters.length}개 챕터 · 예시 진행률'),
-          const SizedBox(height: 12),
-          for (final chapter in chapters)
-            _ChapterCard(
-              chapter: chapter,
-              onTap: grammarChapterRoutes.containsKey(chapter.id)
-                  ? () => openGrammarChapter(context, language, chapter)
-                  : null,
+      body: PreviewContent(
+        child: ListView(
+          padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
+          children: [
+            LearningHero(
+              title: '문법 챕터',
+              description: '학습할 내용과 마지막 학습 상태를 확인해 보세요.',
+              eyebrow: language.label,
+              art: 'login_code',
             ),
-          const SizedBox(height: 16),
-          const Text('학습 가능한 챕터를 눌러 개념을 학습해 보세요.'),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChapterCard extends StatelessWidget {
-  const _ChapterCard({required this.chapter, this.onTap});
-
-  final GrammarChapter chapter;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final icon = switch (chapter.category) {
-      GrammarCategory.basics => Icons.code,
-      GrammarCategory.control => Icons.alt_route,
-      GrammarCategory.objects => Icons.account_tree_outlined,
-      GrammarCategory.collections => Icons.data_array,
-    };
-    return LearningCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              LearningIcon(icon, size: 48),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      chapter.title,
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    if (onTap != null) const Text('개념 학습하기 ›'),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${chapter.category.label} · ${chapter.status}',
-                      style: TextStyle(color: colors.primary),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(chapter.description, style: AppTypography.helper),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: LinearProgressIndicator(
-                            value: chapter.progress,
-                            semanticsLabel: '${chapter.title} 진행률',
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text('${(chapter.progress * 100).round()}%'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            const SizedBox(height: 16),
+            previewNotice,
+            const SizedBox(height: 20),
+            if (items.isEmpty) const LearningNotice('아직 등록된 학습이 없어요.'),
+            for (final item in items) TemplatePreviewCard(item: item),
+          ],
         ),
       ),
     );

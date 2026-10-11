@@ -1,170 +1,120 @@
-import '../../../app/widgets/learning_overview_content.dart';
-import '../../../app/widgets/learning_card.dart';
-import '../../../app/widgets/learning_ui.dart';
-import '../../../app/app_ui_tokens.dart';
+import '../../../app/widgets/app_home_header.dart';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../../../app/router/app_router.dart';
-import '../data/grammar_sample_data.dart';
+import '../../../app/app_ui_tokens.dart';
+import '../../../app/widgets/learning_ui.dart';
+import '../../../app/widgets/learning_visuals.dart';
+import '../../learning/data/learning_preview_data.dart';
+import '../../learning/presentation/learning_preview_store.dart';
+import '../../learning/presentation/learning_preview_widgets.dart';
 import 'grammar_scaffold.dart';
+import '../../learning/presentation/learning_filter_sheet.dart';
 
 class GrammarHomeScreen extends StatefulWidget {
   const GrammarHomeScreen({super.key});
-
   @override
   State<GrammarHomeScreen> createState() => _GrammarHomeScreenState();
 }
 
 class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
-  GrammarLanguage _language = GrammarLanguage.java;
-  final _searchController = TextEditingController();
-
-  void _openChapters() {
-    FocusScope.of(context).unfocus();
-    context.pushNamed(
-      AppRouteNames.grammarChapters,
-      pathParameters: {'language': _language.id},
-    );
-  }
-
+  int _languageId = 1;
+  bool _bookmarksOnly = false;
+  final _search = TextEditingController();
   @override
   void dispose() {
-    _searchController.dispose();
+    _search.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final query = _searchController.text.trim().toLowerCase();
-    final chapters = grammarSampleChapters[_language]!
+    final store = context.watch<LearningPreviewStore>();
+    final language = previewLanguages.firstWhere((l) => l.id == _languageId);
+    final query = _search.text.trim().toLowerCase();
+    final items = store.templates
         .where(
-          (chapter) => '${chapter.title} ${chapter.description}'
-              .toLowerCase()
-              .contains(query),
+          (t) =>
+              t.categoryId == 1 &&
+              t.languageId == _languageId &&
+              (!_bookmarksOnly || store.bookmarked(t.id)) &&
+              '${t.title} ${t.summary}'.toLowerCase().contains(query),
         )
         .toList();
-
     return GrammarScaffold(
       title: '문법 학습',
       isOverview: true,
-      body: ListView(
-        padding: AppSpacing.pagePadding(context),
-        children: [
-          LearningIntro(
-            title: '문법 학습',
-            lines: ['코드를 더 잘 이해하는 시작', 'COBIA와 함께 문법을 학습해보세요'],
-            icon: Icons.menu_book_outlined,
-          ),
-          Card(
-            color: AppColors.primarySoft,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.menu_book_outlined, color: AppColors.primary),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          '오늘 학습 $sampleDailyCompleted개',
-                          style: AppTypography.section,
-                        ),
-                      ),
-                      const Text('$sampleDailyCompleted / $sampleDailyGoal'),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const LinearProgressIndicator(
-                    value: sampleDailyCompleted / sampleDailyGoal,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('학습 진행률은 예시 데이터입니다.', style: AppTypography.meta),
-                ],
-              ),
+      body: PreviewContent(
+        child: ListView(
+          padding: AppSpacing.pagePadding(context, top: 4),
+          children: [
+            const AppHomeHeader(),
+            const SizedBox(height: 24),
+            const LearningIntro(
+              title: '문법 학습',
+              lines: ['코드를 더 잘 이해하는 시작', 'COBIA와 함께 문법을 학습해보세요'],
+              icon: Icons.menu_book_outlined,
             ),
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 8,
-            children: [
-              for (final language in GrammarLanguage.values)
-                ChoiceChip(
-                  label: Text(language.label),
-                  selected: _language == language,
-                  onSelected: (_) => setState(() => _language = language),
+            LearningListToolbar(
+              controller: _search,
+              hint: '문법 검색',
+              summary: '${language.name}${_bookmarksOnly ? ' · 북마크' : ''}',
+              filtered: _languageId != 1 || _bookmarksOnly,
+              onChanged: () => setState(() {}),
+              onFilter: () async {
+                final result = await showLearningFilters(
+                  context,
+                  groups: [
+                    LearningFilterGroup('language', '언어', {
+                      for (final l in previewLanguages) '${l.id}': l.name,
+                    }),
+                  ],
+                  current: LearningFilterValues({
+                    'language': '$_languageId',
+                  }, markedOnly: _bookmarksOnly),
+                  defaults: const LearningFilterValues({'language': '1'}),
+                  markedLabel: '북마크만 보기',
+                );
+                if (result != null && mounted) {
+                  setState(() {
+                    _languageId = int.parse(result.selections['language']!);
+                    _bookmarksOnly = result.markedOnly;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${language.name} 문법 챕터',
+                    style: AppTypography.section,
+                  ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _searchController,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              labelText: '문법 검색',
-              hintText: '변수, 조건문, 반복문',
-              prefixIcon: const Icon(Icons.search),
-              border: const OutlineInputBorder(),
-              suffixIcon: query.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: '검색어 지우기',
-                      onPressed: () => setState(_searchController.clear),
-                      icon: const Icon(Icons.close),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            '${_language.label} 문법 챕터',
-            style: Theme.of(context).textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _openChapters,
-              icon: const Icon(Icons.arrow_forward),
-              label: const Text('전체 보기'),
-            ),
-          ),
-          if (chapters.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Text('검색 결과가 없어요. 다른 검색어를 입력해 주세요.'),
-            ),
-          for (final chapter in chapters)
-            LearningCard(
-              emphasizedShadow: true,
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: LearningOverviewContent(
-                  label: '${_language.label} · ${chapter.category.label}',
-                  title: chapter.title,
-                  description: chapter.description,
-                  icon: switch (chapter.id) {
-                    'conditions' => Icons.call_split_rounded,
-                    'loops' => Icons.repeat_rounded,
-                    'arrays' => Icons.grid_view_rounded,
-                    'variables' => Icons.data_object_rounded,
-                    _ => Icons.code_rounded,
+                TextButton(
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
+                    context.push(
+                      '/grammar/${language.code.toLowerCase()}/chapters',
+                    );
                   },
-                  footer: grammarChapterRoutes.containsKey(chapter.id)
-                      ? '개념부터 예제까지 학습하기'
-                      : '문법 개념 살펴보기',
-                  enabled: grammarChapterRoutes.containsKey(chapter.id),
+                  child: const Text('전체 보기'),
                 ),
-                onTap: grammarChapterRoutes.containsKey(chapter.id)
-                    ? () => openGrammarChapter(context, _language, chapter)
-                    : null,
-              ),
+              ],
             ),
-        ],
+            const SizedBox(height: 12),
+            if (items.isEmpty)
+              LearningNotice(
+                _bookmarksOnly
+                    ? '저장한 학습이 없어요. 마음에 드는 학습을 북마크해 보세요.'
+                    : '검색 결과가 없어요. 다른 검색어를 입력해 주세요.',
+              ),
+            for (final item in items) TemplatePreviewCard(item: item),
+          ],
+        ),
       ),
     );
   }

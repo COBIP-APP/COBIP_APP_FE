@@ -15,6 +15,8 @@ class LearningOverviewContent extends StatelessWidget {
     this.tags = const [],
     this.enabled = true,
     this.action,
+    this.footerIcon,
+    this.footerColor,
   });
 
   final String label, title, description, footer;
@@ -22,6 +24,8 @@ class LearningOverviewContent extends StatelessWidget {
   final List<String> tags;
   final bool enabled;
   final Widget? action;
+  final IconData? footerIcon;
+  final Color? footerColor;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -149,12 +153,25 @@ class LearningOverviewContent extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              enabled ? Icons.auto_stories_outlined : Icons.menu_book_outlined,
+              footerIcon ??
+                  (enabled
+                      ? Icons.auto_stories_outlined
+                      : Icons.menu_book_outlined),
               size: 18,
-              color: AppColors.primary,
+              color: footerColor ?? AppColors.primary,
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text(footer, style: AppTypography.meta)),
+            Expanded(
+              child: Text(
+                footer,
+                style: footerColor == null
+                    ? AppTypography.meta
+                    : AppTypography.meta.copyWith(
+                        color: footerColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+              ),
+            ),
             if (enabled) ...[
               const SizedBox(width: 12),
               const LearningCardArrow(),

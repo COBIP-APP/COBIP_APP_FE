@@ -116,6 +116,8 @@ class TemplatePreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = context.watch<LearningPreviewStore>().progress(item.id);
+    final grammarCompleted =
+        item.categoryId == 1 && progress?.completedAt != null;
     return LearningCard(
       emphasizedShadow: true,
       margin: const EdgeInsets.only(bottom: 16),
@@ -130,8 +132,11 @@ class TemplatePreviewCard extends StatelessWidget {
               ? Icons.menu_book_outlined
               : Icons.layers_outlined,
           action: BookmarkButton(templateId: item.id),
-          footer:
-              '${item.difficulty.label} · ${progress?.label ?? '미시작'} · ${progress == null ? '학습하기' : '이어하기'}',
+          footerIcon: grammarCompleted ? Icons.check_circle : null,
+          footerColor: grammarCompleted ? AppColors.success : null,
+          footer: grammarCompleted
+              ? '${item.difficulty.label} · 학습 완료 · 복습하기'
+              : '${item.difficulty.label} · ${progress?.label ?? '미시작'} · ${progress == null ? '학습하기' : '이어하기'}',
         ),
       ),
     );

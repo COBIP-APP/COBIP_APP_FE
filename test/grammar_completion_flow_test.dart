@@ -142,6 +142,15 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('다시 풀기'), findsNothing);
       await reveal(tester, find.text('학습 끝내기'));
+      if (entry.key == 'java') {
+        store.failNextAction = true;
+        await tester.tap(find.text('학습 끝내기'));
+        await tester.pumpAndSettle();
+        expect(find.byType(GrammarPracticeScreen), findsOneWidget);
+        expect(store.progress(entry.value), isNull);
+        expect(find.text('학습 완료를 저장하지 못했어요. 다시 눌러 주세요.'), findsOneWidget);
+        await reveal(tester, find.text('학습 끝내기'));
+      }
       await tester.tap(find.text('학습 끝내기'));
       await tester.pumpAndSettle();
       expect(
@@ -150,6 +159,9 @@ void main() {
       );
       expect(find.byType(GrammarPracticeScreen), findsNothing);
       expect(find.text('문법 챕터'), findsOneWidget);
+      expect(store.progress(entry.value)!.completedAt, isNotNull);
+      await reveal(tester, find.textContaining('학습 완료 · 복습하기'));
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

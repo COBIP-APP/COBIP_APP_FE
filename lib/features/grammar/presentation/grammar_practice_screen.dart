@@ -62,6 +62,28 @@ class _GrammarPracticeScreenState extends State<GrammarPracticeScreen> {
     }
   }
 
+  Future<void> _finish(String location) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final store = context.read<LearningPreviewStore>();
+      final section = store.template(widget.templateId)?.allSections.lastOrNull;
+      if (section == null) throw StateError('No lesson section');
+      await store.saveProgress(
+        widget.templateId,
+        store.progress(widget.templateId)?.lastSectionId ?? section.id,
+        completed: true,
+      );
+      if (mounted) context.go(location);
+    } catch (_) {
+      if (mounted) setState(() => _error = '학습 완료를 저장하지 못했어요. 다시 눌러 주세요.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Widget _questionCard(LearningQuestion question, int index) {
     final result = _results[question.id];
     final graded =
@@ -251,12 +273,14 @@ class _GrammarPracticeScreenState extends State<GrammarPracticeScreen> {
                 )
               else if (allCorrect)
                 FilledButton(
-                  onPressed: () => context.go(
-                    language == null
-                        ? '/grammar'
-                        : '/grammar/${language.code.toLowerCase()}/chapters',
-                  ),
-                  child: const Text('학습 끝내기'),
+                  onPressed: _busy
+                      ? null
+                      : () => _finish(
+                          language == null
+                              ? '/grammar'
+                              : '/grammar/${language.code.toLowerCase()}/chapters',
+                        ),
+                  child: Text(_busy ? '저장 중…' : '학습 끝내기'),
                 )
               else
                 OutlinedButton(

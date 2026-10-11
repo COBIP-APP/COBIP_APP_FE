@@ -53,6 +53,7 @@ void main() {
       find.byType(ListView).first,
       const Offset(0, -200),
     );
+    expect(find.textContaining('학습 완료 · 복습하기'), findsOneWidget);
     await tester.tap(find.text('조건문'));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
@@ -64,6 +65,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(store.progress(111)!.label, '학습 중');
     expect(store.progress(111)!.lastSectionId, 11101);
+    await tester.tap(find.byTooltip('뒤로가기'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('학습 완료 · 복습하기'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

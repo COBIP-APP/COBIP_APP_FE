@@ -22,6 +22,8 @@ class PracticalScaffold extends StatelessWidget {
     child: Scaffold(
       appBar: isDetail
           ? AppBar(title: const Text('실무 기술 학습'), centerTitle: true)
+          : onBack == null
+          ? null
           : AppBar(
               automaticallyImplyLeading: false,
               leading: onBack == null

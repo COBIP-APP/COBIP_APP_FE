@@ -1,3 +1,5 @@
+import '../../../app/widgets/app_home_header.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -46,8 +48,10 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
       isOverview: true,
       body: PreviewContent(
         child: ListView(
-          padding: AppSpacing.pagePadding(context),
+          padding: AppSpacing.pagePadding(context, top: 4),
           children: [
+            const AppHomeHeader(),
+            const SizedBox(height: 24),
             const LearningIntro(
               title: '문법 학습',
               lines: ['코드를 더 잘 이해하는 시작', 'COBIA와 함께 문법을 학습해보세요'],

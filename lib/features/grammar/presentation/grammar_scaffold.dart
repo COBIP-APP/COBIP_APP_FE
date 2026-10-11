@@ -1,5 +1,4 @@
 import '../../../app/widgets/learning_ui.dart';
-import '../../../app/app_ui_tokens.dart';
 import '../../chat/presentation/chat_panel.dart';
 
 import 'package:flutter/material.dart';
@@ -28,27 +27,7 @@ class GrammarScaffold extends StatelessWidget {
       data: learningUiTheme,
       child: Scaffold(
         appBar: isOverview
-            ? AppBar(
-                automaticallyImplyLeading: false,
-                title: Text(
-                  'COBIA',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                actions: [
-                  IconButton(
-                    tooltip: '프로필',
-                    icon: const Icon(Icons.account_circle_outlined),
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('마이페이지는 담당 화면 연결 후 이용할 수 있습니다.'),
-                      ),
-                    ),
-                  ),
-                ],
-              )
+            ? null
             : AppBar(
                 title: Text(title),
                 leading: IconButton(

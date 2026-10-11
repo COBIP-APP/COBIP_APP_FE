@@ -1,5 +1,6 @@
+import '../../../app/widgets/app_home_header.dart';
+
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/app_ui_tokens.dart';
@@ -46,30 +47,15 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
         .toList();
     return LearningTheme(
       child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: Text(
-            'COBIA',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          actions: [
-            IconButton(
-              tooltip: '프로필',
-              onPressed: () => context.push('/my-page'),
-              icon: const Icon(Icons.account_circle_outlined),
-            ),
-          ],
-        ),
         bottomNavigationBar: const AppBottomNavigation(selectedIndex: 3),
         body: SafeArea(
           child: LearningBody(
             child: PreviewContent(
               child: ListView(
-                padding: AppSpacing.pagePadding(context),
+                padding: AppSpacing.pagePadding(context, top: 4),
                 children: [
+                  const AppHomeHeader(),
+                  const SizedBox(height: 24),
                   const LearningIntro(
                     title: '문제 풀이',
                     lines: ['배운 개념을 직접 확인해보세요.', '코드 작성과 간단한 문제로 기초를 다져요.'],

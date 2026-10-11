@@ -1,3 +1,5 @@
+import '../../../app/widgets/app_home_header.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -44,8 +46,10 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
     return PracticalScaffold(
       body: PreviewContent(
         child: ListView(
-          padding: AppSpacing.pagePadding(context),
+          padding: AppSpacing.pagePadding(context, top: 4),
           children: [
+            const AppHomeHeader(),
+            const SizedBox(height: 24),
             const LearningIntro(
               title: '실무 학습',
               lines: ['개념을 넘어 실무에 한 걸음', 'COBIA와 함께 실무 기술을 학습해보세요'],

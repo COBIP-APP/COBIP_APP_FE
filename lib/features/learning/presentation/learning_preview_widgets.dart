@@ -118,8 +118,15 @@ class TemplatePreviewCard extends StatelessWidget {
     final progress = context.watch<LearningPreviewStore>().progress(item.id);
     final grammarCompleted =
         item.categoryId == 1 && progress?.completedAt != null;
+    final grammarStarted = item.categoryId == 1 && progress != null;
     return LearningCard(
       emphasizedShadow: true,
+      borderColor: grammarCompleted
+          ? AppColors.success
+          : grammarStarted
+          ? AppColors.inProgress
+          : AppColors.border,
+      borderWidth: grammarStarted ? 1.5 : 1,
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () => context.push(templateLocation(item)),
@@ -132,8 +139,16 @@ class TemplatePreviewCard extends StatelessWidget {
               ? Icons.menu_book_outlined
               : Icons.layers_outlined,
           action: BookmarkButton(templateId: item.id),
-          footerIcon: grammarCompleted ? Icons.check_circle : null,
-          footerColor: grammarCompleted ? AppColors.success : null,
+          footerIcon: grammarCompleted
+              ? Icons.check_circle
+              : grammarStarted
+              ? Icons.play_circle_outline
+              : null,
+          footerColor: grammarCompleted
+              ? AppColors.success
+              : grammarStarted
+              ? AppColors.warning
+              : null,
           footer: grammarCompleted
               ? '${item.difficulty.label} · 학습 완료 · 복습하기'
               : '${item.difficulty.label} · ${progress?.label ?? '미시작'} · ${progress == null ? '학습하기' : '이어하기'}',

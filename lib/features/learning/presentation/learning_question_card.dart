@@ -56,6 +56,7 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
   Widget build(BuildContext context) {
     final question = widget.question;
     final result = widget.result;
+    final explanation = result?.explanation ?? question.explanation;
     final graded =
         result?.gradingStatus == 'COMPLETED' && result?.score != null;
     final correct = graded && result!.score! >= question.passScore;
@@ -181,7 +182,8 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
                     ),
                   ],
                   if (graded &&
-                      (question.explanation?.isNotEmpty == true ||
+                      (explanation?.isNotEmpty == true ||
+                          result.correctAnswer?.isNotEmpty == true ||
                           result.feedback?.isNotEmpty == true)) ...[
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
@@ -194,8 +196,15 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
                     ),
                     if (_expanded) ...[
                       const SizedBox(height: 12),
-                      if (question.explanation?.isNotEmpty == true)
-                        Text(question.explanation!, style: AppTypography.body),
+                      if (result.correctAnswer?.isNotEmpty == true) ...[
+                        Text(
+                          '정답: ${result.correctAnswer}',
+                          style: AppTypography.card,
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      if (explanation?.isNotEmpty == true)
+                        Text(explanation!, style: AppTypography.body),
                       if (widget.showSubmissionDetails &&
                           result.feedback?.isNotEmpty == true) ...[
                         const SizedBox(height: 8),

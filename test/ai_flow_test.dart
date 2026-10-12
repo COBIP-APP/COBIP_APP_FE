@@ -64,9 +64,10 @@ void main() {
     await tapVisible(tester, find.text('답안 제출'));
     expect(server.calls('/ai/quiz/grade').single.data['userAnswer'], '2');
     expect(find.text('정답 · 100점'), findsOneWidget);
-    expect(find.text('채점 후 해설'), findsNothing);
+    expect(find.text('생성 시 해설'), findsNothing);
     await tapVisible(tester, find.text('풀이 보기'));
-    expect(find.text('채점 후 해설'), findsOneWidget);
+    expect(find.text('생성 시 해설'), findsOneWidget);
+    expect(find.text('채점 후 해설'), findsNothing);
     await tapVisible(tester, find.text('자세한 해설'));
     expect(find.text('상세 해설'), findsOneWidget);
     await tapVisible(tester, find.text('다음 문제'));

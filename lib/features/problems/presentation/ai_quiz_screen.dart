@@ -116,7 +116,7 @@ class _QuizPageState extends State<_QuizPage> {
             const SizedBox(height: 16),
             OutlinedButton.icon(
               key: const ValueKey('ai-save-question'),
-              onPressed: vm.busy || vm.savedQuestion != null ? null : vm.save,
+              onPressed: vm.busy || !vm.canSave ? null : vm.save,
               icon: Icon(
                 vm.savedQuestion == null
                     ? Icons.bookmark_add_outlined
@@ -125,23 +125,18 @@ class _QuizPageState extends State<_QuizPage> {
               label: Text(
                 vm.saving
                     ? '저장 중…'
+                    : vm.savedQuestion != null && vm.needsSolutionSave
+                    ? '풀이 저장 다시 시도'
                     : vm.savedQuestion != null
                     ? '저장 완료'
                     : '문제 저장',
               ),
             ),
-            if (vm.savedQuestion case final question?) ...[
+            if (vm.savedQuestion case final question?)
               Text(
                 question.creatorLabel(context.read<LearningStore>().userId),
                 style: AppTypography.meta,
               ),
-              TextButton(
-                onPressed: vm.busy
-                    ? null
-                    : () => context.push('/problems/${question.id}'),
-                child: const Text('저장한 문제 풀기'),
-              ),
-            ],
             const SizedBox(height: 12),
             if (vm.result == null)
               FilledButton(
@@ -160,7 +155,7 @@ class _QuizPageState extends State<_QuizPage> {
                 score: vm.result!.score,
                 feedback: vm.result!.feedback,
                 correctAnswer: vm.result!.correctAnswer,
-                explanation: vm.result!.explanation,
+                explanation: batch.quizzes[vm.index].explanation,
                 relatedSection: vm.result!.relatedSection,
                 extra: vm.explanation == null
                     ? OutlinedButton(
@@ -202,11 +197,6 @@ class _QuizPageState extends State<_QuizPage> {
                           _scroll.jumpTo(0);
                         },
                   child: const Text('다음 문제'),
-                )
-              else
-                FilledButton(
-                  onPressed: vm.busy ? null : () => context.go('/problems'),
-                  child: const Text('목록으로 돌아가기'),
                 ),
             ],
           ],
@@ -219,13 +209,18 @@ class _QuizPageState extends State<_QuizPage> {
             LearningNotice(vm.error!),
           ],
           const SizedBox(height: 20),
-          if (batch != null)
+          if (batch != null) ...[
             TextButton(
               onPressed: vm.busy ? null : vm.newBatch,
               child: const Text('새 문제 만들기'),
             ),
+            TextButton(
+              onPressed: vm.busy ? null : () => context.go('/problems'),
+              child: const Text('목록 돌아가기'),
+            ),
+          ],
           const LearningNotice(
-            '남겨두고 싶은 문제는 각각 저장해 주세요. 저장한 문제는 필터의 ‘내가 만든 문제’에서 다시 풀 수 있어요. 이 화면의 연습 답안은 기록에 남지 않으며, 풀이 기록은 ‘저장한 문제 풀기’에서 제출할 때 남아요.',
+            '문제를 저장하면 기본 해설과 제출한 풀이도 함께 보관돼요. 저장한 문제를 풀면 답안과 채점 결과가 자동으로 기록돼요. 저장 전에 푼 답안은 저장할 때 다시 채점되며, 추가로 요청한 자세한 해설은 저장되지 않아요.',
           ),
           const SizedBox(height: 24),
         ],

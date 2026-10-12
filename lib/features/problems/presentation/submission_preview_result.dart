@@ -24,6 +24,7 @@ class SubmissionPreviewResult extends StatelessWidget {
                   .firstOrNull ??
               submission.selectedChoiceKey!;
     final complete = submission.gradingStatus == 'COMPLETED';
+    final explanation = submission.explanation ?? question.explanation;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -88,12 +89,27 @@ class SubmissionPreviewResult extends StatelessWidget {
             ],
           ),
         ),
-        if (complete && question.explanation?.isNotEmpty == true) ...[
+        if (complete &&
+            (explanation?.isNotEmpty == true ||
+                submission.correctAnswer?.isNotEmpty == true)) ...[
           const SizedBox(height: 20),
           LearningSection(
             title: '해설',
             icon: Icons.lightbulb_outline,
-            child: Text(question.explanation!, style: AppTypography.body),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (submission.correctAnswer?.isNotEmpty == true) ...[
+                  Text(
+                    '정답: ${submission.correctAnswer}',
+                    style: AppTypography.card,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (explanation?.isNotEmpty == true)
+                  Text(explanation!, style: AppTypography.body),
+              ],
+            ),
           ),
         ],
       ],

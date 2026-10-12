@@ -229,6 +229,16 @@ void main() {
     expect(find.text('영진'), findsNothing);
     await tapVisible(tester, find.text('계정 관리'));
     expect(find.text('닉네임: 테스트학습자'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('로그아웃'),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const PageStorageKey('my-account')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     await tapVisible(tester, find.text('로그아웃'));
     expect(router.routeInformationProvider.value.uri.path, '/login');
     expect(auth.user, isNull);

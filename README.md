@@ -23,6 +23,8 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
 
 `API_BASE_URL`은 백엔드 호스트 주소입니다. 위 주소는 같은 PC에서 실행한 개발 서버에 Android 에뮬레이터로 연결하는 예시이며 서버를 자동으로 실행하지 않습니다. 실기기는 접근 가능한 개발 서버 주소를 별도로 사용합니다. 릴리스에서는 HTTPS 주소가 필요합니다. 주소 미설정·서버 오류를 모의 성공으로 처리하지 않습니다.
 
+AI 문제 생성·채점·챗봇도 같은 `API_BASE_URL`과 로그인 인증을 사용합니다. FE는 Spring의 `/ai/quiz/generate`, `/ai/quiz/grade`, `/ai/java/grade`, `/ai/chat`, `/ai/quiz/explain`으로 요청하며, 별도 `AI_BASE_URL`이나 AI 키를 설정하지 않습니다. Spring이 전달받은 AI 명세 그대로 중계한다는 계약을 사용합니다. AI 요청의 응답 제한 시간은 5분이며, 자동 재전송하지 않습니다. 중계가 아직 없는 서버에서는 실패 안내가 표시됩니다.
+
 메일 인증에는 승인된 개발 서버의 SMTP 설정과 테스트 메일함이 필요합니다. SMTP 비밀번호·JWT 비밀값은 앱에 넣지 않습니다. 회원가입 성공 후에는 로그인 화면에서 별도로 로그인합니다.
 
 프로젝트 내부 SDK를 사용하는 경우 `.tools/flutter/bin/flutter.bat`와 `.tools/flutter/bin/dart.bat`를 사용하고 `PUB_CACHE`, `APPDATA`, `GRADLE_USER_HOME`은 기존 `.tools` 설정을 유지합니다. SDK·캐시가 루트 안에 있으면 소스 포맷 검사는 `dart format --output=none --set-exit-if-changed lib test`로 범위를 제한할 수 있습니다.

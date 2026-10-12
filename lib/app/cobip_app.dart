@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../features/auth/data/auth_api.dart';
 import '../features/auth/data/token_store.dart';
 import '../features/auth/presentation/auth_view_model.dart';
-import '../features/chat/presentation/chat_view_model.dart';
+import '../features/chat/presentation/chat_sessions.dart';
 import '../features/learning/presentation/learning_store.dart';
 import '../features/learning/data/learning_api.dart';
 import '../features/problems/data/ai_api.dart';
@@ -65,9 +65,10 @@ class _CobipAppState extends State<CobipApp> {
             if (widget.aiApi == null) api.dispose();
           },
         ),
-        ChangeNotifierProxyProvider<AuthViewModel, ChatViewModel>(
+        ChangeNotifierProxyProvider<AuthViewModel, ChatSessions>(
+          lazy: false,
           create: (context) =>
-              ChatViewModel(api: context.read<AiApi>())
+              ChatSessions(api: context.read<AiApi>())
                 ..bindUser(_auth.user?.userId),
           update: (_, auth, chat) => chat!..bindUser(auth.user?.userId),
         ),

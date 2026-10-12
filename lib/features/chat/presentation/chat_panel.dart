@@ -6,8 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'chat_view_model.dart';
+import 'chat_sessions.dart';
 
-Future<void> showChatPanel(BuildContext context) => showModalBottomSheet<void>(
+Future<void> showChatPanel(
+  BuildContext context, {
+  String conversationKey = ChatSessions.mainKey,
+  String? learningTitle,
+}) => showModalBottomSheet<void>(
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
@@ -16,17 +21,50 @@ Future<void> showChatPanel(BuildContext context) => showModalBottomSheet<void>(
   shape: const RoundedRectangleBorder(
     borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
   ),
-  builder: (context) => const ChatPanel(),
+  builder: (context) =>
+      ChatPanel(conversationKey: conversationKey, learningTitle: learningTitle),
 );
 
-class ChatPanel extends StatefulWidget {
-  const ChatPanel({super.key, this.isPage = false});
+class ChatPanel extends StatelessWidget {
+  const ChatPanel({
+    super.key,
+    this.isPage = false,
+    this.conversationKey = ChatSessions.mainKey,
+    this.learningTitle,
+  });
   final bool isPage;
+  final String conversationKey;
+  final String? learningTitle;
   @override
-  State<ChatPanel> createState() => _ChatPanelState();
+  Widget build(BuildContext context) {
+    final sessions = context.watch<ChatSessions>();
+    final chat = sessions.conversation(conversationKey);
+    return ChangeNotifierProvider.value(
+      value: chat,
+      child: _ChatConversation(
+        key: ValueKey((conversationKey, sessions.generation)),
+        isPage: isPage,
+        learningTitle: learningTitle,
+        isLearning: conversationKey != ChatSessions.mainKey,
+      ),
+    );
+  }
 }
 
-class _ChatPanelState extends State<ChatPanel> {
+class _ChatConversation extends StatefulWidget {
+  const _ChatConversation({
+    super.key,
+    required this.isPage,
+    required this.isLearning,
+    this.learningTitle,
+  });
+  final bool isPage, isLearning;
+  final String? learningTitle;
+  @override
+  State<_ChatConversation> createState() => _ChatPanelState();
+}
+
+class _ChatPanelState extends State<_ChatConversation> {
   late final _input = TextEditingController(
     text: context.read<ChatViewModel>().draft,
   );
@@ -98,9 +136,13 @@ class _ChatPanelState extends State<ChatPanel> {
                                       onPressed: () => Navigator.pop(context),
                                       child: const Text('학습 계속하기'),
                                     )
-                                  : const Text(
-                                      'COBIA 챗봇',
+                                  : Text(
+                                      widget.learningTitle == null
+                                          ? 'COBIA 챗봇'
+                                          : 'COBIA · ${widget.learningTitle}',
                                       style: AppTypography.card,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                             ),
                             IconButton(
@@ -149,7 +191,11 @@ class _ChatPanelState extends State<ChatPanel> {
                             children: [
                               if (index == 0) ...[
                                 if (messages.length == 1) const _ChatWelcome(),
-                                const LearningNotice('대화는 앱 실행 중에만 유지됩니다.'),
+                                LearningNotice(
+                                  widget.isLearning
+                                      ? '이 학습 카드의 대화예요. 로그아웃하거나 앱을 완전히 종료하면 사라져요.'
+                                      : '메인 챗봇 대화예요. 로그아웃하거나 앱을 완전히 종료하면 사라져요.',
+                                ),
                                 const SizedBox(height: 20),
                               ],
                               _ChatBubble(

@@ -164,6 +164,8 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
       });
     }
     return LearningDetailScaffold(
+      chatTemplateId: widget.templateId,
+      showChat: item != null,
       title: item?.title ?? (widget.practical ? '실무 학습' : '문법 학습'),
       fallbackLocation: item == null
           ? (widget.practical ? '/practical' : '/grammar')

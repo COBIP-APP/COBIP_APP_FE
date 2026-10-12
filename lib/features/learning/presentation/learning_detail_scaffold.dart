@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/widgets/learning_ui.dart';
 import '../../chat/presentation/chat_panel.dart';
+import '../../chat/presentation/chat_sessions.dart';
 
 class LearningDetailScaffold extends StatelessWidget {
   const LearningDetailScaffold({
@@ -12,11 +13,13 @@ class LearningDetailScaffold extends StatelessWidget {
     required this.fallbackLocation,
     this.actions,
     this.showChat = true,
+    this.chatTemplateId,
   });
   final String title, fallbackLocation;
   final Widget body;
   final List<Widget>? actions;
   final bool showChat;
+  final int? chatTemplateId;
 
   @override
   Widget build(BuildContext context) => Theme(
@@ -45,7 +48,13 @@ class LearningDetailScaffold extends StatelessWidget {
           ? FloatingActionButton(
               tooltip: 'COBIA 챗봇',
               shape: const CircleBorder(),
-              onPressed: () => showChatPanel(context),
+              onPressed: () => showChatPanel(
+                context,
+                conversationKey: chatTemplateId == null
+                    ? ChatSessions.mainKey
+                    : ChatSessions.templateKey(chatTemplateId!),
+                learningTitle: chatTemplateId == null ? null : title,
+              ),
               child: const Icon(Icons.smart_toy_outlined),
             )
           : null,

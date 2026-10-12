@@ -101,6 +101,19 @@ void main() {
     await expectLater(api.template(31), throwsA(isA<LearningApiException>()));
   });
 
+  test('제출 응답의 정답과 해설을 읽고 새 세션에서도 복원한다', () async {
+    final question = (await api.questions()).first;
+    await api.submit(1, question, 'B');
+    server.saved[41]!.addAll({
+      'correctAnswer': 'B',
+      'explanation': '생성 당시의 기본 해설',
+    });
+    final freshApi = LearningApi(testApi(server).dio);
+    final restored = await freshApi.latest(1, 41);
+    expect(restored!.correctAnswer, 'B');
+    expect(restored.explanation, '생성 당시의 기본 해설');
+  });
+
   test('실패한 저장은 북마크·진도·제출 상태에 반영하지 않는다', () async {
     final store = LearningStore(api: api)..bindUser(1);
     addTearDown(store.dispose);

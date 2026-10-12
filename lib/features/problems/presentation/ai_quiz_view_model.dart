@@ -9,7 +9,7 @@ import '../../learning/data/learning_api.dart';
 import '../../learning/data/learning_models.dart';
 import '../../learning/presentation/learning_store.dart';
 
-/// Practice stays page-scoped; only explicit saves persist a question in BE.
+/// Explicit saves persist the question and any completed practice answer in BE.
 class AiQuizViewModel extends ChangeNotifier {
   AiQuizViewModel(this.api, {this.userId, this.learningStore});
   final AiApi api;
@@ -17,7 +17,11 @@ class AiQuizViewModel extends ChangeNotifier {
   final LearningStore? learningStore;
   final _saved = <int, LearningQuestion>{};
   final _requestIds = <int, String>{};
+  final _recordedResults = <int>{};
   LearningQuestion? get savedQuestion => _saved[_index];
+  bool get needsSolutionSave =>
+      result != null && !_recordedResults.contains(_index);
+  bool get canSave => savedQuestion == null || needsSolutionSave;
   bool saving = false;
   final _cancel = CancelToken();
   bool _disposed = false;
@@ -53,6 +57,7 @@ class AiQuizViewModel extends ChangeNotifier {
   void retry() {
     if (_busy) return;
     _results.remove(_index);
+    _recordedResults.remove(_index);
     _explanations.remove(_index);
     _error = null;
     notifyListeners();
@@ -68,6 +73,7 @@ class AiQuizViewModel extends ChangeNotifier {
     _explanations.clear();
     _saved.clear();
     _requestIds.clear();
+    _recordedResults.clear();
     notifyListeners();
   }
 
@@ -116,11 +122,12 @@ class AiQuizViewModel extends ChangeNotifier {
     _explanations.clear();
     _saved.clear();
     _requestIds.clear();
+    _recordedResults.clear();
   });
 
   Future<void> save() async {
     final store = learningStore;
-    if (_busy || _disposed || _batch == null || savedQuestion != null) return;
+    if (_busy || _disposed || _batch == null || !canSave) return;
     if (store == null || store.userId?.toString() != userId) {
       _error = '로그인 상태를 확인한 뒤 다시 저장해 주세요.';
       notifyListeners();
@@ -130,12 +137,16 @@ class AiQuizViewModel extends ChangeNotifier {
     final requestId = _requestIds.putIfAbsent(_index, _uuid);
     saving = true;
     await _run(() async {
-      final question = await store.saveGeneratedQuestion(
-        clientRequestId: requestId,
-        batch: _batch!,
-        quiz: _batch!.quizzes[_index],
-      );
-      if (!_disposed) _saved[_index] = question;
+      final question =
+          savedQuestion ??
+          await store.saveGeneratedQuestion(
+            clientRequestId: requestId,
+            batch: _batch!,
+            quiz: _batch!.quizzes[_index],
+          );
+      if (_disposed) return;
+      _saved[_index] = question;
+      if (needsSolutionSave) await _submitSaved(question);
     });
     saving = false;
     if (!_disposed) notifyListeners();
@@ -153,6 +164,10 @@ class AiQuizViewModel extends ChangeNotifier {
   Future<void> submit() async {
     if (_batch == null || result != null || answer.trim().isEmpty) return;
     await _run(() async {
+      if (savedQuestion case final question?) {
+        await _submitSaved(question);
+        return;
+      }
       final result = await api.grade(
         batch: _batch!,
         quiz: _batch!.quizzes[_index],
@@ -161,6 +176,43 @@ class AiQuizViewModel extends ChangeNotifier {
       );
       if (!_disposed) _results[_index] = result;
     });
+  }
+
+  Future<void> _submitSaved(LearningQuestion question) async {
+    final store = learningStore;
+    if (store == null || store.userId?.toString() != userId) {
+      throw const LearningApiException('로그인 상태를 확인한 뒤 다시 제출해 주세요.');
+    }
+    final quiz = _batch!.quizzes[_index];
+    var submissionAnswer = answer.trim();
+    if (quiz.type == AiQuizType.ox) {
+      final optionIndex = int.tryParse(submissionAnswer);
+      if (optionIndex != null &&
+          optionIndex > 0 &&
+          optionIndex <= quiz.options.length) {
+        submissionAnswer = quiz.options[optionIndex - 1]
+            .replaceFirst(RegExp(r'^\s*\d+[.)]\s*'), '')
+            .trim()
+            .toUpperCase();
+      }
+    }
+    final submission = await store.submit(question.id, submissionAnswer);
+    if (_disposed) return;
+    if (submission.gradingStatus != 'COMPLETED' || submission.score == null) {
+      throw const LearningApiException(
+        '문제와 답안은 저장됐지만 채점이 완료되지 않았어요. 다시 제출해 주세요.',
+      );
+    }
+    _results[_index] = AiGrade.fromJson({
+      'isCorrect': submission.score! >= question.passScore,
+      'score': submission.score!.round(),
+      'feedback': submission.feedback ?? '',
+      'correctAnswer': submission.correctAnswer ?? quiz.answer,
+      'explanation': submission.explanation ?? quiz.explanation,
+      'relatedSection': null,
+    });
+    _recordedResults.add(_index);
+    _explanations.remove(_index);
   }
 
   Future<void> explain() async {

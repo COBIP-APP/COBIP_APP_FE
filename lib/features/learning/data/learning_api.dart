@@ -188,6 +188,8 @@ LearningSubmission _submission(Object? value, int userId, int questionId) {
     gradingMethod: _optionalText(s['gradingMethod']),
     score: score as num?,
     feedback: _optionalText(s['feedback']),
+    correctAnswer: _optionalText(s['correctAnswer']),
+    explanation: _optionalText(s['explanation']),
     selectedChoiceKey: _optionalText(s['selectedChoiceKey']),
     answerText: _optionalText(s['answerText']),
     sourceCode: _optionalText(s['sourceCode']),

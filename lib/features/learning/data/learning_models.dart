@@ -181,6 +181,8 @@ class LearningSubmission {
     this.gradingMethod,
     this.score,
     this.feedback,
+    this.correctAnswer,
+    this.explanation,
     this.gradedAt,
   });
   final int id;
@@ -194,5 +196,7 @@ class LearningSubmission {
   final String? sourceCode;
   final num? score;
   final String? feedback;
+  final String? correctAnswer;
+  final String? explanation;
   bool get pending => gradingStatus == 'PENDING';
 }

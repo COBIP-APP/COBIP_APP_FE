@@ -21,9 +21,32 @@ class ProblemsHomeScreen extends StatefulWidget {
 
 class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
   final _search = TextEditingController();
+  final _scroll = ScrollController();
+  static const _pageSize = 5;
+  int _page = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final store = context.watch<LearningStore>();
+    final userId = store.userId;
+    if (userId != null &&
+        store.state == PreviewLoadState.ready &&
+        store.myQuestionsState == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            store.userId == userId &&
+            store.myQuestionsState == null) {
+          store.loadMyQuestions();
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
     _search.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -47,6 +70,9 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
               (!_submittedOnly || store.latest(q.id) != null),
         )
         .toList();
+    final pageCount = (items.length / _pageSize).ceil();
+    _page = _page.clamp(0, pageCount > 0 ? pageCount - 1 : 0);
+    final pageItems = items.skip(_page * _pageSize).take(_pageSize);
     return LearningTheme(
       child: Scaffold(
         bottomNavigationBar: const AppBottomNavigation(selectedIndex: 3),
@@ -55,9 +81,10 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
             child: PreviewContent(
               onRefresh: () async {
                 await store.load();
-                if (_mineOnly) await store.loadMyQuestions();
+                await store.loadMyQuestions();
               },
               child: ListView(
+                controller: _scroll,
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: AppSpacing.pagePadding(context, top: 4),
                 children: [
@@ -78,7 +105,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                         _type != null ||
                         _submittedOnly ||
                         _mineOnly,
-                    onChanged: () => setState(() {}),
+                    onChanged: () => setState(() => _page = 0),
                     onFilter: () async {
                       final result = await showLearningFilters(
                         context,
@@ -111,6 +138,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                       );
                       if (result != null && mounted) {
                         setState(() {
+                          _page = 0;
                           _languageId = int.tryParse(
                             result.selections['language']!,
                           );
@@ -134,11 +162,10 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                     label: const Text('AI 실무 문제 생성'),
                   ),
                   const SizedBox(height: 20),
-                  if (_mineOnly &&
-                      store.myQuestionsState == PreviewLoadState.loading)
+                  if (store.myQuestionsState == PreviewLoadState.loading)
                     const Center(child: CircularProgressIndicator())
-                  else if (_mineOnly &&
-                      store.myQuestionsState == PreviewLoadState.error) ...[
+                  else if (store.myQuestionsState ==
+                      PreviewLoadState.error) ...[
                     LearningNotice(
                       store.myQuestionsError ?? '내가 만든 문제를 불러오지 못했어요.',
                     ),
@@ -146,8 +173,12 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                       onPressed: store.loadMyQuestions,
                       child: const Text('다시 시도'),
                     ),
-                  ] else ...[
-                    if (items.isEmpty)
+                  ],
+                  if (!_mineOnly ||
+                      store.myQuestionsState == PreviewLoadState.ready) ...[
+                    if (items.isEmpty &&
+                        store.myQuestionsState != PreviewLoadState.loading &&
+                        store.myQuestionsState != PreviewLoadState.error)
                       LearningNotice(
                         _mineOnly && store.myQuestions.isEmpty
                             ? '아직 저장한 문제가 없어요. AI 문제를 만든 뒤 문제 저장을 눌러 주세요.'
@@ -155,7 +186,17 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                             ? '아직 등록된 문제가 없어요.'
                             : '조건에 맞는 문제가 없어요. 다른 필터를 선택해 주세요.',
                       ),
-                    for (final item in items) QuestionPreviewCard(item: item),
+                    for (final item in pageItems)
+                      QuestionPreviewCard(item: item),
+                    if (pageCount > 1)
+                      _ProblemPagination(
+                        page: _page,
+                        pageCount: pageCount,
+                        onChanged: (page) {
+                          setState(() => _page = page);
+                          if (_scroll.hasClients) _scroll.jumpTo(0);
+                        },
+                      ),
                   ],
                 ],
               ),
@@ -163,6 +204,54 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ProblemPagination extends StatelessWidget {
+  const _ProblemPagination({
+    required this.page,
+    required this.pageCount,
+    required this.onChanged,
+  });
+  final int page;
+  final int pageCount;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final start = (page - 2).clamp(0, (pageCount - 5).clamp(0, pageCount));
+    final end = (start + 5).clamp(0, pageCount);
+    return Wrap(
+      key: const ValueKey('problem-pagination'),
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        IconButton(
+          tooltip: '이전 페이지',
+          onPressed: page > 0 ? () => onChanged(page - 1) : null,
+          icon: const Icon(Icons.chevron_left),
+        ),
+        for (var i = start; i < end; i++)
+          Semantics(
+            selected: page == i,
+            child: TextButton(
+              key: ValueKey('problem-page-${i + 1}'),
+              onPressed: page == i ? null : () => onChanged(i),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(44, 44),
+                disabledForegroundColor: AppColors.primary,
+                backgroundColor: page == i ? AppColors.primarySoft : null,
+              ),
+              child: Text('${i + 1}'),
+            ),
+          ),
+        IconButton(
+          tooltip: '다음 페이지',
+          onPressed: page < pageCount - 1 ? () => onChanged(page + 1) : null,
+          icon: const Icon(Icons.chevron_right),
+        ),
+      ],
     );
   }
 }

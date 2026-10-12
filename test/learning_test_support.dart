@@ -118,6 +118,9 @@ class LearningServer extends TestAuthAdapter {
         for (final id in [41, 42, 43]) serverQuestion(id),
       ], 200);
     }
+    if (r.path == '/api/users/me/questions' && r.method == 'GET') {
+      return jsonResponse([], 200);
+    }
     if (RegExp(r'^/api/questions/\d+$').hasMatch(r.path)) {
       return jsonResponse(
         serverQuestion(int.parse(r.path.split('/').last)),

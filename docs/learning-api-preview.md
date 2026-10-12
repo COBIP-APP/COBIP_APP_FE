@@ -37,6 +37,17 @@ FE `develop`의 PR #14 병합 커밋 `f95cc7d`에서 `feature/learning-api-conne
 
 전체 Flutter 테스트 177개, 정적 분석, 전체 Dart 포맷 검사와 Android 디버그 APK 빌드를 통과했다. HTTP 계약/실패/계정 변경과 실제 저장소를 주입한 화면 흐름을 포함한다. 실제 로컬 Docker에서도 임시 계정·문법/실무 콘텐츠로 목록·상세·북마크·진도·객관식 정오답·코드/설명 제출·기록 복원을 확인했다. 검증용 계정과 콘텐츠/활동 기록은 끝난 뒤 삭제했고 기존 사용자 데이터는 유지했다.
 
+### 명세·BE 구현 재대조
+
+`learning-api.md`, `auth-fe-alignment.md`, 실제 `ContentController`/`ActivityController`/`CatalogController`, 응답 DTO, 진도 저장 SQL, 실행 중인 Docker의 `/v3/api-docs`를 다시 대조했다. FE가 사용하는 경로·메서드·성공 상태·필드 이름에 추가 불일치는 발견하지 못했다.
+
+- 목차 전용 GET 대신 템플릿 상세에 포함된 `sections`를 사용하고, 단건 진도 GET 대신 `/api/users/me/progress`로 복원한다. 두 API를 별도로 호출하지 않는 것은 기능 누락이 아니다.
+- 학습 답안 POST가 401이면 기존 인증 계층이 토큰을 한 번 갱신하고 같은 사용자·답안으로 재시도한다. 반복 401은 세션 종료, 403은 갱신 없이 실패하는 것을 추가 테스트로 확인했다.
+- 중첩 목차, null 본문/코드/첨부 설명, 첨부 objectKey 해석을 추가 테스트로 확인했다. API·화면 관련 테스트 16개가 통과했다(기존 13개 + 이번 추가 3개).
+- 실제 Docker 재검증에는 조회·저장·채점·복원 외에도 다른 사용자 ID의 403, 없는 학습의 404, null 마지막 목차, 완료 상태 해제를 포함했다. 임시 계정·콘텐츠·활동 기록은 검증 후 정리했다.
+- `choiceOptions` 내부의 `key/text`는 여전히 FE 지원 형식이며 BE 명세가 보장하는 형식은 아니다. 다른 형태로 저장된 객관식이 있으면 현재 목록 조회가 응답 형식 오류로 중단될 수 있다. 실제 콘텐츠 등록 전에 팀 간 형식 합의가 필요하다.
+- `criteriaResults`·`aiModelVersion`은 현재 BE에서 값이 채워지지 않는 AI 채점용 필드로 화면 모델에 연결하지 않았다. AI 연결 때 응답·표시 범위를 함께 확정해야 한다. 첨부 URL과 누적 정답 여부의 제약도 위에 기록한 상태다.
+
 ## 2026-10-11 API 연동 전 화면 미리보기 (이전 기록)
 
 2026-10-11 기준. BE `develop`의 `docs/learning-api.md`, `docs/auth-fe-alignment.md`, `ContentDtos.java`, `ActivityDtos.java`를 기준으로 화면에 필요한 데이터와 흐름을 정리했다. 실제 학습 API 호출은 추가하지 않았다. 기존 인증·홈의 서버 연동과 챗봇 예시 동작은 그대로다.

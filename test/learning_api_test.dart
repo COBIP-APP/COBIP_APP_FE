@@ -188,4 +188,114 @@ void main() {
     await first;
     expect(store.solved(41), isTrue);
   });
+
+  test('학습 답안 제출의 401은 토큰을 갱신하고 동일 답안으로 한 번 재시도한다', () async {
+    final tokens = MemoryTokenStore();
+    final auth = await testAuth(
+      authenticated: true,
+      adapter: server,
+      store: tokens,
+    );
+    addTearDown(auth.dispose);
+    final authenticatedApi = LearningApi(auth.api.dio);
+    final question = await authenticatedApi.question(41);
+    final attempts = <Map<String, Object?>>[];
+    server.handle = (r) async {
+      if (r.path == '/api/auth/refresh') {
+        return jsonResponse(testTokens(2), 200);
+      }
+      if (r.path == '/api/questions/41/submissions') {
+        attempts.add({
+          'authorization': r.headers['Authorization'],
+          'body': Map.of(r.data as Map),
+        });
+        if (attempts.length == 1) {
+          return jsonResponse({'code': 'UNAUTHORIZED'}, 401);
+        }
+      }
+      return server.respond(r);
+    };
+    final result = await authenticatedApi.submit(
+      auth.user!.userId,
+      question,
+      'B',
+    );
+    expect(result.score, 100);
+    expect(attempts, [
+      {
+        'authorization': 'Bearer test-access-1',
+        'body': {'userId': 1, 'selectedChoiceKey': 'B'},
+      },
+      {
+        'authorization': 'Bearer test-access-2',
+        'body': {'userId': 1, 'selectedChoiceKey': 'B'},
+      },
+    ]);
+    expect(
+      server.requests.where((r) => r.path == '/api/auth/refresh').length,
+      1,
+    );
+    expect(tokens.value, contains('test-refresh-2'));
+  });
+
+  test('학습 API의 반복 401은 세션을 종료하고 403은 토큰 재발급 없이 실패한다', () async {
+    for (final status in [401, 403]) {
+      final adapter = LearningServer();
+      final auth = await testAuth(authenticated: true, adapter: adapter);
+      addTearDown(auth.dispose);
+      var reads = 0;
+      adapter.handle = (r) async {
+        if (r.path == '/api/auth/refresh') {
+          return jsonResponse(testTokens(2), 200);
+        }
+        reads++;
+        return jsonResponse({}, status);
+      };
+      await expectLater(
+        LearningApi(auth.api.dio).templates(),
+        throwsA(isA<LearningApiException>()),
+      );
+      expect(reads, status == 401 ? 2 : 1);
+      expect(auth.isAuthenticated, status == 403);
+      expect(
+        adapter.requests.where((r) => r.path == '/api/auth/refresh').length,
+        status == 401 ? 1 : 0,
+      );
+    }
+  });
+
+  test('중첩 목차·첨부와 null 선택 필드를 BE 응답 그대로 해석한다', () async {
+    final detail = serverTemplate();
+    final root = (detail['sections'] as List).single as Map<String, dynamic>;
+    root['body'] = null;
+    root['exampleCode'] = null;
+    root['children'] = [
+      {
+        'id': 312,
+        'parentId': 311,
+        'title': '하위 목차',
+        'body': '본문',
+        'exampleCode': null,
+        'media': [
+          {
+            'id': 51,
+            'originalName': 'diagram.png',
+            'objectKey': 'private/diagram.png',
+            'altText': null,
+          },
+        ],
+        'children': [],
+      },
+    ];
+    server.handle = (r) async => jsonResponse(detail, 200);
+    final result = await api.template(31);
+    expect(result.allSections.map((s) => s.id), [311, 312]);
+    expect(result.sections.single.body, isNull);
+    expect(result.allSections.last.parentId, 311);
+    expect(
+      result.allSections.last.media.single.objectKey,
+      'private/diagram.png',
+    );
+    expect(result.allSections.last.media.single.altText, isNull);
+  });
 }

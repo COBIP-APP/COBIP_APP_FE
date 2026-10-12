@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/app_ui_tokens.dart';
+import '../../../app/router/app_router.dart';
 import '../../../app/widgets/app_bottom_navigation.dart';
 import '../../../app/widgets/app_home_header.dart';
 import '../../auth/presentation/auth_view_model.dart';
+import '../../learning/data/learning_api.dart';
 import '../data/home_api.dart';
 import 'home_view_model.dart';
 
@@ -229,7 +232,13 @@ class _HomeContent extends StatelessWidget {
             ),
             child: InkWell(
               borderRadius: BorderRadius.circular(AppRadii.hero),
-              onTap: () => _showDetailPending(context),
+              onTap: home.opening
+                  ? null
+                  : () => _openTemplate(
+                      context,
+                      template.id,
+                      progress.lastSectionId,
+                    ),
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.hero),
                 child: Column(
@@ -288,7 +297,7 @@ class _HomeContent extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '학습 상세 연결 준비 중',
+                      home.opening ? '학습을 여는 중…' : '이어서 학습',
                       style: AppTypography.link.copyWith(
                         color: AppColors.primary,
                       ),
@@ -302,6 +311,7 @@ class _HomeContent extends StatelessWidget {
         const Text('현재 공개된 학습의 기록입니다.', style: AppTypography.meta),
         const SizedBox(height: 12),
         _sectionTitle('학습 추천'),
+        if (home.opening) const LinearProgressIndicator(),
         for (final item in home.templates) _recommendationCard(context, item),
         const Text('공개 학습 목록을 서버 표시 순서로 안내합니다.', style: AppTypography.meta),
       ],
@@ -351,7 +361,9 @@ class _HomeContent extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadii.card),
-          onTap: () => _showDetailPending(context),
+          onTap: context.watch<HomeViewModel>().opening
+              ? null
+              : () => _openTemplate(context, template.id),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.card),
             child: Column(
@@ -408,10 +420,44 @@ class _HomeContent extends StatelessWidget {
         ),
       );
 
-  void _showDetailPending(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('학습 상세 화면의 서버 연동은 준비 중입니다.')));
+  Future<void> _openTemplate(
+    BuildContext context,
+    int templateId, [
+    int? sectionId,
+  ]) async {
+    final home = context.read<HomeViewModel>();
+    try {
+      final destination = await home.destination(templateId, sectionId);
+      if (!context.mounted || destination == null || home.disposed) return;
+      await context.pushNamed(
+        destination.grammar
+            ? AppRouteNames.grammarConcept
+            : AppRouteNames.practicalChapter,
+        pathParameters: {
+          'template': '${destination.templateId}',
+          if (destination.grammar)
+            'language': destination.language
+          else
+            'topic': '${destination.categoryId}',
+        },
+        queryParameters: {
+          if (destination.sectionId != null)
+            'section': '${destination.sectionId}',
+        },
+      );
+      if (context.mounted && !home.disposed) await home.load();
+    } catch (error) {
+      if (!context.mounted || home.disposed) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error is LearningApiException
+                ? error.message
+                : '학습을 열지 못했어요. 잠시 후 다시 시도해 주세요.',
+          ),
+        ),
+      );
+    }
   }
 
   String _studyDate(DateTime date) {

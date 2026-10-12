@@ -10,13 +10,17 @@ import 'package:cobip_app_fe/features/auth/presentation/sign_up_complete_screen.
 import 'package:cobip_app_fe/features/auth/presentation/sign_up_screen.dart';
 import 'package:cobip_app_fe/features/auth/presentation/terms_screen.dart';
 import 'package:cobip_app_fe/features/home/presentation/home_screen.dart';
+import 'package:cobip_app_fe/features/learning/data/learning_api.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:cobip_app_fe/features/auth/presentation/auth_view_model.dart';
 import 'package:dio/dio.dart';
 
 import 'auth_test_support.dart';
+import 'learning_test_support.dart';
 
 void main() {
   testWidgets('로그인 화면에서 비밀번호 찾기로 이동한다', (tester) async {
@@ -471,79 +475,91 @@ void main() {
     );
   });
 
-  testWidgets('홈은 서버 학습과 위치를 표시하고 샘플 상세로 이동하지 않는다', (tester) async {
-    final adapter = TestAuthAdapter();
-    final auth = (await tester.runAsync(
-      () => testAuth(authenticated: true, adapter: adapter),
-    ))!;
-    addTearDown(auth.dispose);
-    adapter.handle = (options) async => options.path == '/api/templates'
-        ? jsonResponse([
-            {
-              'id': 42,
-              'title': '서버에서 받은 학습',
-              'summary': '서버에서 받은 설명',
-              'categoryCode': 'GRAMMAR',
-              'categoryName': '문법 학습',
-              'languageCode': 'python',
-              'languageName': 'Python',
-              'published': true,
-            },
-          ], 200)
-        : jsonResponse({
-            'userId': 1,
-            'templateId': 42,
-            'lastSectionId': 101,
-            'startedAt': '2026-10-01T09:00:00Z',
-            'lastStudiedAt': '2026-10-10T10:00:00Z',
-            'completedAt': null,
-          }, 200);
-    final router = createAppRouter(initialLocation: '/home');
-    addTearDown(router.dispose);
-    await tester.pumpWithAuth(
-      MaterialApp.router(routerConfig: router),
-      auth: auth,
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('서버에서 받은 학습'), findsNWidgets(2));
-    expect(find.text('마지막 위치: 섹션 101'), findsOneWidget);
-    expect(find.text('학습 중'), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
-    expect(find.text('현재 학습 기록은 UI 확인용 예시입니다.'), findsNothing);
-    expect(
-      adapter.requests.any(
-        (request) =>
-            request.path == '/api/users/1/progress/templates/42' &&
-            request.headers['Authorization'] == 'Bearer test-access-1',
-      ),
-      isTrue,
-    );
-    await tester.tap(find.text('학습 상세 연결 준비 중'));
-    await tester.pumpAndSettle();
-    expect(find.text('학습 상세 화면의 서버 연동은 준비 중입니다.'), findsOneWidget);
-    expect(router.routeInformationProvider.value.uri.path, '/home');
-    ScaffoldMessenger.of(tester.element(find.byType(HomeScreen)))
-        .removeCurrentSnackBar();
-    await tester.pumpAndSettle();
-    expect(find.text('학습 상세 화면의 서버 연동은 준비 중입니다.'), findsNothing);
-    await tester.scrollUntilVisible(
-      find.text('서버에서 받은 학습').last,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.drag(
-      find.byKey(const Key('homeContentList')),
-      const Offset(0, -140),
-    );
-    await tester.pumpAndSettle();
-    final recommendation = find.text('서버에서 받은 학습').last.hitTestable();
-    expect(recommendation, findsOneWidget);
-    await tester.tap(recommendation);
-    await tester.pumpAndSettle();
-    expect(find.text('학습 상세 화면의 서버 연동은 준비 중입니다.'), findsOneWidget);
-    expect(router.routeInformationProvider.value.uri.path, '/home');
-  });
-
+  for (final practical in [false, true]) {
+    testWidgets('홈 추천과 마지막 학습이 실제 상세로 이동한다 practical=$practical', (
+      tester,
+    ) async {
+      final server = LearningServer();
+      server.savedProgress = {
+        'userId': 1,
+        'templateId': 31,
+        'lastSectionId': 311,
+        'startedAt': stamp,
+        'lastStudiedAt': stamp,
+        'completedAt': null,
+      };
+      server.handle = (options) async {
+        if (options.path == '/api/users/1/progress/templates/31' &&
+            options.method == 'GET') {
+          return jsonResponse(server.savedProgress, 200);
+        }
+        if (options.path == '/api/templates/31' && practical) {
+          return jsonResponse(serverTemplate()..['categoryId'] = 204, 200);
+        }
+        return server.respond(options);
+      };
+      final auth = (await tester.runAsync(
+        () => testAuth(authenticated: true, adapter: server),
+      ))!;
+      addTearDown(auth.dispose);
+      final router = createAppRouter(initialLocation: '/home');
+      addTearDown(router.dispose);
+      await tester.pumpWithAuth(
+        CobipApp(
+          router: router,
+          learningStore: LearningStore(api: LearningApi(auth.api.dio)),
+        ),
+        auth: auth,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('마지막 위치: 섹션 311'), findsOneWidget);
+      await tester.ensureVisible(find.text('이어서 학습'));
+      await tester.tap(find.text('이어서 학습'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('서버 본문'),
+        findsOneWidget,
+        reason: tester
+            .widgetList<Text>(find.byType(Text))
+            .map((w) => w.data)
+            .join(' | '),
+      );
+      expect(
+        router.routerDelegate.currentConfiguration.last.matchedLocation,
+        practical ? '/practical/204/templates/31' : '/grammar/java/chapters/31',
+      );
+      expect(
+        GoRouterState.of(tester.element(find.text('서버 본문')))
+            .uri
+            .queryParameters['section'],
+        '311',
+      );
+      router.pop();
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('서버 조건문').last,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.text('서버 조건문').last);
+      await tester.tap(find.text('서버 조건문').last);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('서버 본문'),
+        findsOneWidget,
+        reason: tester
+            .widgetList<Text>(find.byType(Text))
+            .map((w) => w.data)
+            .join(' | '),
+      );
+      expect(
+        GoRouterState.of(tester.element(find.text('서버 본문')))
+            .uri
+            .queryParameters['section'],
+        isNull,
+      );
+    });
+  }
   for (final (size, textScale) in [
     (const Size(320, 640), 2.0),
     (const Size(640, 320), 1.0),

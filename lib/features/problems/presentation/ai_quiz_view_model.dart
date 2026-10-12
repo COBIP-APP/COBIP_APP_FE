@@ -97,7 +97,7 @@ class AiQuizViewModel extends ChangeNotifier {
     required String difficulty,
     required List<AiQuizType> types,
     required int countPerType,
-    required String domain,
+    String? domain,
   }) => _run(() async {
     final batch = await api.generate(
       category: category,

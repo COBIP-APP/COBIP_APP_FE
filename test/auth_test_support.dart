@@ -54,6 +54,16 @@ class TestAuthAdapter implements HttpClientAdapter {
     if (options.method == 'GET' && options.path == '/api/templates') {
       return jsonResponse([], 200);
     }
+    if (options.path == '/api/users/me') {
+      return jsonResponse({
+        ...testUser,
+        'createdAt': '2026-10-01T00:00:00Z',
+      }, 200);
+    }
+    if (options.path == '/api/users/me/progress' ||
+        options.path == '/api/users/1/bookmarks') {
+      return jsonResponse([], 200);
+    }
     if (options.path.endsWith('/send')) {
       return jsonResponse({
         'message': '메일함을 확인해 주세요.',

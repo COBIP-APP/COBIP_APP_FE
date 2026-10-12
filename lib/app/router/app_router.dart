@@ -40,6 +40,7 @@ abstract final class AppRouteNames {
   static const problemMission = 'problem-mission';
   static const home = 'home';
   static const myPage = 'my-page';
+  static const accountSettings = 'account-settings';
   static const practical = 'practical';
   static const practicalChapters = 'practical-chapters';
   static const practicalChapter = 'practical-chapter';
@@ -129,6 +130,13 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
       path: '/my-page',
       name: AppRouteNames.myPage,
       builder: (context, state) => const MyPageScreen(),
+      routes: [
+        GoRoute(
+          path: 'account-settings',
+          name: AppRouteNames.accountSettings,
+          builder: (context, state) => const AccountSettingsScreen(),
+        ),
+      ],
     ),
     GoRoute(
       path: '/practical',

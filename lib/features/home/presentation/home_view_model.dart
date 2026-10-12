@@ -1,5 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../learning/data/learning_api.dart';
+import '../../learning/data/learning_destination.dart';
 import '../data/home_api.dart';
 
 enum HomeContentState { loading, empty, loaded, error }
@@ -16,6 +19,29 @@ class HomeViewModel extends ChangeNotifier {
   String? _errorMessage;
   bool _isLoading = false;
   bool _disposed = false;
+  bool _opening = false;
+  final _navigationCancel = CancelToken();
+
+  bool get opening => _opening;
+  bool get disposed => _disposed;
+
+  Future<LearningDestination?> destination(int id, int? sectionId) async {
+    if (_disposed || _opening) return null;
+    _opening = true;
+    notifyListeners();
+    try {
+      final destination = await resolveLearningDestination(
+        LearningApi(api.dio),
+        id,
+        sectionId,
+        _navigationCancel,
+      );
+      return _disposed ? null : destination;
+    } finally {
+      _opening = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
 
   HomeContentState get state => _state;
   List<HomeTemplate> get templates => _templates;
@@ -80,6 +106,7 @@ class HomeViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _navigationCancel.cancel('Home session closed');
     super.dispose();
   }
 }

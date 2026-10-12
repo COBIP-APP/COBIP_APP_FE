@@ -42,6 +42,7 @@ class LearningStore extends ChangeNotifier {
   int _generation = 0;
   bool _disposed = false;
   bool _loading = false;
+  bool _refreshRequested = false;
   CancelToken _cancel = CancelToken();
   PreviewLoadState state = PreviewLoadState.loading;
   String? error;
@@ -58,6 +59,7 @@ class LearningStore extends ChangeNotifier {
     _userId = userId;
     final generation = ++_generation;
     _loading = false;
+    _refreshRequested = false;
     _languages = [];
     _categories = [];
     _templates = [];
@@ -165,11 +167,32 @@ class LearningStore extends ChangeNotifier {
       if (_current(generation)) {
         _loading = false;
         _notify();
+        _drainRefresh();
       }
     }
   }
 
   bool detailReady(String key) => _details[key] == PreviewLoadState.ready;
+
+  /// Reload after another screen saved activity, including during an old read.
+  void requestRefresh() {
+    if (_disposed || _userId == null) return;
+    _refreshRequested = true;
+    _drainRefresh();
+  }
+
+  void _drainRefresh() {
+    if (!_refreshRequested ||
+        _disposed ||
+        _userId == null ||
+        _loading ||
+        _busy.isNotEmpty ||
+        _details.containsValue(PreviewLoadState.loading)) {
+      return;
+    }
+    _refreshRequested = false;
+    unawaited(load());
+  }
 
   Future<void> loadMyQuestions() async {
     final user = _userId;
@@ -297,7 +320,10 @@ class LearningStore extends ChangeNotifier {
           ? e.message
           : '상세 정보를 불러오지 못했어요.';
     }
-    if (_current(generation)) _notify();
+    if (_current(generation)) {
+      _notify();
+      _drainRefresh();
+    }
   }
 
   LearningTemplate? template(int id) =>
@@ -333,7 +359,10 @@ class LearningStore extends ChangeNotifier {
       _notify();
       return result;
     } finally {
-      if (_current(generation)) _busy.remove(key);
+      if (_current(generation)) {
+        _busy.remove(key);
+        _drainRefresh();
+      }
     }
   }
 

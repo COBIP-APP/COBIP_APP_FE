@@ -227,7 +227,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('테스트학습자'), findsOneWidget);
     expect(find.text('영진'), findsNothing);
-    await tapVisible(tester, find.text('계정 관리'));
+    await tapVisible(tester, find.byTooltip('계정 관리'));
     expect(find.text('닉네임: 테스트학습자'), findsOneWidget);
     await tapVisible(tester, find.text('로그아웃'));
     expect(router.routeInformationProvider.value.uri.path, '/login');

@@ -1,4 +1,4 @@
-// UI models follow BE ContentDtos / ActivityDtos. No HTTP transport is used yet.
+// Screen models decoded from BE ContentDtos / ActivityDtos by LearningApi.
 class LearningLanguage {
   const LearningLanguage(this.id, this.code, this.name);
   final int id;
@@ -97,7 +97,7 @@ enum LearningQuestionType {
   final String label;
 }
 
-// The inner choiceOptions shape is a preview convention, pending BE agreement.
+// Supported choiceOptions shape: {key, text}. Other shapes fail explicitly.
 class LearningChoice {
   const LearningChoice(this.key, this.text);
   final String key;
@@ -144,7 +144,7 @@ class LearningProgress {
     this.completedAt,
   });
   final int templateId;
-  final int lastSectionId;
+  final int? lastSectionId;
   final DateTime startedAt;
   final DateTime lastStudiedAt;
   final DateTime? completedAt;

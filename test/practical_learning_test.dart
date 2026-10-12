@@ -1,6 +1,6 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
-import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:cobip_app_fe/features/learning/presentation/template_preview_screen.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_practice_screen.dart';
 import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
@@ -32,7 +32,7 @@ void main() {
       await tester.pumpAndSettle();
       final store = tester
           .element(find.byType(TemplatePreviewScreen))
-          .read<LearningPreviewStore>();
+          .read<LearningStore>();
       expect(find.byTooltip('COBIA 챗봇'), findsOneWidget);
       expect(find.text('문제 풀기'), findsNothing);
       await reveal(tester, find.text('본문 읽기 완료'));
@@ -95,7 +95,7 @@ void main() {
     await tester.pumpAndSettle();
     final store = tester
         .element(find.byType(NavigationBar))
-        .read<LearningPreviewStore>();
+        .read<LearningStore>();
     final database = store.template(202)!;
     await tester.dragUntilVisible(
       find.text(database.title).hitTestable(),

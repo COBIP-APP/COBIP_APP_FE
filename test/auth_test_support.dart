@@ -1,3 +1,5 @@
+import 'preview_learning_store.dart';
+
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -155,6 +157,11 @@ extension AuthWidgetTester on WidgetTester {
               key: ObjectKey(session),
               auth: session,
               router: widget.router,
+              learningStore:
+                  widget.learningStore ??
+                  (PreviewLearningStore()
+                    ..bindUser(session.user?.userId)
+                    ..load()),
             )
           : ChangeNotifierProvider.value(value: session, child: widget),
     );

@@ -7,7 +7,7 @@ import '../../../app/widgets/learning_visuals.dart';
 import '../../learning/data/learning_models.dart';
 import '../../learning/presentation/learning_detail_scaffold.dart';
 import '../../learning/presentation/learning_question_card.dart';
-import '../../learning/presentation/learning_preview_store.dart';
+import '../../learning/presentation/learning_store.dart';
 import '../../learning/presentation/learning_preview_widgets.dart';
 
 class QuestionPreviewScreen extends StatefulWidget {
@@ -37,7 +37,7 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
       _error = null;
     });
     try {
-      await context.read<LearningPreviewStore>().submit(item.id, _answer);
+      await context.read<LearningStore>().submit(item.id, _answer);
       if (!mounted) return;
       setState(() => _editing = false);
       if (_scroll.hasClients) _scroll.jumpTo(0);
@@ -61,7 +61,7 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<LearningPreviewStore>();
+    final store = context.watch<LearningStore>();
     final item = store.question(widget.questionId);
     final latest = store.latest(widget.questionId);
     final result = !_editing ? latest : null;
@@ -83,7 +83,8 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
       title: '문제 풀이',
       showChat: false,
       fallbackLocation: '/problems',
-      body: PreviewContent(
+      body: LearningDetailContent(
+        detailKey: 'q:${widget.questionId}',
         child: item == null
             ? const Center(child: Text('문제를 찾을 수 없어요. 목록에서 다시 선택해 주세요.'))
             : ListView(
@@ -91,7 +92,7 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                 padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
                 children: [
                   Text(
-                    '${languageName(item.languageId)} · ${item.questionType.label} · ${item.difficulty.label}',
+                    '${store.languageName(item.languageId)} · ${item.questionType.label} · ${item.difficulty.label}',
                     style: AppTypography.meta,
                   ),
                   const SizedBox(height: 16),
@@ -107,7 +108,7 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                   const SizedBox(height: 20),
                   if (!isChoice && result == null) ...[
                     const LearningNotice(
-                      '답안을 제출하면 채점 대기로 표시됩니다. 이 미리보기에서는 코드를 실행하거나 AI 채점을 하지 않습니다.',
+                      '답안은 서버에 저장됩니다. 코드·설명형 자동 채점은 아직 준비 중이라 채점 대기로 표시됩니다.',
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -149,7 +150,7 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                     const SizedBox(height: 16),
                     OutlinedButton.icon(
                       onPressed: () => context.push(
-                        '${templateLocation(related)}${item.relatedSectionId == null ? '' : '?section=${item.relatedSectionId}'}',
+                        '${store.templateLocation(related)}${item.relatedSectionId == null ? '' : '?section=${item.relatedSectionId}'}',
                       ),
                       icon: const Icon(Icons.menu_book_outlined),
                       label: Text('관련 학습 · ${related.title}'),

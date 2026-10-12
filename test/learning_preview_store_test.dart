@@ -1,17 +1,19 @@
+import 'preview_learning_store.dart';
+
 import 'package:cobip_app_fe/features/learning/data/learning_models.dart';
 import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
-import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  late LearningPreviewStore store;
-  setUp(() => store = LearningPreviewStore(delay: Duration.zero)..bindUser(1));
+  late LearningStore store;
+  setUp(() => store = PreviewLearningStore(delay: Duration.zero)..bindUser(1));
   tearDown(() => store.dispose());
 
   test('정답 기록은 이후 오답에도 유지되고 계정 변경 시 초기화된다', () async {
     final correct = previewAnswerKeys[2001]!;
     final wrong = correct == 'A' ? 'B' : 'A';
-    store.failNextAction = true;
+    (store as PreviewLearningStore).failNextAction = true;
     await expectLater(store.submit(2001, correct), throwsStateError);
     expect(store.solved(2001), isFalse);
     expect(store.latest(2001), isNull);
@@ -41,7 +43,7 @@ void main() {
   });
 
   test('북마크 실패는 상태를 변경하지 않고 다시 시도할 수 있다', () async {
-    store.failNextAction = true;
+    (store as PreviewLearningStore).failNextAction = true;
     await expectLater(store.toggleBookmark(111), throwsStateError);
     expect(store.bookmarked(111), isFalse);
     await store.toggleBookmark(111);
@@ -87,12 +89,12 @@ void main() {
   });
 
   test('학습 불러오기 실패 후 재시도와 빈 목록을 지원한다', () async {
-    store.failNextAction = true;
+    (store as PreviewLearningStore).failNextAction = true;
     await store.load();
     expect(store.state, PreviewLoadState.error);
     await store.load();
     expect(store.state, PreviewLoadState.ready);
-    final empty = LearningPreviewStore(
+    final empty = PreviewLearningStore(
       templates: [],
       questions: [],
       delay: Duration.zero,

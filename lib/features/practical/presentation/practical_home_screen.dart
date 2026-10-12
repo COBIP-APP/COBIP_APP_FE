@@ -6,8 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../app/app_ui_tokens.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/widgets/learning_visuals.dart';
-import '../../learning/data/learning_preview_data.dart';
-import '../../learning/presentation/learning_preview_store.dart';
+import '../../learning/presentation/learning_store.dart';
 import '../../learning/presentation/learning_preview_widgets.dart';
 import 'practical_scaffold.dart';
 import '../../learning/presentation/learning_filter_sheet.dart';
@@ -30,9 +29,15 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<LearningPreviewStore>();
-    final categories = previewCategories.where((c) => c.parentId == 2).toList();
-    final categoryIds = {2, ...categories.map((c) => c.id)};
+    final store = context.watch<LearningStore>();
+    final categories = store.categories
+        .where(
+          (c) =>
+              store.categoryIds('PRACTICAL').contains(c.id) &&
+              c.id != store.categoryId('PRACTICAL'),
+        )
+        .toList();
+    final categoryIds = store.categoryIds('PRACTICAL');
     final query = _search.text.trim().toLowerCase();
     final items = store.templates
         .where(
@@ -46,6 +51,7 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
     return PracticalScaffold(
       body: PreviewContent(
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: AppSpacing.pagePadding(context, top: 4),
           children: [
             const AppHomeHeader(),
@@ -59,7 +65,7 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
               controller: _search,
               hint: '주제 또는 키워드 검색',
               summary:
-                  '${_categoryId == null ? '전체 분류' : categoryName(_categoryId!)}${_bookmarksOnly ? ' · 북마크' : ''}',
+                  '${_categoryId == null ? '전체 분류' : store.categoryName(_categoryId!)}${_bookmarksOnly ? ' · 북마크' : ''}',
               filtered: _categoryId != null || _bookmarksOnly,
               onChanged: () => setState(() {}),
               onFilter: () async {
@@ -90,6 +96,8 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
               LearningNotice(
                 _bookmarksOnly
                     ? '저장한 학습이 없어요. 마음에 드는 학습을 북마크해 보세요.'
+                    : query.isEmpty
+                    ? '아직 등록된 학습이 없어요.'
                     : '검색 결과가 없어요. 다른 키워드를 입력해보세요.',
               ),
             for (final item in items) TemplatePreviewCard(item: item),

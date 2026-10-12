@@ -8,8 +8,7 @@ import '../../../app/widgets/app_bottom_navigation.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/widgets/learning_visuals.dart';
 import '../../learning/data/learning_models.dart';
-import '../../learning/data/learning_preview_data.dart';
-import '../../learning/presentation/learning_preview_store.dart';
+import '../../learning/presentation/learning_store.dart';
 import '../../learning/presentation/learning_preview_widgets.dart';
 import '../../learning/presentation/learning_filter_sheet.dart';
 
@@ -32,11 +31,11 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
   bool _submittedOnly = false;
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<LearningPreviewStore>();
+    final store = context.watch<LearningStore>();
     final items = store.questions
         .where(
           (q) =>
-              q.categoryId == 3 &&
+              store.categoryIds('CODING_PROBLEM').contains(q.categoryId) &&
               q.prompt.toLowerCase().contains(
                 _search.text.trim().toLowerCase(),
               ) &&
@@ -52,6 +51,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
           child: LearningBody(
             child: PreviewContent(
               child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: AppSpacing.pagePadding(context, top: 4),
                 children: [
                   const AppHomeHeader(),
@@ -65,7 +65,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                     controller: _search,
                     hint: '문제 검색',
                     summary:
-                        '${_languageId == null ? '전체 언어' : languageName(_languageId)} · ${_type?.label ?? '전체 유형'}${_submittedOnly ? ' · 제출한 문제' : ''}',
+                        '${_languageId == null ? '전체 언어' : store.languageName(_languageId)} · ${_type?.label ?? '전체 유형'}${_submittedOnly ? ' · 제출한 문제' : ''}',
                     filtered:
                         _languageId != null || _type != null || _submittedOnly,
                     onChanged: () => setState(() {}),
@@ -75,7 +75,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                         groups: [
                           LearningFilterGroup('language', '언어', {
                             'all': '전체 언어',
-                            for (final l in previewLanguages) '${l.id}': l.name,
+                            for (final l in store.languages) '${l.id}': l.name,
                           }),
                           LearningFilterGroup('type', '문제 유형', {
                             'all': '전체 유형',
@@ -108,7 +108,11 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                   ),
                   const SizedBox(height: 20),
                   if (items.isEmpty)
-                    const LearningNotice('조건에 맞는 문제가 없어요. 다른 필터를 선택해 주세요.'),
+                    LearningNotice(
+                      store.questions.isEmpty
+                          ? '아직 등록된 문제가 없어요.'
+                          : '조건에 맞는 문제가 없어요. 다른 필터를 선택해 주세요.',
+                    ),
                   for (final item in items) QuestionPreviewCard(item: item),
                 ],
               ),

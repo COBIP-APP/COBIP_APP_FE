@@ -1,6 +1,6 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
-import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:cobip_app_fe/features/learning/presentation/template_preview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +90,7 @@ void main() {
       await tester.pumpAndSettle();
       final store = tester
           .element(find.byType(TemplatePreviewScreen))
-          .read<LearningPreviewStore>();
+          .read<LearningStore>();
       for (final (id, answer) in [(2000, '직접 작성한 코드\nprint(1)'), (2001, 'D')]) {
         final pending = store.submit(id, answer);
         await tester.pump(const Duration(seconds: 1));

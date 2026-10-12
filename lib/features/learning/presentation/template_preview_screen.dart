@@ -6,7 +6,7 @@ import '../../../app/app_ui_tokens.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/widgets/learning_visuals.dart';
 import '../data/learning_models.dart';
-import 'learning_preview_store.dart';
+import 'learning_store.dart';
 import 'learning_preview_widgets.dart';
 import 'learning_detail_scaffold.dart';
 
@@ -42,7 +42,7 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
       _error = null;
     });
     try {
-      await context.read<LearningPreviewStore>().saveProgress(
+      await context.read<LearningStore>().saveProgress(
         widget.templateId,
         section.id,
         completed: completed,
@@ -141,7 +141,7 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<LearningPreviewStore>();
+    final store = context.watch<LearningStore>();
     final item = store.template(widget.templateId);
     final progress = store.progress(widget.templateId);
     final sections = item?.allSections ?? <TemplateSection>[];
@@ -156,6 +156,7 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
         .toList();
     if (!_entryRequested &&
         store.state == PreviewLoadState.ready &&
+        store.detailReady('t:${widget.templateId}') &&
         section != null) {
       _entryRequested = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -166,7 +167,7 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
       title: item?.title ?? (widget.practical ? '실무 학습' : '문법 학습'),
       fallbackLocation: item == null
           ? (widget.practical ? '/practical' : '/grammar')
-          : templateListLocation(item),
+          : store.templateListLocation(item),
       actions: item == null
           ? null
           : [
@@ -179,7 +180,8 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
                 icon: const Icon(Icons.format_list_bulleted),
               ),
             ],
-      body: PreviewContent(
+      body: LearningDetailContent(
+        detailKey: 't:${widget.templateId}',
         child: item == null
             ? const Center(child: Text('학습을 찾을 수 없어요. 목록에서 다시 선택해 주세요.'))
             : ListView(
@@ -220,7 +222,7 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
                     TextButton(
                       onPressed: () => context.canPop()
                           ? context.pop()
-                          : context.go(templateListLocation(item)),
+                          : context.go(store.templateListLocation(item)),
                       child: const Text('학습 목록으로'),
                     ),
                   ] else if (section == null)

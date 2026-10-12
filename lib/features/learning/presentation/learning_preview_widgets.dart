@@ -7,12 +7,7 @@ import '../../../app/widgets/learning_card.dart';
 import '../../../app/widgets/learning_overview_content.dart';
 import '../../../app/widgets/learning_visuals.dart';
 import '../data/learning_models.dart';
-import '../data/learning_preview_data.dart';
-import 'learning_preview_store.dart';
-
-const previewNotice = LearningNotice(
-  '미리보기 · 예시 데이터이며, 학습 기록은 앱을 실행하는 동안만 유지됩니다.',
-);
+import 'learning_store.dart';
 
 // The API provides an objectKey, not a public/download URL. Never load it as a URL.
 class PreviewMediaList extends StatelessWidget {
@@ -33,25 +28,17 @@ class PreviewMediaList extends StatelessWidget {
   );
 }
 
-String languageName(int? id) =>
-    previewLanguages.where((l) => l.id == id).firstOrNull?.name ?? '언어 공통';
-String categoryName(int id) =>
-    previewCategories.where((c) => c.id == id).firstOrNull?.name ?? '학습';
-String templateLocation(LearningTemplate item) => item.categoryId == 1
-    ? '/grammar/${previewLanguages.firstWhere((l) => l.id == item.languageId).code.toLowerCase()}/chapters/${item.id}'
-    : '/practical/${item.categoryId}/templates/${item.id}';
-String templateListLocation(LearningTemplate item) => item.categoryId == 1
-    ? '/grammar/${previewLanguages.firstWhere((l) => l.id == item.languageId).code.toLowerCase()}/chapters'
-    : '/practical/${item.categoryId}/templates';
-String previewDate(DateTime value) =>
-    '${value.month}/${value.day} ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+String previewDate(DateTime value) {
+  final local = value.toLocal();
+  return '${local.month}/${local.day} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
 
 class PreviewContent extends StatelessWidget {
   const PreviewContent({super.key, required this.child});
   final Widget child;
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<LearningPreviewStore>();
+    final store = context.watch<LearningStore>();
     return switch (store.state) {
       PreviewLoadState.loading => const Center(
         child: CircularProgressIndicator(),
@@ -62,14 +49,17 @@ class PreviewContent extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('학습 정보를 불러오지 못했어요.'),
+              Text(store.error ?? '학습 정보를 불러오지 못했어요.'),
               const SizedBox(height: 16),
               FilledButton(onPressed: store.load, child: const Text('다시 시도')),
             ],
           ),
         ),
       ),
-      PreviewLoadState.ready => child,
+      PreviewLoadState.ready => RefreshIndicator(
+        onRefresh: store.load,
+        child: child,
+      ),
     };
   }
 }
@@ -85,7 +75,7 @@ class _BookmarkButtonState extends State<BookmarkButton> {
   bool _busy = false;
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<LearningPreviewStore>();
+    final store = context.watch<LearningStore>();
     final saved = store.bookmarked(widget.templateId);
     return IconButton(
       tooltip: saved ? '북마크 해제' : '북마크 저장',
@@ -118,7 +108,8 @@ class TemplatePreviewCard extends StatelessWidget {
   final LearningTemplate item;
   @override
   Widget build(BuildContext context) {
-    final progress = context.watch<LearningPreviewStore>().progress(item.id);
+    final store = context.watch<LearningStore>();
+    final progress = store.progress(item.id);
     final completed = progress?.completedAt != null;
     final started = progress != null;
     return LearningCard(
@@ -130,13 +121,13 @@ class TemplatePreviewCard extends StatelessWidget {
           : AppColors.surface,
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
-        onTap: () => context.push(templateLocation(item)),
+        onTap: () => context.push(store.templateLocation(item)),
         child: LearningOverviewContent(
           label:
-              '${languageName(item.languageId)} · ${categoryName(item.categoryId)}',
+              '${store.languageName(item.languageId)} · ${store.categoryName(item.categoryId)}',
           title: item.title,
           description: item.summary,
-          icon: item.categoryId == 1
+          icon: store.isGrammar(item)
               ? Icons.menu_book_outlined
               : Icons.layers_outlined,
           action: BookmarkButton(templateId: item.id),
@@ -164,7 +155,7 @@ class QuestionPreviewCard extends StatelessWidget {
   final LearningQuestion item;
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<LearningPreviewStore>();
+    final store = context.watch<LearningStore>();
     final latest = store.latest(item.id);
     final solved = store.solved(item.id);
     return LearningCard(
@@ -178,7 +169,7 @@ class QuestionPreviewCard extends StatelessWidget {
         onTap: () => context.push('/problems/${item.id}'),
         child: LearningOverviewContent(
           label:
-              '${languageName(item.languageId)} · ${item.questionType.label}',
+              '${store.languageName(item.languageId)} · ${item.questionType.label}',
           title: item.prompt,
           description: '통과 기준 ${item.passScore}점',
           icon: Icons.terminal_rounded,
@@ -200,6 +191,48 @@ class QuestionPreviewCard extends StatelessWidget {
               : latest.pending
               ? '채점 대기 · 다시 풀기'
               : '제출한 문제 · 다시 풀기',
+        ),
+      ),
+    );
+  }
+}
+
+/// Loads full detail only on entry; list summaries never stand in for sections.
+class LearningDetailContent extends StatelessWidget {
+  const LearningDetailContent({
+    super.key,
+    required this.detailKey,
+    required this.child,
+  });
+  final String detailKey;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) {
+    final store = context.watch<LearningStore>();
+    if (store.state != PreviewLoadState.ready) {
+      return PreviewContent(child: child);
+    }
+    if (store.detailReady(detailKey)) return child;
+    final error = store.detailError(detailKey);
+    if (error == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) store.ensureDetail(detailKey);
+      });
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(error),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => store.ensureDetail(detailKey, refresh: true),
+              child: const Text('다시 시도'),
+            ),
+          ],
         ),
       ),
     );

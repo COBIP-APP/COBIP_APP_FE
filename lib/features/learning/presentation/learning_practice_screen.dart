@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../app/app_ui_tokens.dart';
 import '../../../app/widgets/learning_visuals.dart';
 import '../data/learning_models.dart';
-import 'learning_preview_store.dart';
+import 'learning_store.dart';
 import 'learning_preview_widgets.dart';
 import 'learning_detail_scaffold.dart';
 import 'learning_question_card.dart';
@@ -22,6 +22,8 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
   final _scroll = ScrollController();
   final _answers = <int, String>{};
   Map<int, LearningSubmission> _results = {};
+  final _accepted = <int, LearningSubmission>{};
+  final _acceptedAnswers = <int, String>{};
   bool _busy = false;
   String? _error;
 
@@ -38,10 +40,20 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
       _error = null;
     });
     try {
-      final store = context.read<LearningPreviewStore>();
+      final store = context.read<LearningStore>();
       final submissions = await Future.wait([
         for (final question in questions)
-          store.submit(question.id, _answers[question.id]!),
+          () async {
+            final answer = _answers[question.id]!;
+            if (_acceptedAnswers[question.id] == answer &&
+                _accepted.containsKey(question.id)) {
+              return _accepted[question.id]!;
+            }
+            final result = await store.submit(question.id, answer);
+            _accepted[question.id] = result;
+            _acceptedAnswers[question.id] = answer;
+            return result;
+          }(),
       ]);
       if (!mounted) return;
       setState(() {
@@ -65,7 +77,7 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
       _error = null;
     });
     try {
-      final store = context.read<LearningPreviewStore>();
+      final store = context.read<LearningStore>();
       final section = store.template(widget.templateId)?.allSections.lastOrNull;
       if (section == null) throw StateError('No lesson section');
       await store.saveProgress(
@@ -83,7 +95,7 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<LearningPreviewStore>();
+    final store = context.watch<LearningStore>();
     final questions = store.questions
         .where((question) => question.relatedTemplateId == widget.templateId)
         .toList();
@@ -101,12 +113,13 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
     final template = store.template(widget.templateId);
     final listLocation = template == null
         ? '/grammar'
-        : templateListLocation(template);
+        : store.templateListLocation(template);
     return LearningDetailScaffold(
       title: '학습 확인 문제',
       showChat: false,
       fallbackLocation: listLocation,
-      body: PreviewContent(
+      body: LearningDetailContent(
+        detailKey: 't:${widget.templateId}',
         child: ListView(
           controller: _scroll,
           padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
@@ -155,6 +168,8 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
                   onPressed: () {
                     setState(() {
                       _answers.clear();
+                      _accepted.clear();
+                      _acceptedAnswers.clear();
                       _results = {};
                       _error = null;
                     });

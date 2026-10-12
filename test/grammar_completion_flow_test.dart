@@ -1,3 +1,5 @@
+import 'preview_learning_store.dart';
+
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:cobip_app_fe/app/app_ui_tokens.dart';
@@ -6,7 +8,7 @@ import 'package:cobip_app_fe/features/learning/presentation/learning_preview_wid
 import 'package:cobip_app_fe/features/grammar/presentation/grammar_lesson_screen.dart';
 import 'package:cobip_app_fe/features/grammar/presentation/grammar_practice_screen.dart';
 import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
-import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -32,11 +34,11 @@ void main() {
     await tester.pumpAndSettle();
     final store = tester
         .element(find.byType(GrammarLessonScreen))
-        .read<LearningPreviewStore>();
+        .read<LearningStore>();
     expect(find.text(store.template(111)!.description), findsNothing);
     expect(find.text('문제 풀기'), findsNothing);
     await reveal(tester, find.text('본문 읽기 완료'));
-    store.failNextAction = true;
+    (store as PreviewLearningStore).failNextAction = true;
     await tester.tap(find.text('본문 읽기 완료'));
     await tester.pumpAndSettle();
     expect(store.progress(111)!.completedAt, isNull);
@@ -129,7 +131,7 @@ void main() {
       await tester.pumpAndSettle();
       final store = tester
           .element(find.byType(GrammarPracticeScreen))
-          .read<LearningPreviewStore>();
+          .read<LearningStore>();
       final questions = store.questions.where(
         (q) => q.relatedTemplateId == entry.value,
       );
@@ -147,7 +149,7 @@ void main() {
       expect(find.text('다시 풀기'), findsNothing);
       await reveal(tester, find.text('학습 끝내기'));
       if (entry.key == 'java') {
-        store.failNextAction = true;
+        (store as PreviewLearningStore).failNextAction = true;
         await tester.tap(find.text('학습 끝내기'));
         await tester.pumpAndSettle();
         expect(find.byType(GrammarPracticeScreen), findsOneWidget);
@@ -207,7 +209,7 @@ void main() {
     expect(
       tester
           .element(find.byType(GrammarLessonScreen))
-          .read<LearningPreviewStore>()
+          .read<LearningStore>()
           .progress(111)!
           .lastSectionId,
       11105,
@@ -258,7 +260,7 @@ void main() {
       await tester.pumpAndSettle();
       final store = tester
           .element(find.byType(GrammarLessonScreen))
-          .read<LearningPreviewStore>();
+          .read<LearningStore>();
       await tester.tap(find.byTooltip('목차'));
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('목차 닫기'));

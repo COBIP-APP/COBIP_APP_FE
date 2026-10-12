@@ -6,13 +6,15 @@ import '../features/auth/data/auth_api.dart';
 import '../features/auth/data/token_store.dart';
 import '../features/auth/presentation/auth_view_model.dart';
 import '../features/chat/presentation/chat_view_model.dart';
-import '../features/learning/presentation/learning_preview_store.dart';
+import '../features/learning/presentation/learning_store.dart';
+import '../features/learning/data/learning_api.dart';
 import 'router/app_router.dart';
 
 class CobipApp extends StatefulWidget {
-  const CobipApp({super.key, this.auth, this.router});
+  const CobipApp({super.key, this.auth, this.router, this.learningStore});
   final AuthViewModel? auth;
   final GoRouter? router;
+  final LearningStore? learningStore;
 
   @override
   State<CobipApp> createState() => _CobipAppState();
@@ -49,10 +51,11 @@ class _CobipAppState extends State<CobipApp> {
       providers: [
         ChangeNotifierProvider.value(value: _auth),
         ChangeNotifierProvider(create: (_) => ChatViewModel()),
-        ChangeNotifierProxyProvider<AuthViewModel, LearningPreviewStore>(
-          create: (context) => LearningPreviewStore()
-            ..bindUser(context.read<AuthViewModel>().user?.userId)
-            ..load(),
+        ChangeNotifierProxyProvider<AuthViewModel, LearningStore>(
+          create: (context) =>
+              (widget.learningStore ??
+                    LearningStore(api: LearningApi(_auth.api.dio)))
+                ..bindUser(context.read<AuthViewModel>().user?.userId),
           update: (_, auth, store) => store!..bindUser(auth.user?.userId),
         ),
       ],

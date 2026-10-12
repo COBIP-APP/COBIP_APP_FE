@@ -37,8 +37,7 @@ class _QuizPage extends StatefulWidget {
 
 class _QuizPageState extends State<_QuizPage> {
   final _form = GlobalKey<FormState>();
-  final _category = TextEditingController(text: 'Java');
-  final _domain = TextEditingController();
+  final _category = TextEditingController(text: 'aws');
   final _scroll = ScrollController();
   final _types = <AiQuizType>{
     AiQuizType.multipleChoice,
@@ -51,7 +50,6 @@ class _QuizPageState extends State<_QuizPage> {
   @override
   void dispose() {
     _category.dispose();
-    _domain.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -61,7 +59,6 @@ class _QuizPageState extends State<_QuizPage> {
     FocusScope.of(context).unfocus();
     await vm.generate(
       category: _category.text,
-      domain: _domain.text,
       difficulty: _difficulty,
       types: _types.toList(),
       countPerType: _count,
@@ -74,7 +71,7 @@ class _QuizPageState extends State<_QuizPage> {
     final vm = context.watch<AiQuizViewModel>();
     final batch = vm.batch;
     return LearningDetailScaffold(
-      title: 'AI 문제 생성',
+      title: 'AI 실무 문제 생성',
       showChat: false,
       fallbackLocation: '/problems',
       body: ListView(
@@ -251,20 +248,10 @@ class _QuizPageState extends State<_QuizPage> {
             enabled: !vm.busy,
             decoration: const InputDecoration(
               labelText: '주제',
-              hintText: '예: Java, Database, Infrastructure',
+              hintText: '예: aws, docker, cicd',
             ),
             validator: (v) =>
                 v == null || v.trim().isEmpty ? '주제를 입력해 주세요.' : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            key: const ValueKey('ai-domain'),
-            controller: _domain,
-            enabled: !vm.busy,
-            decoration: const InputDecoration(
-              labelText: '세부 주제 (선택)',
-              hintText: '예: AWS, 조건문, 인덱스',
-            ),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(

@@ -131,7 +131,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                       if (mounted && _mineOnly) await store.loadMyQuestions();
                     },
                     icon: const Icon(Icons.auto_awesome_outlined),
-                    label: const Text('AI 문제 생성'),
+                    label: const Text('AI 실무 문제 생성'),
                   ),
                   const SizedBox(height: 20),
                   if (_mineOnly &&

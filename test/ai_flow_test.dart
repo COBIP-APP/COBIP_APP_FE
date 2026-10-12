@@ -33,16 +33,27 @@ void main() {
     addTearDown(router.dispose);
     await tester.pumpWithAuth(CobipApp(router: router), auth: auth);
     await tester.pumpAndSettle();
-    await tapVisible(tester, find.text('AI 문제 생성'));
+    await tapVisible(tester, find.text('AI 실무 문제 생성'));
     expect(find.byType(AiQuizScreen), findsOneWidget);
-    await tester.enterText(
-      find.byKey(const ValueKey('ai-category')),
-      'Infrastructure',
+    expect(
+      tester
+          .widget<TextFormField>(find.byKey(const ValueKey('ai-category')))
+          .controller!
+          .text,
+      'aws',
     );
-    await tester.enterText(find.byKey(const ValueKey('ai-domain')), 'AWS');
+    expect(find.byKey(const ValueKey('ai-domain')), findsNothing);
+    await tester.enterText(find.byKey(const ValueKey('ai-category')), '');
+    expect(find.text('예: aws, docker, cicd'), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('ai-category')), 'docker');
     tester.testTextInput.hide();
     await tester.pumpAndSettle();
     await tapVisible(tester, find.byKey(const ValueKey('ai-generate')));
+    expect(server.calls('/ai/quiz/generate').single.data['category'], 'docker');
+    expect(
+      server.calls('/ai/quiz/generate').single.data.containsKey('domain'),
+      isFalse,
+    );
     expect(server.calls('/ai/quiz/generate').single.data['quiz_types'], [
       'MULTIPLE_CHOICE',
       'BLANK',

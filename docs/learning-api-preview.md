@@ -1,5 +1,152 @@
 # 학습 API 연결 및 화면 변경 기록
 
+## 2026-10-12 생성 문제 저장·작성자·내 문제 필터 (BE 구현 요청)
+
+**상태: FE 구현, 아래 BE 계약은 신규 제안이며 아직 로컬 BE에 없음.** 실제 저장 성공은 BE 구현 후 확인해야 한다. 앱에 더미 문제나 가짜 저장 성공을 넣지 않았다. 아래 과거 AI 직접 연결 기록과 구분한다. 이번 변경은 생성된 문제의 저장·작성자·조회이며, AI 생성/챗봇의 Spring 중계 전환은 수행하지 않았다. 팀에서 전달한 최종 중계 경로는 `/api/ai/chat`, `/api/admin/ai/questions/generate` 등으로 기존 `/ai/...`와 다르므로 `AI_USE_BE_PROXY=true`만으로 최종 중계가 완성되지는 않는다. 특히 관리자 생성 API를 일반 사용자의 생성·저장 API로 사용하지 않는다.
+
+### 앱 동작
+
+- 생성 결과에서 문제마다 `문제 저장`을 누른 시점에 Spring으로 저장 요청한다. 여러 문제를 생성해도 각각 독립된 문제로 저장하며 묶음 ID를 만들지 않는다.
+- 저장 중 다른 생성·문제 이동·제출·저장을 잠근다. 성공 응답 후에만 `저장 완료`와 서버가 반환한 작성자를 표시하고 저장 버튼을 비활성화한다. 실패 시 문제를 유지하고 다시 저장할 수 있다.
+- `저장한 문제 풀기`는 **서버에서 받은 DB 문제 ID**로 기존 `/problems/{id}` 화면을 연다. AI 생성 결과의 `id`를 DB ID로 사용하지 않는다.
+- 문제 카드와 상세 화면에 작성자 닉네임을 표시하고, 로그인 사용자와 `createdBy`가 같으면 `(나)`를 붙인다. 닉네임만 같다는 이유로 내 문제로 판단하지 않는다. 이전 BE 응답에 작성자가 없으면 `작성자 정보 없음`으로 표시한다.
+- 문제 목록의 기존 하단 필터 선택창에 `작성자 → 전체 문제 / 내가 만든 문제`를 추가했다. 내 문제 필터는 서버에서 본인 목록을 조회하며 검색·언어·유형·제출 여부와 함께 적용한다. 새로고침 시 서버에서 다시 읽는다.
+- 내 문제 조회 오류를 빈 목록으로 숨기지 않는다. 404/405/501이면 서버 기능 준비 안내와 재시도를 표시한다. 기존 공개 문제 목록은 계속 사용한다.
+- 생성 페이지의 임시 연습 답안은 저장 요청에 포함하지 않는다. 영구 풀이 기록은 저장한 문제를 기존 문제 화면에서 제출할 때 남는다.
+- 계정 변경·로그아웃 시 내 문제 캐시를 비우고 이전 계정의 늦은 응답은 반영하지 않는다. 캐시는 목록 표시용이며 앱 종료 후 재조회할 원본은 BE DB다.
+
+### 1. 일반 사용자 문제 저장 API 신규 구현
+
+`POST /api/users/me/questions`
+
+인증: 기존 Spring 로그인 Bearer JWT. 일반 `USER`도 허용. 작성자는 JWT subject에서 결정한다. FE는 `userId`, `createdBy`, `published`를 보내지 않는다.
+
+현재 FE가 보내는 JSON 예시:
+
+```json
+{
+  "clientRequestId": "ca127cf6-831f-40fc-bdea-61cdd4d38c6a",
+  "category": "Infrastructure",
+  "difficulty": "중급",
+  "question": {
+    "id": 1,
+    "type": "multiple_choice",
+    "question": "AWS의 객체 스토리지 서비스는?",
+    "options": ["1. EC2", "2. S3", "3. RDS", "4. Lambda"],
+    "answer": "2",
+    "explanation": "S3는 객체 스토리지 서비스입니다.",
+    "references": [],
+    "gradingKeywords": []
+  }
+}
+```
+
+- `clientRequestId`: FE에서 문제별로 만든 UUID v4. 같은 문제 저장의 시간 초과·수동 재시도에는 같은 값을 보낸다. 새 생성 결과는 새 값을 받는다.
+- `category`: AI 생성 주제 문자열이다. BE의 숫자 `categoryId`가 아니며 `Infrastructure`를 DB 분류 ID로 쓰면 안 된다.
+- `difficulty`: 현재 생성 응답의 문자열. `초급/중급/고급`을 `EASY/NORMAL/HARD`로 변환한다. AI가 다른 표기를 반환할 경우 허용 표기를 합의하고 명시적으로 정규화하거나 검증 오류를 반환한다.
+- `question.id`: AI 배치 안의 임시 번호이며 DB PK로 사용하지 않는다. 정규화한 문제 내용에 대한 중복 비교에서도 제외한다.
+- `question.type/question/options/answer/explanation/references/gradingKeywords`: 생성 응답을 전달한다. 텍스트형의 options 및 없는 references/gradingKeywords는 FE가 빈 배열로 정규화한다.
+- BE가 질문·유형·정답·보기 키의 유효성, 길이와 배열 크기를 검증한 후 트랜잭션으로 저장한다. 저장 시 AI를 다시 호출할 필요는 없다.
+- DB category는 `CODING_PROBLEM` 또는 그 하위 분류로 배정해야 현재 문제 목록에서 보인다. 생성 주제는 별도 메타데이터로 보존할 수 있다. 언어 ID가 정확히 매핑되지 않으면 null로 두고 언어 공통으로 표시한다. FE는 이번 저장 요청에 임의의 언어/분류 숫자 ID를 넣지 않는다.
+
+응답은 **기존 QuestionResponse에 작성자 필드를 추가한 단일 JSON 객체**다. `{success,data}`로 감싸거나 `{id}`만 반환하면 현재 FE 계약과 맞지 않는다. 신규 저장은 `201`, 같은 요청 또는 동일 내용의 기존 문제 반환은 `200`:
+
+```json
+{
+  "id": 501,
+  "categoryId": 203,
+  "languageId": null,
+  "relatedTemplateId": null,
+  "relatedSectionId": null,
+  "createdBy": 1,
+  "creatorNickname": "학습자",
+  "questionType": "MULTIPLE_CHOICE",
+  "prompt": "AWS의 객체 스토리지 서비스는?",
+  "codeSnippet": null,
+  "choiceOptions": [
+    {"key": "1", "text": "EC2"},
+    {"key": "2", "text": "S3"},
+    {"key": "3", "text": "RDS"},
+    {"key": "4", "text": "Lambda"}
+  ],
+  "explanation": "S3는 객체 스토리지 서비스입니다.",
+  "difficulty": "NORMAL",
+  "passScore": 70,
+  "published": false,
+  "media": []
+}
+```
+
+위 숫자 ID는 예시다. 실제 DB의 ID를 반환한다. `createdBy`는 필수 양의 정수, `creatorNickname`은 표시용 닉네임이다. 이메일은 필요 없다. 기존 QuestionResponse의 categoryCode, languageName, displayOrder, createdAt 등 추가 필드는 유지해도 된다. 문제 목록/상세에 정답 키·referenceAnswer를 새로 공개할 필요는 없고, 서버 채점용으로 보관한다.
+
+### 2. 내가 만든 문제 조회 API 신규 구현
+
+`GET /api/users/me/questions`
+
+- 본인 ID는 JWT에서 결정한다. 관리자 권한이나 URL의 임의 userId를 요구하지 않는다.
+- 위와 같은 QuestionResponse 객체의 **배열**을 반환한다. 없는 경우 `200 []`. 이번 FE는 페이지 객체를 파싱하지 않으므로 첫 페이지 일부만 반환하지 않는다. 페이지 처리를 도입하려면 FE와 계약을 함께 변경한다.
+- 저장된 본인 문제를 공개 여부와 무관하게 반환한다. 다른 사람이 만든 공개 문제도 이 목록에는 포함하지 않는다. 기본 정렬은 최근 저장 순을 권장한다.
+- `createdBy`, `creatorNickname`을 모든 항목에 반환한다. FE도 작성자 ID 불일치를 검증하지만 권한 제한은 BE 쿼리에서 수행해야 한다.
+- 검색·언어·유형·제출 여부는 현재 FE에서 목록에 적용하므로 별도 쿼리 파라미터는 아직 필요 없다.
+
+### 3. 기존 문제 조회·제출 API 확장
+
+| API | 필요한 변경 |
+| --- | --- |
+| `GET /api/questions?publishedOnly=true` | 기존 공개 목록 유지. 각 항목에 `createdBy`, `creatorNickname` 추가. 타인의 비공개 문제 노출 금지. |
+| `GET /api/questions/{id}` | 공개 문제 또는 JWT 본인이 만든 비공개 문제 조회 허용. 작성자 2필드 추가. |
+| `POST /api/questions/{id}/submissions` | 본인 저장 문제도 기존과 같은 제출·채점·DB 기록 처리. 새 유형의 답안 필드와 채점 방식 확장. |
+| `GET /api/questions/{id}/submissions/latest?userId=...` | 본인 저장 문제의 최근 결과도 조회. 질문 접근 권한과 요청 userId=JWT 사용자 일치 검사. 미제출은 기존 404 계약 유지. |
+
+기존 제출 요청은 `userId`와 답안 필드 하나다. 응답은 기존 SubmissionResponse를 유지한다. 예: `id`, `userId`, `questionId`, `gradingStatus`, `gradingMethod`, `score`, `feedback`, `submittedAt`, `gradedAt` 및 제출 답안 필드. `COMPLETED`이면 0~100 점수가 필요하다. AI 호출이 오래 걸리는 제출은 FE가 최대 5분 기다리고 중복 클릭을 막는다. 기존 BE 인증 갱신 정책(401 토큰 갱신 후 1회 재시도)은 유지하므로 BE는 인증 검증을 제출 처리 전에 수행한다. `PENDING` 비동기 채점을 유지한다면 최신 결과가 갱신되도록 서버에 저장해야 하며 실시간 폴링은 이번 추가 범위가 아니다.
+
+### 4. 생성 유형을 그대로 보존하기 위한 BE 확장
+
+현재 로컬 BE의 questions.question_type 제약과 DTO는 `MULTIPLE_CHOICE`, `CODE_EXPLANATION`, `CODE_WRITING`만 지원한다. 아래 4개 유형을 추가해야 생성 기능 전체를 저장하고 다시 풀 수 있다. 모든 텍스트 문제를 CODE_EXPLANATION으로 임의 변환하지 않는다.
+
+| 생성 type | 저장 후 questionType | 제출 답안 필드 |
+| --- | --- | --- |
+| `multiple_choice` | `MULTIPLE_CHOICE` | `selectedChoiceKey: "2"` |
+| `ox` | `OX` | `selectedChoiceKey: "1"` 또는 `"2"` |
+| `short_answer` | `SHORT_ANSWER` | `answerText` |
+| `blank` | `FILL_BLANK` | `answerText` |
+| `descriptive` | `DESCRIPTIVE` | `answerText` |
+| 기존 코드 해석 문제 | `CODE_EXPLANATION` 유지 | `answerText` |
+| 기존 Java 코드 작성 문제 | `CODE_WRITING` 유지 | `sourceCode` |
+
+객관식/OX의 choiceOptions는 반드시 `{key,text}` 배열. 배열 순서 기준 key는 `"1"`부터 시작하고 보기 앞 `"1. "` 등 표시 번호는 text에서 제거한다. `correct_choice_key`가 존재하는 보기 키를 가리키도록 검증한다. OX의 AI 정답이 O/X 문구로 오는 경우 Spring에서 해당 보기 키로 정규화한다. 텍스트형 정답은 reference_answer, 채점 키워드는 grading_criteria 등에 보존한다. 기존 빈칸 채점 호출 시 AI type은 `fill_blank`/`blank` 호환을 처리한다. 생성 요청의 대문자 `BLANK`와 DB의 `FILL_BLANK`를 혼동하지 않는다.
+
+### 5. 작성자·공개 범위·중복 저장 처리
+
+- 기존 `questions.created_by`를 사용한다. 작성자 컬럼을 새로 만들 필요 없다. 조회 시 users의 닉네임을 조인해 반환하면 된다.
+- 개인 저장은 `published=false`를 기본으로 제안한다. 본인은 즉시 조회·풀이 가능하고 다른 사용자는 볼 수 없다. 관리자 AI 초안 검토·공개 과정과 개인 저장을 구분한다. 향후 공개 정책은 별도로 결정할 수 있다.
+- `(created_by, client_request_id)`의 고유 제약 또는 멱등성 테이블로 동시 요청을 원자적으로 처리한다. 같은 키/같은 본문은 기존 문제를 `200`으로 반환한다. 같은 키/다른 본문은 `409`. 중복 응답에도 전체 QuestionResponse를 반환한다.
+- 화면을 닫았다가 같은 내용을 새로 생성한 경우 UUID는 바뀐다. 이 경우까지 막으려면 **작성자별 정규화 콘텐츠 해시**도 비교한다. 정규화 기준은 유형·질문·순서가 유지된 보기·정답·채점 기준·난이도 등으로 정의하고 AI 임시 ID/clientRequestId는 제외한다. 동일한 경우 기존 문제를 `200`으로 반환한다. 다른 사용자의 같은 내용까지 같은 소유 문제로 합치지 않는다.
+- 저장 API 성공과 문제/멱등 정보 커밋을 하나의 트랜잭션으로 처리한다. 네트워크 응답 유실 후 재시도해도 중복 행이 생기지 않아야 한다.
+- 클라이언트가 보낸 생성 정답은 조작될 수 있으므로 개인 연습 범위로 취급한다. 공식 문제/랭킹으로 공개한다면 서버의 생성 이력 검증이나 관리자 검토가 필요하다.
+
+### 6. 오류와 BE 작업 위치
+
+| 상태 | 의미 |
+| --- | --- |
+| 400/422 | 저장 데이터·지원 유형·정답 키 검증 실패 |
+| 401 | 인증 없음/만료 |
+| 403 또는 404 | 다른 사용자 비공개 문제 접근 차단 |
+| 409 | 멱등 키를 다른 본문에 재사용 |
+| 429/5xx/시간 초과 | 실패 또는 결과 미확인. FE는 성공 표시 없이 같은 키로 수동 재시도 |
+
+로컬 BE 코드 확인 근거:
+
+- `src/main/resources/db/migration/V1__initial_schema.sql`: questions.created_by 및 question_type CHECK. 운영 적용 시 V1을 수정하기보다 신규 마이그레이션으로 유형 제약과 멱등성 저장 구조를 추가한다.
+- `src/main/java/com/cobip/domain/content/AdminContentController.java`: 기존 생성은 관리자 전용. 이 API의 권한을 전체 공개하지 않고 일반 사용자 저장 API를 별도로 추가한다.
+- `src/main/java/com/cobip/domain/content/AdminContentRepository.java`: 질문 INSERT와 created_by 저장 방식 참고.
+- `src/main/java/com/cobip/domain/content/ContentDtos.java`: QuestionResponse에 작성자 정보 추가. 목록·상세·저장 응답에서 같은 모양으로 사용한다.
+- 기존 content 조회 및 activity 제출 코드에서 공개 여부 조건, 본인 소유권, 유형별 제출 검증/채점 분기를 함께 확장한다.
+
+BE 연동 후 실제 확인할 항목: 5가지 생성 유형 각각 저장/재조회/제출, 동일 버튼 연속 클릭, DB 저장 후 응답 유실 및 같은 키 재시도, 앱 재시작 후 내 문제 복원, 다른 계정에서 비공개 문제 접근 차단, 저장 문제의 제출 기록/색상 복원. FE 테스트의 모의 서버 응답은 계약 검증용이며 실제 DB 저장 검증을 대신하지 않는다.
+
+FE 검증: `flutter analyze --no-pub` 문제 없음, 전체 테스트 **206개 통과**, 로컬 BE 주소 설정으로 Android debug APK 빌드 성공. 새 테스트는 저장 중복 클릭·시간 초과 재시도 UUID 유지·서버 미구현 안내·타인 작성자 응답 거절·계정 변경 후 늦은 응답 무시·추가 유형의 제출 필드·저장 후 기존 풀이 진입과 작성자 필터를 확인한다. BE 코드와 DB는 수정하지 않았다.
+
 ## 2026-10-12 운영 AI 서버 직접 연결
 
 팀에서 전달한 운영 주소 `https://ai.cobip.tech`를 `AI_BASE_URL` 기본값으로 사용한다. `AiApi.fromEnvironment`가 전용 Dio를 만들고, 생성·채점·Java·챗봇·추가 해설은 AI 서버에 직접 요청한다. `API_BASE_URL`은 기존 BE 용도로 유지한다. BE의 Authorization 헤더나 인증 인터셉터를 AI 클라이언트에 복사하지 않는다.

@@ -53,8 +53,9 @@ class _ChatPanelState extends State<ChatPanel> {
   }
 
   void _send() {
-    if (_input.text.trim().isEmpty) return;
-    context.read<ChatViewModel>().send(_input.text);
+    final vm = context.read<ChatViewModel>();
+    if (_input.text.trim().isEmpty || vm.busy) return;
+    vm.send(_input.text);
     _input.clear();
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
@@ -62,7 +63,9 @@ class _ChatPanelState extends State<ChatPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final messages = context.watch<ChatViewModel>().messages;
+    final vm = context.watch<ChatViewModel>();
+    final messages = vm.messages;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
     final media = MediaQuery.of(context);
     final available =
         (media.size.height - media.viewInsets.bottom - media.padding.top - 48)
@@ -115,17 +118,38 @@ class _ChatPanelState extends State<ChatPanel> {
                           context,
                           top: 12,
                         ).copyWith(bottom: 16),
-                        itemCount: messages.length,
+                        itemCount:
+                            messages.length +
+                            (vm.busy || vm.error != null ? 1 : 0),
                         itemBuilder: (context, index) {
+                          if (index == messages.length) {
+                            return vm.busy
+                                ? const Column(
+                                    children: [
+                                      LinearProgressIndicator(),
+                                      SizedBox(height: 12),
+                                      Text('답변을 작성하고 있어요…'),
+                                    ],
+                                  )
+                                : Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      LearningNotice(vm.error!),
+                                      TextButton(
+                                        onPressed: vm.retry,
+                                        child: const Text('답변 다시 요청'),
+                                      ),
+                                    ],
+                                  );
+                          }
                           final message = messages[index];
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               if (index == 0) ...[
                                 if (messages.length == 1) const _ChatWelcome(),
-                                const LearningNotice(
-                                  '더미 응답 · 대화는 앱 실행 중에만 유지됩니다.',
-                                ),
+                                const LearningNotice('대화는 앱 실행 중에만 유지됩니다.'),
                                 const SizedBox(height: 20),
                               ],
                               _ChatBubble(
@@ -186,6 +210,7 @@ class _ChatPanelState extends State<ChatPanel> {
                             child: TextField(
                               key: const ValueKey('chat-input'),
                               controller: _input,
+                              enabled: !vm.busy,
                               minLines: 1,
                               maxLines: 3,
                               maxLength: 1000,
@@ -210,7 +235,7 @@ class _ChatPanelState extends State<ChatPanel> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            onPressed: _input.text.trim().isEmpty
+                            onPressed: vm.busy || _input.text.trim().isEmpty
                                 ? null
                                 : _send,
                             icon: const Icon(Icons.arrow_upward_rounded),

@@ -252,6 +252,11 @@ class AuthViewModel extends ChangeNotifier {
       handler.next(error);
       return;
     }
+    // Refresh authentication, but do not replay expensive AI POST requests.
+    if (options.extra['noAuthReplay'] == true) {
+      handler.next(error);
+      return;
+    }
     options.extra['authRetried'] = true;
     options.headers['Authorization'] = 'Bearer ${_session!.accessToken}';
     try {

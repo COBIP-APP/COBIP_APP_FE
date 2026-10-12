@@ -157,6 +157,7 @@ extension AuthWidgetTester on WidgetTester {
               key: ObjectKey(session),
               auth: session,
               router: widget.router,
+              aiApi: widget.aiApi,
               learningStore:
                   widget.learningStore ??
                   (PreviewLearningStore()

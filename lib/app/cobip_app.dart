@@ -8,13 +8,21 @@ import '../features/auth/presentation/auth_view_model.dart';
 import '../features/chat/presentation/chat_view_model.dart';
 import '../features/learning/presentation/learning_store.dart';
 import '../features/learning/data/learning_api.dart';
+import '../features/problems/data/ai_api.dart';
 import 'router/app_router.dart';
 
 class CobipApp extends StatefulWidget {
-  const CobipApp({super.key, this.auth, this.router, this.learningStore});
+  const CobipApp({
+    super.key,
+    this.auth,
+    this.router,
+    this.learningStore,
+    this.aiApi,
+  });
   final AuthViewModel? auth;
   final GoRouter? router;
   final LearningStore? learningStore;
+  final AiApi? aiApi;
 
   @override
   State<CobipApp> createState() => _CobipAppState();
@@ -50,7 +58,13 @@ class _CobipAppState extends State<CobipApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: _auth),
-        ChangeNotifierProvider(create: (_) => ChatViewModel()),
+        Provider<AiApi>(create: (_) => widget.aiApi ?? AiApi(_auth.api.dio)),
+        ChangeNotifierProxyProvider<AuthViewModel, ChatViewModel>(
+          create: (context) =>
+              ChatViewModel(api: context.read<AiApi>())
+                ..bindUser(_auth.user?.userId),
+          update: (_, auth, chat) => chat!..bindUser(auth.user?.userId),
+        ),
         ChangeNotifierProxyProvider<AuthViewModel, LearningStore>(
           create: (context) =>
               (widget.learningStore ??

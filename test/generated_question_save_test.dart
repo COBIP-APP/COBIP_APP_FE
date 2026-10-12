@@ -202,8 +202,9 @@ void main() {
     final server = AiTestServer();
     var fail = true;
     server.handle = (r) async {
-      if (r.path == '/api/users/me/questions')
+      if (r.path == '/api/users/me/questions') {
         return jsonResponse(ownQuestion(), 201);
+      }
       if (r.path == '/api/questions/501/submissions' && r.method == 'POST') {
         if (fail) return jsonResponse({}, 500);
         return jsonResponse({

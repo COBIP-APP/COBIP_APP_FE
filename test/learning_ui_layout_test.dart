@@ -19,6 +19,7 @@ void main() {
     '/practical/4/templates',
     '/practical/4/templates/201',
     '/problems',
+    '/problems/generate',
     '/problems/2000',
     '/problems/2001',
     '/problems/2002',

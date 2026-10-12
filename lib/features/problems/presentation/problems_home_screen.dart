@@ -2,6 +2,7 @@ import '../../../app/widgets/app_home_header.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/app_ui_tokens.dart';
 import '../../../app/widgets/app_bottom_navigation.dart';
@@ -105,6 +106,12 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                         });
                       }
                     },
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () => context.push('/problems/generate'),
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    label: const Text('AI 문제 생성'),
                   ),
                   const SizedBox(height: 20),
                   if (items.isEmpty)

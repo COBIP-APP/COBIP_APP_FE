@@ -2,6 +2,7 @@ import '../../features/chat/presentation/chat_screen.dart';
 
 import '../../features/problems/presentation/problems_home_screen.dart';
 import '../../features/problems/presentation/question_preview_screen.dart';
+import '../../features/problems/presentation/ai_quiz_screen.dart';
 
 import '../../features/practical/presentation/practical_chapters_screen.dart';
 import '../../features/practical/presentation/practical_home_screen.dart';
@@ -110,6 +111,10 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
       name: AppRouteNames.problems,
       builder: (context, state) => const ProblemsHomeScreen(),
       routes: [
+        GoRoute(
+          path: 'generate',
+          builder: (context, state) => const AiQuizScreen(),
+        ),
         GoRoute(
           path: ':mission',
           name: AppRouteNames.problemMission,

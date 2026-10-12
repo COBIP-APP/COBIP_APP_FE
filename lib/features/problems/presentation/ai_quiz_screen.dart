@@ -6,6 +6,7 @@ import '../../../app/app_ui_tokens.dart';
 import '../../../app/widgets/learning_visuals.dart';
 import '../../auth/presentation/auth_view_model.dart';
 import '../../learning/presentation/learning_detail_scaffold.dart';
+import '../../learning/presentation/learning_store.dart';
 import '../data/ai_api.dart';
 import '../data/ai_models.dart';
 import 'ai_quiz_view_model.dart';
@@ -18,8 +19,11 @@ class AiQuizScreen extends StatelessWidget {
     final userId = context.watch<AuthViewModel>().user?.userId;
     return ChangeNotifierProvider(
       key: ValueKey(userId),
-      create: (context) =>
-          AiQuizViewModel(context.read<AiApi>(), userId: userId?.toString()),
+      create: (context) => AiQuizViewModel(
+        context.read<AiApi>(),
+        userId: userId?.toString(),
+        learningStore: context.read<LearningStore>(),
+      ),
       child: const _QuizPage(),
     );
   }
@@ -113,6 +117,35 @@ class _QuizPageState extends State<_QuizPage> {
               key: ValueKey('${identityHashCode(batch)}-${vm.index}'),
             ),
             const SizedBox(height: 16),
+            OutlinedButton.icon(
+              key: const ValueKey('ai-save-question'),
+              onPressed: vm.busy || vm.savedQuestion != null ? null : vm.save,
+              icon: Icon(
+                vm.savedQuestion == null
+                    ? Icons.bookmark_add_outlined
+                    : Icons.check_circle_outline,
+              ),
+              label: Text(
+                vm.saving
+                    ? '저장 중…'
+                    : vm.savedQuestion != null
+                    ? '저장 완료'
+                    : '문제 저장',
+              ),
+            ),
+            if (vm.savedQuestion case final question?) ...[
+              Text(
+                question.creatorLabel(context.read<LearningStore>().userId),
+                style: AppTypography.meta,
+              ),
+              TextButton(
+                onPressed: vm.busy
+                    ? null
+                    : () => context.push('/problems/${question.id}'),
+                child: const Text('저장한 문제 풀기'),
+              ),
+            ],
+            const SizedBox(height: 12),
             if (vm.result == null)
               FilledButton(
                 onPressed: vm.busy || vm.answer.trim().isEmpty
@@ -180,7 +213,10 @@ class _QuizPageState extends State<_QuizPage> {
                 ),
             ],
           ],
-          if (vm.busy) const AiLoading('AI가 처리하고 있어요. 몇 분 정도 걸릴 수 있어요.'),
+          if (vm.busy)
+            AiLoading(
+              vm.saving ? '문제를 저장하고 있어요.' : 'AI가 처리하고 있어요. 몇 분 정도 걸릴 수 있어요.',
+            ),
           if (vm.error != null) ...[
             const SizedBox(height: 12),
             LearningNotice(vm.error!),
@@ -191,7 +227,9 @@ class _QuizPageState extends State<_QuizPage> {
               onPressed: vm.busy ? null : vm.newBatch,
               child: const Text('새 문제 만들기'),
             ),
-          const LearningNotice('생성한 문제와 풀이 결과는 이 화면을 나가면 사라져요.'),
+          const LearningNotice(
+            '남겨두고 싶은 문제는 각각 저장해 주세요. 저장한 문제는 필터의 ‘내가 만든 문제’에서 다시 풀 수 있어요. 이 화면의 연습 답안은 기록에 남지 않으며, 풀이 기록은 ‘저장한 문제 풀기’에서 제출할 때 남아요.',
+          ),
           const SizedBox(height: 24),
         ],
       ),

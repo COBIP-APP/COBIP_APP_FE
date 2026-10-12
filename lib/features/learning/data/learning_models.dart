@@ -90,11 +90,16 @@ class LearningTemplate {
 enum LearningQuestionType {
   multipleChoice('MULTIPLE_CHOICE', '객관식'),
   codeExplanation('CODE_EXPLANATION', '코드 설명'),
-  codeWriting('CODE_WRITING', '코드 작성');
+  codeWriting('CODE_WRITING', '코드 작성'),
+  ox('OX', 'OX'),
+  shortAnswer('SHORT_ANSWER', '단답형'),
+  fillBlank('FILL_BLANK', '빈칸'),
+  descriptive('DESCRIPTIVE', '서술형');
 
   const LearningQuestionType(this.code, this.label);
   final String code;
   final String label;
+  bool get hasChoices => this == multipleChoice || this == ox;
 }
 
 // Supported choiceOptions shape: {key, text}. Other shapes fail explicitly.
@@ -119,6 +124,9 @@ class LearningQuestion {
     this.difficulty = LearningDifficulty.easy,
     this.passScore = 60,
     this.media = const [],
+    this.createdBy,
+    this.creatorNickname,
+    this.published = true,
   });
   final int id;
   final String prompt;
@@ -133,6 +141,16 @@ class LearningQuestion {
   final LearningDifficulty difficulty;
   final int passScore;
   final List<LearningMedia> media;
+  final int? createdBy;
+  final String? creatorNickname;
+  final bool published;
+
+  String creatorLabel(int? currentUserId) {
+    if (createdBy == null) return '작성자 정보 없음';
+    final name = creatorNickname?.trim();
+    return '작성자: ${name == null || name.isEmpty ? '사용자 #$createdBy' : name}'
+        '${currentUserId != null && createdBy == currentUserId ? ' (나)' : ''}';
+  }
 }
 
 class LearningProgress {

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import 'learning_models.dart';
+import '../../problems/data/ai_models.dart';
 
 class LearningApiException implements Exception {
   const LearningApiException(this.message, {this.status});
@@ -98,9 +99,11 @@ LearningTemplate _template(Object? value, {bool detail = false}) {
   );
 }
 
-LearningQuestion _question(Object? value) {
+LearningQuestion _question(Object? value, {int? ownerId}) {
   final q = _object(value);
-  if (q['published'] != true) {
+  if (q['published'] is! bool ||
+      (q['published'] != true &&
+          (ownerId == null || q['createdBy'] != ownerId))) {
     throw const FormatException('Unpublished question');
   }
   final type = _enum(
@@ -117,7 +120,7 @@ LearningQuestion _question(Object? value) {
             ),
           )
           .toList();
-  if (type == LearningQuestionType.multipleChoice &&
+  if (type.hasChoices &&
       (choices.isEmpty ||
           choices.map((c) => c.key).toSet().length != choices.length)) {
     throw const FormatException('Unsupported choice options');
@@ -128,6 +131,9 @@ LearningQuestion _question(Object? value) {
   }
   return LearningQuestion(
     id: _id(q['id']),
+    createdBy: _optionalId(q['createdBy']),
+    creatorNickname: _optionalText(q['creatorNickname']),
+    published: q['published'] as bool,
     prompt: _text(q['prompt']),
     questionType: type,
     categoryId: _id(q['categoryId']),
@@ -202,6 +208,8 @@ class LearningApi {
     Object? body,
     Map<String, dynamic>? query,
     int status = 200,
+    Set<int> additionalStatuses = const {},
+    Duration? receiveTimeout,
     CancelToken? cancelToken,
   }) async {
     final uri = Uri.tryParse(dio.options.baseUrl);
@@ -218,9 +226,14 @@ class LearningApi {
         data: body,
         queryParameters: query,
         cancelToken: cancelToken,
-        options: Options(method: method, extra: {'authRequired': true}),
+        options: Options(
+          method: method,
+          receiveTimeout: receiveTimeout,
+          extra: {'authRequired': true},
+        ),
       );
-      if (response.statusCode != status) {
+      if (response.statusCode != status &&
+          !additionalStatuses.contains(response.statusCode)) {
         throw const FormatException('Unexpected status');
       }
       return decode(response.data);
@@ -306,14 +319,80 @@ class LearningApi {
     query: {'publishedOnly': true, 'templateId': ?templateId},
     cancelToken: cancelToken,
   );
-  Future<LearningQuestion> question(int id, {CancelToken? cancelToken}) =>
-      _request('/api/questions/$id', (v) {
-        final result = _question(v);
-        if (result.id != id) {
-          throw const FormatException('Question identity mismatch');
+  Future<LearningQuestion> question(
+    int id, {
+    int? ownerId,
+    CancelToken? cancelToken,
+  }) => _request('/api/questions/$id', (v) {
+    final result = _question(v, ownerId: ownerId);
+    if (result.id != id) {
+      throw const FormatException('Question identity mismatch');
+    }
+    return result;
+  }, cancelToken: cancelToken);
+
+  // Proposed ordinary-user contract; do not use the admin creation API.
+  Future<LearningQuestion> saveGeneratedQuestion({
+    required int userId,
+    required String clientRequestId,
+    required AiQuizBatch batch,
+    required AiQuiz quiz,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      return await _request(
+        '/api/users/me/questions',
+        (v) {
+          final question = _question(v, ownerId: userId);
+          if (question.createdBy != userId) {
+            throw const FormatException('Creator identity mismatch');
+          }
+          return question;
+        },
+        method: 'POST',
+        status: 201,
+        additionalStatuses: {200},
+        body: {
+          'clientRequestId': clientRequestId,
+          'category': batch.category,
+          'difficulty': batch.difficulty,
+          'question': quiz.toJson(),
+        },
+        cancelToken: cancelToken,
+      );
+    } on LearningApiException catch (e) {
+      if (e.status == 404 || e.status == 405 || e.status == 501) {
+        throw const LearningApiException(
+          '문제 저장 기능이 아직 서버에 준비되지 않았어요. 저장되지 않았습니다.',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<LearningQuestion>> myQuestions(
+    int userId, {
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      return await _request('/api/users/me/questions', (v) {
+        final result = _list(v)
+            .map((q) => _question(q, ownerId: userId))
+            .toList();
+        if (result.any((q) => q.createdBy != userId) ||
+            result.map((q) => q.id).toSet().length != result.length) {
+          throw const FormatException('Invalid own questions');
         }
         return result;
       }, cancelToken: cancelToken);
+    } on LearningApiException catch (e) {
+      if (e.status == 404 || e.status == 405 || e.status == 501) {
+        throw const LearningApiException('내가 만든 문제 조회 기능이 아직 서버에 준비되지 않았어요.');
+      }
+      rethrow;
+    }
+  }
+
   Future<List<LearningProgress>> progress({CancelToken? cancelToken}) =>
       _request(
         '/api/users/me/progress',
@@ -392,9 +471,10 @@ class LearningApi {
     CancelToken? cancelToken,
   }) {
     final field = switch (question.questionType) {
-      LearningQuestionType.multipleChoice => 'selectedChoiceKey',
-      LearningQuestionType.codeExplanation => 'answerText',
+      LearningQuestionType.multipleChoice ||
+      LearningQuestionType.ox => 'selectedChoiceKey',
       LearningQuestionType.codeWriting => 'sourceCode',
+      _ => 'answerText',
     };
     return _request(
       '/api/questions/${question.id}/submissions',
@@ -402,6 +482,7 @@ class LearningApi {
       method: 'POST',
       status: 201,
       body: {'userId': userId, field: answer},
+      receiveTimeout: const Duration(minutes: 5),
       cancelToken: cancelToken,
     );
   }

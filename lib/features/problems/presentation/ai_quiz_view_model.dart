@@ -1,14 +1,24 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../data/ai_api.dart';
 import '../data/ai_models.dart';
+import '../../learning/data/learning_api.dart';
+import '../../learning/data/learning_models.dart';
+import '../../learning/presentation/learning_store.dart';
 
-/// Page-scoped practice. Generated questions/results are not persisted in BE.
+/// Practice stays page-scoped; only explicit saves persist a question in BE.
 class AiQuizViewModel extends ChangeNotifier {
-  AiQuizViewModel(this.api, {this.userId});
+  AiQuizViewModel(this.api, {this.userId, this.learningStore});
   final AiApi api;
   final String? userId;
+  final LearningStore? learningStore;
+  final _saved = <int, LearningQuestion>{};
+  final _requestIds = <int, String>{};
+  LearningQuestion? get savedQuestion => _saved[_index];
+  bool saving = false;
   final _cancel = CancelToken();
   bool _disposed = false;
   bool _busy = false;
@@ -56,6 +66,8 @@ class AiQuizViewModel extends ChangeNotifier {
     _answers.clear();
     _results.clear();
     _explanations.clear();
+    _saved.clear();
+    _requestIds.clear();
     notifyListeners();
   }
 
@@ -67,6 +79,8 @@ class AiQuizViewModel extends ChangeNotifier {
     try {
       await action();
     } on AiApiException catch (e) {
+      if (!_disposed) _error = e.message;
+    } on LearningApiException catch (e) {
       if (!_disposed) _error = e.message;
     } catch (_) {
       if (!_disposed) _error = '요청을 완료하지 못했어요. 다시 시도해 주세요.';
@@ -100,7 +114,41 @@ class AiQuizViewModel extends ChangeNotifier {
     _answers.clear();
     _results.clear();
     _explanations.clear();
+    _saved.clear();
+    _requestIds.clear();
   });
+
+  Future<void> save() async {
+    final store = learningStore;
+    if (_busy || _disposed || _batch == null || savedQuestion != null) return;
+    if (store == null || store.userId?.toString() != userId) {
+      _error = '로그인 상태를 확인한 뒤 다시 저장해 주세요.';
+      notifyListeners();
+      return;
+    }
+    // Keep the same UUID on timeout/retry, even if the server already saved it.
+    final requestId = _requestIds.putIfAbsent(_index, _uuid);
+    saving = true;
+    await _run(() async {
+      final question = await store.saveGeneratedQuestion(
+        clientRequestId: requestId,
+        batch: _batch!,
+        quiz: _batch!.quizzes[_index],
+      );
+      if (!_disposed) _saved[_index] = question;
+    });
+    saving = false;
+    if (!_disposed) notifyListeners();
+  }
+
+  static String _uuid() {
+    final random = Random.secure();
+    final bytes = List.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    final h = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${h.substring(0, 8)}-${h.substring(8, 12)}-${h.substring(12, 16)}-${h.substring(16, 20)}-${h.substring(20)}';
+  }
 
   Future<void> submit() async {
     if (_batch == null || result != null || answer.trim().isEmpty) return;

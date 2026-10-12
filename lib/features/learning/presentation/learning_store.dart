@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../data/learning_api.dart';
 import '../data/learning_models.dart';
+import '../../problems/data/ai_models.dart';
 
 enum PreviewLoadState { loading, ready, error }
 
@@ -16,10 +17,19 @@ class LearningStore extends ChangeNotifier {
   List<LearningCategory> _categories = [];
   List<LearningTemplate> _templates = [];
   List<LearningQuestion> _questions = [];
+  List<LearningQuestion> _myQuestions = [];
+  int _saveVersion = 0;
+  final _saveVersions = <int, int>{};
+  PreviewLoadState? myQuestionsState;
+  String? myQuestionsError;
+  List<LearningQuestion> get myQuestions => _myQuestions;
   List<LearningLanguage> get languages => _languages;
   List<LearningCategory> get categories => _categories;
   List<LearningTemplate> get templates => _templates;
-  List<LearningQuestion> get questions => _questions;
+  List<LearningQuestion> get questions => {
+    for (final q in _questions) q.id: q,
+    for (final q in _myQuestions) q.id: q,
+  }.values.toList();
   final _progress = <int, LearningProgress>{};
   final _bookmarks = <int>{};
   final _submissions = <int, LearningSubmission>{};
@@ -52,6 +62,11 @@ class LearningStore extends ChangeNotifier {
     _categories = [];
     _templates = [];
     _questions = [];
+    _myQuestions = [];
+    _saveVersions.clear();
+    _saveVersion = 0;
+    myQuestionsState = null;
+    myQuestionsError = null;
     _progress.clear();
     _bookmarks.clear();
     _submissions.clear();
@@ -108,8 +123,12 @@ class LearningStore extends ChangeNotifier {
       final questions = await api.questions(cancelToken: cancel);
       final progress = await api.progress(cancelToken: cancel);
       final bookmarks = await api.bookmarks(userId, cancelToken: cancel);
+      final visibleQuestions = {
+        for (final q in questions) q.id: q,
+        for (final q in _myQuestions) q.id: q,
+      }.values.toList();
       final submissions = await _batch(
-        questions,
+        visibleQuestions,
         (q) => api.latest(userId, q.id, cancelToken: cancel),
         generation,
       );
@@ -131,7 +150,7 @@ class LearningStore extends ChangeNotifier {
             (s) => MapEntry(s.questionId, s),
           ),
         );
-      for (final q in questions) {
+      for (final q in visibleQuestions) {
         final s = _submissions[q.id];
         if (_passed(q, s)) _solved.add(q.id);
       }
@@ -151,6 +170,74 @@ class LearningStore extends ChangeNotifier {
   }
 
   bool detailReady(String key) => _details[key] == PreviewLoadState.ready;
+
+  Future<void> loadMyQuestions() async {
+    final user = _userId;
+    if (user == null ||
+        _disposed ||
+        myQuestionsState == PreviewLoadState.loading) {
+      return;
+    }
+    final generation = _generation;
+    final saveVersion = _saveVersion;
+    final cancel = _cancel;
+    myQuestionsState = PreviewLoadState.loading;
+    myQuestionsError = null;
+    _notify();
+    try {
+      final items = await api.myQuestions(user, cancelToken: cancel);
+      final submissions = await _batch(
+        items,
+        (q) => api.latest(user, q.id, cancelToken: cancel),
+        generation,
+      );
+      if (!_current(generation)) return;
+      _myQuestions = {
+        for (final q in items) q.id: q,
+        for (final q in _myQuestions)
+          if ((_saveVersions[q.id] ?? 0) > saveVersion) q.id: q,
+      }.values.toList();
+      for (var i = 0; i < items.length; i++) {
+        final s = submissions[i];
+        if (s == null) {
+          _submissions.remove(items[i].id);
+        } else {
+          _submissions[items[i].id] = s;
+        }
+        if (_passed(items[i], s)) _solved.add(items[i].id);
+      }
+      myQuestionsState = PreviewLoadState.ready;
+    } catch (e) {
+      if (!_current(generation)) return;
+      myQuestionsState = PreviewLoadState.error;
+      myQuestionsError = e is LearningApiException
+          ? e.message
+          : '내가 만든 문제를 불러오지 못했어요.';
+    }
+    if (_current(generation)) _notify();
+  }
+
+  Future<LearningQuestion> saveGeneratedQuestion({
+    required String clientRequestId,
+    required AiQuizBatch batch,
+    required AiQuiz quiz,
+  }) => _mutate(
+    'save:$clientRequestId',
+    (u, c) => api.saveGeneratedQuestion(
+      userId: u,
+      clientRequestId: clientRequestId,
+      batch: batch,
+      quiz: quiz,
+      cancelToken: c,
+    ),
+    (question) {
+      _saveVersions[question.id] = ++_saveVersion;
+      _myQuestions = [
+        question,
+        ..._myQuestions.where((q) => q.id != question.id),
+      ];
+    },
+  );
   String? detailError(String key) => _detailErrors[key];
   Future<void> ensureDetail(String key, {bool refresh = false}) async {
     if (state != PreviewLoadState.ready ||
@@ -177,9 +264,19 @@ class LearningStore extends ChangeNotifier {
           if (!_templates.any((t) => t.id == id)) item,
         ];
       } else {
-        final item = await api.question(id, cancelToken: cancel);
+        final item = await api.question(
+          id,
+          ownerId: userId,
+          cancelToken: cancel,
+        );
         final latest = await api.latest(userId, id, cancelToken: cancel);
         if (!_current(generation)) return;
+        if (item.createdBy == userId) {
+          _myQuestions = [
+            for (final q in _myQuestions)
+              if (q.id == id) item else q,
+          ];
+        }
         _questions = [
           for (final q in _questions)
             if (q.id == id) item else q,
@@ -281,7 +378,7 @@ class LearningStore extends ChangeNotifier {
     final q = question(questionId);
     if (q == null ||
         answer.trim().isEmpty ||
-        (q.questionType == LearningQuestionType.multipleChoice &&
+        (q.questionType.hasChoices &&
             !q.choiceOptions.any((c) => c.key == answer))) {
       throw StateError('Invalid answer');
     }

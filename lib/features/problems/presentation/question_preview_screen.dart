@@ -116,7 +116,7 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
     final item = store.question(widget.questionId);
     final latest = store.latest(widget.questionId);
     final result = !_editing ? latest : null;
-    final isChoice = item?.questionType == LearningQuestionType.multipleChoice;
+    final isChoice = item?.questionType.hasChoices ?? false;
     final java = item != null && _isJava(store, item);
     final correct =
         _javaResult?.isCorrect == true ||
@@ -146,6 +146,11 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                 children: [
                   Text(
                     '${store.languageName(item.languageId)} · ${item.questionType.label} · ${item.difficulty.label}',
+                    style: AppTypography.meta,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.creatorLabel(store.userId),
                     style: AppTypography.meta,
                   ),
                   const SizedBox(height: 16),

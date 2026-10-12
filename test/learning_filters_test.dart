@@ -28,6 +28,11 @@ void main() {
     await tester.tap(find.byTooltip('필터'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, 'Python'));
+    await tester.dragUntilVisible(
+      find.widgetWithText(ChoiceChip, '코드 설명').hitTestable(),
+      find.byType(ListView).last,
+      const Offset(0, -100),
+    );
     await tester.tap(find.widgetWithText(ChoiceChip, '코드 설명'));
     await tester.tap(find.text('적용'));
     await tester.pumpAndSettle();

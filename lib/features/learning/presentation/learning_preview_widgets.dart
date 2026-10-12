@@ -34,8 +34,9 @@ String previewDate(DateTime value) {
 }
 
 class PreviewContent extends StatelessWidget {
-  const PreviewContent({super.key, required this.child});
+  const PreviewContent({super.key, required this.child, this.onRefresh});
   final Widget child;
+  final Future<void> Function()? onRefresh;
   @override
   Widget build(BuildContext context) {
     final store = context.watch<LearningStore>();
@@ -57,7 +58,7 @@ class PreviewContent extends StatelessWidget {
         ),
       ),
       PreviewLoadState.ready => RefreshIndicator(
-        onRefresh: store.load,
+        onRefresh: onRefresh ?? store.load,
         child: child,
       ),
     };
@@ -171,7 +172,8 @@ class QuestionPreviewCard extends StatelessWidget {
           label:
               '${store.languageName(item.languageId)} · ${item.questionType.label}',
           title: item.prompt,
-          description: '통과 기준 ${item.passScore}점',
+          description:
+              '통과 기준 ${item.passScore}점 · ${item.creatorLabel(store.userId)}',
           icon: Icons.terminal_rounded,
           tags: [item.difficulty.label],
           footerIcon: solved

@@ -1,3 +1,5 @@
+import 'preview_learning_store.dart';
+
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -5,6 +7,7 @@ import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/features/auth/data/auth_api.dart';
 import 'package:cobip_app_fe/features/auth/data/token_store.dart';
 import 'package:cobip_app_fe/features/auth/presentation/auth_view_model.dart';
+import 'package:cobip_app_fe/features/problems/data/ai_api.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -155,6 +158,21 @@ extension AuthWidgetTester on WidgetTester {
               key: ObjectKey(session),
               auth: session,
               router: widget.router,
+              aiApi:
+                  widget.aiApi ??
+                  AiApi(
+                    Dio(
+                      BaseOptions(
+                        baseUrl: 'https://ai.test',
+                        contentType: Headers.jsonContentType,
+                      ),
+                    )..httpClientAdapter = session.api.dio.httpClientAdapter,
+                  ),
+              learningStore:
+                  widget.learningStore ??
+                  (PreviewLearningStore()
+                    ..bindUser(session.user?.userId)
+                    ..load()),
             )
           : ChangeNotifierProvider.value(value: session, child: widget),
     );

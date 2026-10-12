@@ -1,18 +1,29 @@
-import 'package:flutter/foundation.dart';
+// ignore_for_file: annotate_overrides, overridden_fields
+import 'package:dio/dio.dart';
+import 'package:cobip_app_fe/features/learning/data/learning_api.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 
-import '../data/learning_models.dart';
-import '../data/learning_preview_data.dart';
-
-enum PreviewLoadState { loading, ready, error }
+import 'package:cobip_app_fe/features/learning/data/learning_models.dart';
+import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
 
 // Local-only UI rehearsal. No API, database, or persistent storage writes.
-class LearningPreviewStore extends ChangeNotifier {
-  LearningPreviewStore({
+class PreviewLearningStore extends LearningStore {
+  @override
+  List<LearningLanguage> get languages => previewLanguages;
+  @override
+  List<LearningCategory> get categories => previewCategories;
+  @override
+  bool detailReady(String key) => true;
+  @override
+  Future<void> ensureDetail(String key, {bool refresh = false}) async {}
+
+  PreviewLearningStore({
     List<LearningTemplate>? templates,
     List<LearningQuestion>? questions,
     this.delay = const Duration(milliseconds: 180),
   }) : templates = templates ?? previewTemplates,
-       questions = questions ?? previewQuestions;
+       questions = questions ?? previewQuestions,
+       super(api: LearningApi(Dio()));
   final List<LearningTemplate> templates;
   final List<LearningQuestion> questions;
   final Duration delay;

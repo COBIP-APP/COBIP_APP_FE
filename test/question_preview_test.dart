@@ -1,10 +1,12 @@
+import 'preview_learning_store.dart';
+
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:cobip_app_fe/app/app_ui_tokens.dart';
 import 'package:cobip_app_fe/app/widgets/learning_card.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_preview_widgets.dart';
 import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
-import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:cobip_app_fe/features/problems/presentation/question_preview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,7 +66,7 @@ void main() {
     await open(tester, '/problems/2001');
     final store = tester
         .element(find.byType(QuestionPreviewScreen))
-        .read<LearningPreviewStore>();
+        .read<LearningStore>();
     await reveal(tester, find.text('답 확인'));
     expect(
       tester
@@ -153,13 +155,13 @@ void main() {
       await open(tester, '/problems/$id');
       final store = tester
           .element(find.byType(QuestionPreviewScreen))
-          .read<LearningPreviewStore>();
+          .read<LearningStore>();
       final field = find.byKey(ValueKey('answer-$id'));
       await reveal(tester, field);
       await tester.enterText(field, '직접 작성한 답안');
       tester.testTextInput.hide();
       await reveal(tester, find.text('답안 제출'));
-      store.failNextAction = true;
+      (store as PreviewLearningStore).failNextAction = true;
       await tester.tap(find.text('답안 제출'));
       await tester.pumpAndSettle();
       expect(store.latest(id), isNull);

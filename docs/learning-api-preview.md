@@ -1,4 +1,263 @@
-# 학습 API 연동 전 화면 미리보기
+# 학습 API 연결 및 화면 변경 기록
+
+## 2026-10-12 생성 문제 저장·작성자·내 문제 필터 (BE 구현 요청)
+
+**상태: FE 구현, 아래 BE 계약은 신규 제안이며 아직 로컬 BE에 없음.** 실제 저장 성공은 BE 구현 후 확인해야 한다. 앱에 더미 문제나 가짜 저장 성공을 넣지 않았다. 아래 과거 AI 직접 연결 기록과 구분한다. 이번 변경은 생성된 문제의 저장·작성자·조회이며, AI 생성/챗봇의 Spring 중계 전환은 수행하지 않았다. 팀에서 전달한 최종 중계 경로는 `/api/ai/chat`, `/api/admin/ai/questions/generate` 등으로 기존 `/ai/...`와 다르므로 `AI_USE_BE_PROXY=true`만으로 최종 중계가 완성되지는 않는다. 특히 관리자 생성 API를 일반 사용자의 생성·저장 API로 사용하지 않는다.
+
+### 앱 동작
+
+- 생성 결과에서 문제마다 `문제 저장`을 누른 시점에 Spring으로 저장 요청한다. 여러 문제를 생성해도 각각 독립된 문제로 저장하며 묶음 ID를 만들지 않는다.
+- 저장 중 다른 생성·문제 이동·제출·저장을 잠근다. 성공 응답 후에만 `저장 완료`와 서버가 반환한 작성자를 표시하고 저장 버튼을 비활성화한다. 실패 시 문제를 유지하고 다시 저장할 수 있다.
+- `저장한 문제 풀기`는 **서버에서 받은 DB 문제 ID**로 기존 `/problems/{id}` 화면을 연다. AI 생성 결과의 `id`를 DB ID로 사용하지 않는다.
+- 문제 카드와 상세 화면에 작성자 닉네임을 표시하고, 로그인 사용자와 `createdBy`가 같으면 `(나)`를 붙인다. 닉네임만 같다는 이유로 내 문제로 판단하지 않는다. 이전 BE 응답에 작성자가 없으면 `작성자 정보 없음`으로 표시한다.
+- 문제 목록의 기존 하단 필터 선택창에 `작성자 → 전체 문제 / 내가 만든 문제`를 추가했다. 내 문제 필터는 서버에서 본인 목록을 조회하며 검색·언어·유형·제출 여부와 함께 적용한다. 새로고침 시 서버에서 다시 읽는다.
+- 내 문제 조회 오류를 빈 목록으로 숨기지 않는다. 404/405/501이면 서버 기능 준비 안내와 재시도를 표시한다. 기존 공개 문제 목록은 계속 사용한다.
+- 생성 페이지의 임시 연습 답안은 저장 요청에 포함하지 않는다. 영구 풀이 기록은 저장한 문제를 기존 문제 화면에서 제출할 때 남는다.
+- 계정 변경·로그아웃 시 내 문제 캐시를 비우고 이전 계정의 늦은 응답은 반영하지 않는다. 캐시는 목록 표시용이며 앱 종료 후 재조회할 원본은 BE DB다.
+
+### 1. 일반 사용자 문제 저장 API 신규 구현
+
+`POST /api/users/me/questions`
+
+인증: 기존 Spring 로그인 Bearer JWT. 일반 `USER`도 허용. 작성자는 JWT subject에서 결정한다. FE는 `userId`, `createdBy`, `published`를 보내지 않는다.
+
+현재 FE가 보내는 JSON 예시:
+
+```json
+{
+  "clientRequestId": "ca127cf6-831f-40fc-bdea-61cdd4d38c6a",
+  "category": "Infrastructure",
+  "difficulty": "중급",
+  "question": {
+    "id": 1,
+    "type": "multiple_choice",
+    "question": "AWS의 객체 스토리지 서비스는?",
+    "options": ["1. EC2", "2. S3", "3. RDS", "4. Lambda"],
+    "answer": "2",
+    "explanation": "S3는 객체 스토리지 서비스입니다.",
+    "references": [],
+    "gradingKeywords": []
+  }
+}
+```
+
+- `clientRequestId`: FE에서 문제별로 만든 UUID v4. 같은 문제 저장의 시간 초과·수동 재시도에는 같은 값을 보낸다. 새 생성 결과는 새 값을 받는다.
+- `category`: AI 생성 주제 문자열이다. BE의 숫자 `categoryId`가 아니며 `Infrastructure`를 DB 분류 ID로 쓰면 안 된다.
+- `difficulty`: 현재 생성 응답의 문자열. `초급/중급/고급`을 `EASY/NORMAL/HARD`로 변환한다. AI가 다른 표기를 반환할 경우 허용 표기를 합의하고 명시적으로 정규화하거나 검증 오류를 반환한다.
+- `question.id`: AI 배치 안의 임시 번호이며 DB PK로 사용하지 않는다. 정규화한 문제 내용에 대한 중복 비교에서도 제외한다.
+- `question.type/question/options/answer/explanation/references/gradingKeywords`: 생성 응답을 전달한다. 텍스트형의 options 및 없는 references/gradingKeywords는 FE가 빈 배열로 정규화한다.
+- BE가 질문·유형·정답·보기 키의 유효성, 길이와 배열 크기를 검증한 후 트랜잭션으로 저장한다. 저장 시 AI를 다시 호출할 필요는 없다.
+- DB category는 `CODING_PROBLEM` 또는 그 하위 분류로 배정해야 현재 문제 목록에서 보인다. 생성 주제는 별도 메타데이터로 보존할 수 있다. 언어 ID가 정확히 매핑되지 않으면 null로 두고 언어 공통으로 표시한다. FE는 이번 저장 요청에 임의의 언어/분류 숫자 ID를 넣지 않는다.
+
+응답은 **기존 QuestionResponse에 작성자 필드를 추가한 단일 JSON 객체**다. `{success,data}`로 감싸거나 `{id}`만 반환하면 현재 FE 계약과 맞지 않는다. 신규 저장은 `201`, 같은 요청 또는 동일 내용의 기존 문제 반환은 `200`:
+
+```json
+{
+  "id": 501,
+  "categoryId": 203,
+  "languageId": null,
+  "relatedTemplateId": null,
+  "relatedSectionId": null,
+  "createdBy": 1,
+  "creatorNickname": "학습자",
+  "questionType": "MULTIPLE_CHOICE",
+  "prompt": "AWS의 객체 스토리지 서비스는?",
+  "codeSnippet": null,
+  "choiceOptions": [
+    {"key": "1", "text": "EC2"},
+    {"key": "2", "text": "S3"},
+    {"key": "3", "text": "RDS"},
+    {"key": "4", "text": "Lambda"}
+  ],
+  "explanation": "S3는 객체 스토리지 서비스입니다.",
+  "difficulty": "NORMAL",
+  "passScore": 70,
+  "published": false,
+  "media": []
+}
+```
+
+위 숫자 ID는 예시다. 실제 DB의 ID를 반환한다. `createdBy`는 필수 양의 정수, `creatorNickname`은 표시용 닉네임이다. 이메일은 필요 없다. 기존 QuestionResponse의 categoryCode, languageName, displayOrder, createdAt 등 추가 필드는 유지해도 된다. 문제 목록/상세에 정답 키·referenceAnswer를 새로 공개할 필요는 없고, 서버 채점용으로 보관한다.
+
+### 2. 내가 만든 문제 조회 API 신규 구현
+
+`GET /api/users/me/questions`
+
+- 본인 ID는 JWT에서 결정한다. 관리자 권한이나 URL의 임의 userId를 요구하지 않는다.
+- 위와 같은 QuestionResponse 객체의 **배열**을 반환한다. 없는 경우 `200 []`. 이번 FE는 페이지 객체를 파싱하지 않으므로 첫 페이지 일부만 반환하지 않는다. 페이지 처리를 도입하려면 FE와 계약을 함께 변경한다.
+- 저장된 본인 문제를 공개 여부와 무관하게 반환한다. 다른 사람이 만든 공개 문제도 이 목록에는 포함하지 않는다. 기본 정렬은 최근 저장 순을 권장한다.
+- `createdBy`, `creatorNickname`을 모든 항목에 반환한다. FE도 작성자 ID 불일치를 검증하지만 권한 제한은 BE 쿼리에서 수행해야 한다.
+- 검색·언어·유형·제출 여부는 현재 FE에서 목록에 적용하므로 별도 쿼리 파라미터는 아직 필요 없다.
+
+### 3. 기존 문제 조회·제출 API 확장
+
+| API | 필요한 변경 |
+| --- | --- |
+| `GET /api/questions?publishedOnly=true` | 기존 공개 목록 유지. 각 항목에 `createdBy`, `creatorNickname` 추가. 타인의 비공개 문제 노출 금지. |
+| `GET /api/questions/{id}` | 공개 문제 또는 JWT 본인이 만든 비공개 문제 조회 허용. 작성자 2필드 추가. |
+| `POST /api/questions/{id}/submissions` | 본인 저장 문제도 기존과 같은 제출·채점·DB 기록 처리. 새 유형의 답안 필드와 채점 방식 확장. |
+| `GET /api/questions/{id}/submissions/latest?userId=...` | 본인 저장 문제의 최근 결과도 조회. 질문 접근 권한과 요청 userId=JWT 사용자 일치 검사. 미제출은 기존 404 계약 유지. |
+
+기존 제출 요청은 `userId`와 답안 필드 하나다. 응답은 기존 SubmissionResponse를 유지한다. 예: `id`, `userId`, `questionId`, `gradingStatus`, `gradingMethod`, `score`, `feedback`, `submittedAt`, `gradedAt` 및 제출 답안 필드. `COMPLETED`이면 0~100 점수가 필요하다. AI 호출이 오래 걸리는 제출은 FE가 최대 5분 기다리고 중복 클릭을 막는다. 기존 BE 인증 갱신 정책(401 토큰 갱신 후 1회 재시도)은 유지하므로 BE는 인증 검증을 제출 처리 전에 수행한다. `PENDING` 비동기 채점을 유지한다면 최신 결과가 갱신되도록 서버에 저장해야 하며 실시간 폴링은 이번 추가 범위가 아니다.
+
+### 4. 생성 유형을 그대로 보존하기 위한 BE 확장
+
+현재 로컬 BE의 questions.question_type 제약과 DTO는 `MULTIPLE_CHOICE`, `CODE_EXPLANATION`, `CODE_WRITING`만 지원한다. 아래 4개 유형을 추가해야 생성 기능 전체를 저장하고 다시 풀 수 있다. 모든 텍스트 문제를 CODE_EXPLANATION으로 임의 변환하지 않는다.
+
+| 생성 type | 저장 후 questionType | 제출 답안 필드 |
+| --- | --- | --- |
+| `multiple_choice` | `MULTIPLE_CHOICE` | `selectedChoiceKey: "2"` |
+| `ox` | `OX` | `selectedChoiceKey: "1"` 또는 `"2"` |
+| `short_answer` | `SHORT_ANSWER` | `answerText` |
+| `blank` | `FILL_BLANK` | `answerText` |
+| `descriptive` | `DESCRIPTIVE` | `answerText` |
+| 기존 코드 해석 문제 | `CODE_EXPLANATION` 유지 | `answerText` |
+| 기존 Java 코드 작성 문제 | `CODE_WRITING` 유지 | `sourceCode` |
+
+객관식/OX의 choiceOptions는 반드시 `{key,text}` 배열. 배열 순서 기준 key는 `"1"`부터 시작하고 보기 앞 `"1. "` 등 표시 번호는 text에서 제거한다. `correct_choice_key`가 존재하는 보기 키를 가리키도록 검증한다. OX의 AI 정답이 O/X 문구로 오는 경우 Spring에서 해당 보기 키로 정규화한다. 텍스트형 정답은 reference_answer, 채점 키워드는 grading_criteria 등에 보존한다. 기존 빈칸 채점 호출 시 AI type은 `fill_blank`/`blank` 호환을 처리한다. 생성 요청의 대문자 `BLANK`와 DB의 `FILL_BLANK`를 혼동하지 않는다.
+
+### 5. 작성자·공개 범위·중복 저장 처리
+
+- 기존 `questions.created_by`를 사용한다. 작성자 컬럼을 새로 만들 필요 없다. 조회 시 users의 닉네임을 조인해 반환하면 된다.
+- 개인 저장은 `published=false`를 기본으로 제안한다. 본인은 즉시 조회·풀이 가능하고 다른 사용자는 볼 수 없다. 관리자 AI 초안 검토·공개 과정과 개인 저장을 구분한다. 향후 공개 정책은 별도로 결정할 수 있다.
+- `(created_by, client_request_id)`의 고유 제약 또는 멱등성 테이블로 동시 요청을 원자적으로 처리한다. 같은 키/같은 본문은 기존 문제를 `200`으로 반환한다. 같은 키/다른 본문은 `409`. 중복 응답에도 전체 QuestionResponse를 반환한다.
+- 화면을 닫았다가 같은 내용을 새로 생성한 경우 UUID는 바뀐다. 이 경우까지 막으려면 **작성자별 정규화 콘텐츠 해시**도 비교한다. 정규화 기준은 유형·질문·순서가 유지된 보기·정답·채점 기준·난이도 등으로 정의하고 AI 임시 ID/clientRequestId는 제외한다. 동일한 경우 기존 문제를 `200`으로 반환한다. 다른 사용자의 같은 내용까지 같은 소유 문제로 합치지 않는다.
+- 저장 API 성공과 문제/멱등 정보 커밋을 하나의 트랜잭션으로 처리한다. 네트워크 응답 유실 후 재시도해도 중복 행이 생기지 않아야 한다.
+- 클라이언트가 보낸 생성 정답은 조작될 수 있으므로 개인 연습 범위로 취급한다. 공식 문제/랭킹으로 공개한다면 서버의 생성 이력 검증이나 관리자 검토가 필요하다.
+
+### 6. 오류와 BE 작업 위치
+
+| 상태 | 의미 |
+| --- | --- |
+| 400/422 | 저장 데이터·지원 유형·정답 키 검증 실패 |
+| 401 | 인증 없음/만료 |
+| 403 또는 404 | 다른 사용자 비공개 문제 접근 차단 |
+| 409 | 멱등 키를 다른 본문에 재사용 |
+| 429/5xx/시간 초과 | 실패 또는 결과 미확인. FE는 성공 표시 없이 같은 키로 수동 재시도 |
+
+로컬 BE 코드 확인 근거:
+
+- `src/main/resources/db/migration/V1__initial_schema.sql`: questions.created_by 및 question_type CHECK. 운영 적용 시 V1을 수정하기보다 신규 마이그레이션으로 유형 제약과 멱등성 저장 구조를 추가한다.
+- `src/main/java/com/cobip/domain/content/AdminContentController.java`: 기존 생성은 관리자 전용. 이 API의 권한을 전체 공개하지 않고 일반 사용자 저장 API를 별도로 추가한다.
+- `src/main/java/com/cobip/domain/content/AdminContentRepository.java`: 질문 INSERT와 created_by 저장 방식 참고.
+- `src/main/java/com/cobip/domain/content/ContentDtos.java`: QuestionResponse에 작성자 정보 추가. 목록·상세·저장 응답에서 같은 모양으로 사용한다.
+- 기존 content 조회 및 activity 제출 코드에서 공개 여부 조건, 본인 소유권, 유형별 제출 검증/채점 분기를 함께 확장한다.
+
+BE 연동 후 실제 확인할 항목: 5가지 생성 유형 각각 저장/재조회/제출, 동일 버튼 연속 클릭, DB 저장 후 응답 유실 및 같은 키 재시도, 앱 재시작 후 내 문제 복원, 다른 계정에서 비공개 문제 접근 차단, 저장 문제의 제출 기록/색상 복원. FE 테스트의 모의 서버 응답은 계약 검증용이며 실제 DB 저장 검증을 대신하지 않는다.
+
+FE 검증: `flutter analyze --no-pub` 문제 없음, 전체 테스트 **206개 통과**, 로컬 BE 주소 설정으로 Android debug APK 빌드 성공. 새 테스트는 저장 중복 클릭·시간 초과 재시도 UUID 유지·서버 미구현 안내·타인 작성자 응답 거절·계정 변경 후 늦은 응답 무시·추가 유형의 제출 필드·저장 후 기존 풀이 진입과 작성자 필터를 확인한다. BE 코드와 DB는 수정하지 않았다.
+
+## 2026-10-12 운영 AI 서버 직접 연결
+
+팀에서 전달한 운영 주소 `https://ai.cobip.tech`를 `AI_BASE_URL` 기본값으로 사용한다. `AiApi.fromEnvironment`가 전용 Dio를 만들고, 생성·채점·Java·챗봇·추가 해설은 AI 서버에 직접 요청한다. `API_BASE_URL`은 기존 BE 용도로 유지한다. BE의 Authorization 헤더나 인증 인터셉터를 AI 클라이언트에 복사하지 않는다.
+
+`AI_USE_BE_PROXY=true`로 빌드할 경우에만 이전 Spring 중계 모드(같은 `/ai/...` 계약)를 사용한다. 이때 기존 BE Dio와 인증을 재사용한다. 별도 AI 주소나 실패 자동 우회는 사용하지 않는다. 외부에서 주입한 테스트 클라이언트와 BE 공유 클라이언트는 AiApi가 닫지 않고, 직접 생성한 전용 Dio만 앱 종료 시 정리한다.
+
+운영 `/openapi.json`에서 5개 경로를 확인했고, 전용 클라이언트의 BE 토큰·인터셉터 분리와 기존 화면 테스트 20개가 통과했다. 아래 내용 중 Spring 중계에 관한 설명은 이전 작업 기록이며 현재 기본 실행은 직접 연결이다.
+
+### 운영 응답 및 앱 검증
+
+실제 FE `AiApi`를 사용해 인증 헤더 없이 운영 서버에 아래 요청을 순차 실행했다. 정적 분석과 전체 테스트 200개, Android debug APK 빌드도 통과했고 실행 중인 에뮬레이터에 새 APK를 설치했다.
+
+| 요청 | 관측 결과 |
+| --- | --- |
+| 혼합 문제 생성 | 객관식·단답형·서술형 각 1개 반환, 약 179초 |
+| 객관식 채점 | 생성 문제의 정답 번호 문자열 전송, 정답·100점 |
+| 단답형 채점 | 의미가 같은 문장을 제출, 정답·100점, 약 3초 |
+| 서술형 채점 | 6개 응답 필드 파싱 성공, 정답·96점, 약 30초 |
+| 추가 해설 | 요약 3개와 상세 해설 반환, 약 25초 |
+| Java 평가 | `is_correct=true`, 100점, `formatted_code` 반환, 약 21초 |
+| 챗봇 | `source=ollama`, 실제 답변 반환, 약 13초 |
+
+위 확인은 전송·응답 처리 검증이다. 생성 객관식의 질문과 보기 구성, 요청 주제와 일부 생성 문제의 관련성, 서술형의 정답 판정과 부정적 피드백 사이에 일관성이 부족한 응답을 관측했다. 챗봇도 Java int의 범위를 넘는 수를 예로 제시했다. FE가 내용을 수정하거나 재채점하지 않고 서버 응답을 그대로 표시하므로 AI 측 콘텐츠 품질 검토 항목으로 남긴다. BE·AI 코드와 DB에는 이번 작업으로 변경을 가하지 않았다.
+
+## 2026-10-12 AI 명세 기반 FE 구현 (이전 중계 방식)
+
+사용자가 전달한 AI 명세를 기준으로 FE만 변경했다. Spring이 동일한 `/ai/...` 경로와 요청·응답을 중계하는 계약이며, 기존 인증 Dio와 `API_BASE_URL`을 재사용한다. BE·DB·AI 서버 코드는 수정하지 않는다.
+
+- 문제 목록의 검색·필터 아래 `AI 문제 생성` 버튼과 `/problems/generate` 페이지를 추가했다. 주제, 세부 주제, 난이도, 5개 유형 복수 선택, 유형별 1~5개(총 15개 이하)를 지원한다. `quiz_types`에는 대문자 `BLANK` 등을, `user_id`에는 로그인 사용자 ID 문자열을 전달한다.
+- 생성 응답의 소문자 타입과 문제·보기·정답·해설·채점 키워드를 보관한다. 객관식/OX는 배열 순서 기준 `"1"`, `"2"` 등만 `userAnswer`로 제출하며 보기 문구에 번호가 이미 있으면 화면에 중복 번호를 붙이지 않는다.
+- 생성한 문제는 한 번에 하나씩 풀고 번호 버튼으로 이동한다. 정오답 판단은 `isCorrect`를 사용하며 점수, 피드백, 정답, 해설, nullable `relatedSection`을 처리한다. 해설은 `풀이 보기`, 추가 해설은 `/ai/quiz/explain`을 호출하는 `자세한 해설`로 확인한다.
+- 기존 DB Java 코드 문제는 기존 답안 저장 성공 후 PENDING인 경우 `/ai/java/grade`로 문제와 코드를 전송한다. `is_correct`, `score`, `feedback`, `formatted_code`를 별도로 표시한다. AI 실패 재시도는 답안 저장을 반복하지 않는다. Java API는 정적 평가이며 코드 실행 결과로 표기하지 않는다.
+- 챗봇의 더미 답변을 `/ai/chat`으로 교체했다. `source=fallback`이면 정상 AI 답변으로 표시하지 않고 수동 재요청을 제공한다. 대화는 사용자 전환 시 초기화하며 이전 사용자의 늦은 응답을 무시한다.
+- 생성·채점·추가 해설·챗봇은 로딩과 중복 제출 잠금을 사용한다. 응답 제한 시간 5분, 전송 20초, 연결은 기존 인증 클라이언트의 10초를 사용한다. 401에서는 인증을 갱신하더라도 AI POST는 자동 재전송하지 않는다. 4xx/5xx, JSON/text 오류, 네트워크 실패, 시간 초과는 사용자용 안내로 변환한다.
+
+### 저장 및 검증 경계
+
+AI 생성 ID는 해당 생성 결과 안의 번호로만 사용하고 BE 문제 PK로 제출하지 않는다. 별도 저장 API가 명세에 없으므로 생성 문제와 풀이 결과는 페이지를 나가면 사라진다. Java AI 결과도 페이지 내 피드백이며 기존 DB 제출의 점수나 완료 상태를 FE에서 임의로 변경하지 않는다. 기존 DB 객관식 채점은 유지하고, 모범 답안이 공개 응답에 없는 기존 DB 설명형 문제는 기존 BE 제출 경로를 유지한다. 문법·실무의 연결 문제 흐름은 변경하지 않는다.
+
+AI 전용 요청·상태·화면 테스트 19개와 기존 테스트를 포함한 전체 199개가 통과했다. 테스트용 HTTP 응답으로 생성/채점/해설/Java/챗봇 계약, 인증, 중복 방지, 실패 및 사용자 변경을 검증했으며 작은 화면과 큰 글씨의 생성 폼도 검사했다. 실제 Spring→AI 응답 검증은 BE 중계가 준비된 환경에서 수행해야 하며, 이번 FE 테스트 통과를 실제 AI 동작 확인으로 간주하지 않는다.
+
+`flutter analyze --no-pub`에서 문제 없음, 로컬 BE 주소로 Android debug APK 빌드 성공. 실행 중인 Android 에뮬레이터에 데이터 삭제 없이 설치하고 기존 로그인 복원, 문제 목록의 생성 버튼 위치, 생성 페이지의 폼·유형 선택·스타일을 확인했다. 실제 AI 생성 요청은 실행하지 않았다.
+
+## 2026-10-12 실제 API 연결
+
+FE `develop`의 PR #14 병합 커밋 `f95cc7d`에서 `feature/learning-api-connection`을 분기했다. 아래의 2026-10-11 미리보기 기록은 이전 작업 설명이며, 현재 앱의 문법·실무·문제는 `LearningApi`와 `LearningStore`를 통해 실제 서버를 사용한다. 색상·글꼴·카드·목차/필터 선택창·문제 풀이 배치는 유지한다. 챗봇 AI 연결은 이번 범위에 포함하지 않는다.
+
+### 연결한 기능
+
+| 기능 | 서버 요청 |
+| --- | --- |
+| 언어·계층 분류 및 필터 | `GET /api/languages`, `GET /api/categories` |
+| 공개 문법·실무 목록 및 목차 상세 | `GET /api/templates?publishedOnly=true`, `GET /api/templates/{id}` |
+| 공개 문제 목록 및 상세 | `GET /api/questions?publishedOnly=true`, `GET /api/questions/{id}` |
+| 학습 위치·완료 복원과 저장 | `GET /api/users/me/progress`, `PUT /api/users/{userId}/progress/templates/{id}` |
+| 북마크 조회·저장·해제 | `GET /api/users/{userId}/bookmarks`, `PUT/DELETE /api/users/{userId}/bookmarks/templates/{id}` |
+| 문제별 답안 제출·최근 결과 | `POST /api/questions/{id}/submissions`, `GET /api/questions/{id}/submissions/latest?userId=...` |
+
+- 기존 로그인용 Dio의 Bearer 인증과 토큰 갱신을 공유한다. 사용자 ID는 로그인 세션에서 가져오고, 계정 변경 시 이전 요청을 취소하고 사용자 기록을 비운다.
+- 언어·분류·학습·문제 ID를 서버에서 가져온다. 목록 요약을 상세로 대신 사용하지 않고, 상세 진입 시 본문과 목차를 조회한다. 언어 공통 문법도 상세 경로로 이동할 수 있다.
+- 검색과 필터는 내려받은 공개 목록에 적용한다. 목록을 아래로 당기면 다시 조회한다. 서버 목록이 비면 빈 목록 안내를 표시하며 예시 데이터로 대체하지 않는다.
+- 북마크·진도·제출은 서버 성공 응답 후에만 화면에 반영한다. 학습 중 목차 이동은 `completed`를 생략하여 기존 완료 상태를 보존한다. 다시 학습하기는 `false`, 학습 끝내기는 `true`를 보낸다.
+- 답안은 문제 유형에 따라 `selectedChoiceKey`, `sourceCode`, `answerText` 중 하나만 보낸다. 객관식 정답과 점수는 서버 응답을 사용한다. 연결 문제의 일부 제출만 실패하면 재시도 때 이미 성공한 동일 답안은 중복 제출하지 않는다. 응답 자체가 유실된 요청은 BE에 멱등 키 계약이 없어 중복 여부를 확정할 수 없다.
+- 최근 제출 404만 미제출로 처리한다. 서버/권한/응답 형식 오류는 재시도 안내를 표시한다. 최근 제출은 동시에 최대 4개씩 조회하며, 현재 계약에는 전체 문제의 최신 제출을 한 번에 조회하는 API가 없다.
+- 미리보기 저장소는 `test/preview_learning_store.dart`로 분리했다. 기존 화면 회귀 테스트는 이 저장소를 사용하고, 새 API 테스트는 실제 `LearningStore`와 HTTP 응답 어댑터를 사용한다. 앱에서는 더미 저장소나 로컬 정답표를 참조하지 않는다.
+
+### 실행 및 남은 BE 협의
+
+기존 인증/홈과 같은 `API_BASE_URL` 설정을 사용한다. Android 에뮬레이터에서 PC의 로컬 Docker API를 사용할 때는 `http://10.0.2.2:8080`을 빌드 설정으로 전달한다. 배포 빌드는 HTTPS 주소가 필요하다. 학습 API 전용 비밀번호나 추가 환경 변수는 없다.
+
+- 로컬 DB에는 공개 학습/문제 콘텐츠가 없다. 연결 후 카드를 보려면 관리자 기능으로 실제 콘텐츠를 등록·공개해야 한다.
+- 이번 FE 작업에서는 `choiceOptions`의 `{key, text}` 형식을 사용하기로 했다. `text`는 정답인 보기를 포함한 각 보기의 내용이고, `key`는 해당 보기를 선택했을 때 제출하는 답 값이다. 아래 예시대로 콘텐츠를 등록하면 기존 FE와 바로 연결된다. BE 문서 자체에는 아직 배열 내부 필드가 명시되어 있지 않다.
+- 코드 작성·설명형 제출은 현재 BE에서 `PENDING`으로 반환한다. AI 채점/챗봇 연결은 별도이며, 채점 대기를 정답이나 학습 완료로 처리하지 않는다.
+- 첨부 자료는 `objectKey`만 내려오므로 공개/다운로드 URL 계약이 필요하다. 현재는 자료 이름과 준비 중 안내를 유지한다.
+- 최신 제출 한 건만 제공되므로, 이전 정답 이후 오답을 제출한 문제의 누적 정답 여부는 앱 재시작 후 복원할 수 없다. 앱 실행 중 발견한 정답 이력은 유지하지만 완전한 복원에는 BE 누적 정답 계약이 필요하다.
+
+### 객관식 보기 사용 규칙
+
+문제가 “1 + 1은?”일 때 정답인 보기와 오답인 보기를 같은 배열에 넣는다.
+
+```json
+{
+  "choiceOptions": [
+    {"key": "A", "text": "1"},
+    {"key": "B", "text": "2"},
+    {"key": "C", "text": "3"}
+  ]
+}
+```
+
+- 모든 보기에 비어 있지 않은 `key`와 `text`를 넣는다. 한 문제 안의 `key`는 서로 달라야 한다.
+- FE는 `text`를 표시하고 선택한 보기의 `key`를 `selectedChoiceKey`로 제출한다. B를 선택하면 `{"userId":1,"selectedChoiceKey":"B"}`를 보낸다(`userId`는 로그인한 실제 사용자 ID).
+- 정답인 “2”도 다른 보기처럼 `text`에 들어간다. BE는 기존 `correctChoiceKey`에 `B`를 저장해 어느 보기가 정답인지 구분한다. 이 정답 키는 일반 사용자 문제 조회 응답에는 포함되지 않는다.
+- 기존 FE가 이미 이 구조를 읽고 제출하므로 앱 코드·디자인 수정 없이 사용한다.
+
+### 검증
+
+전체 Flutter 테스트 177개, 정적 분석, 전체 Dart 포맷 검사와 Android 디버그 APK 빌드를 통과했다. HTTP 계약/실패/계정 변경과 실제 저장소를 주입한 화면 흐름을 포함한다. 실제 로컬 Docker에서도 임시 계정·문법/실무 콘텐츠로 목록·상세·북마크·진도·객관식 정오답·코드/설명 제출·기록 복원을 확인했다. 검증용 계정과 콘텐츠/활동 기록은 끝난 뒤 삭제했고 기존 사용자 데이터는 유지했다.
+
+### 명세·BE 구현 재대조
+
+`learning-api.md`, `auth-fe-alignment.md`, 실제 `ContentController`/`ActivityController`/`CatalogController`, 응답 DTO, 진도 저장 SQL, 실행 중인 Docker의 `/v3/api-docs`를 다시 대조했다. FE가 사용하는 경로·메서드·성공 상태·필드 이름에 추가 불일치는 발견하지 못했다.
+
+- 목차 전용 GET 대신 템플릿 상세에 포함된 `sections`를 사용하고, 단건 진도 GET 대신 `/api/users/me/progress`로 복원한다. 두 API를 별도로 호출하지 않는 것은 기능 누락이 아니다.
+- 학습 답안 POST가 401이면 기존 인증 계층이 토큰을 한 번 갱신하고 같은 사용자·답안으로 재시도한다. 반복 401은 세션 종료, 403은 갱신 없이 실패하는 것을 추가 테스트로 확인했다.
+- 중첩 목차, null 본문/코드/첨부 설명, 첨부 objectKey 해석을 추가 테스트로 확인했다. API·화면 관련 테스트 16개가 통과했다(기존 13개 + 이번 추가 3개).
+- 실제 Docker 재검증에는 조회·저장·채점·복원 외에도 다른 사용자 ID의 403, 없는 학습의 404, null 마지막 목차, 완료 상태 해제를 포함했다. 임시 계정·콘텐츠·활동 기록은 검증 후 정리했다.
+- 재대조 당시 BE 문서에 `choiceOptions` 내부 구조가 없음을 확인했다. 이후 이번 FE 작업에서 아래의 `key/text` 형식을 사용하기로 결정했다. 이는 FE의 사용 규칙이며 BE 문서나 기존 콘텐츠를 변경한 것은 아니다.
+- `criteriaResults`·`aiModelVersion`은 현재 BE에서 값이 채워지지 않는 AI 채점용 필드로 화면 모델에 연결하지 않았다. AI 연결 때 응답·표시 범위를 함께 확정해야 한다. 첨부 URL과 누적 정답 여부의 제약도 위에 기록한 상태다.
+
+## 2026-10-11 API 연동 전 화면 미리보기 (이전 기록)
 
 2026-10-11 기준. BE `develop`의 `docs/learning-api.md`, `docs/auth-fe-alignment.md`, `ContentDtos.java`, `ActivityDtos.java`를 기준으로 화면에 필요한 데이터와 흐름을 정리했다. 실제 학습 API 호출은 추가하지 않았다. 기존 인증·홈의 서버 연동과 챗봇 예시 동작은 그대로다.
 

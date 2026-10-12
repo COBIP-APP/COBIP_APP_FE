@@ -2,6 +2,7 @@ import '../../features/chat/presentation/chat_screen.dart';
 
 import '../../features/problems/presentation/problems_home_screen.dart';
 import '../../features/problems/presentation/question_preview_screen.dart';
+import '../../features/problems/presentation/ai_quiz_screen.dart';
 
 import '../../features/practical/presentation/practical_chapters_screen.dart';
 import '../../features/practical/presentation/practical_home_screen.dart';
@@ -17,7 +18,6 @@ import '../../features/auth/presentation/password_reset_screen.dart';
 import '../../features/auth/presentation/sign_up_complete_screen.dart';
 import '../../features/auth/presentation/sign_up_screen.dart';
 import '../../features/auth/presentation/terms_screen.dart';
-import '../../features/grammar/data/grammar_sample_data.dart';
 import '../../features/grammar/presentation/grammar_chapters_screen.dart';
 import '../../features/grammar/presentation/grammar_home_screen.dart';
 import '../../features/grammar/presentation/grammar_lesson_screen.dart';
@@ -112,6 +112,10 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
       builder: (context, state) => const ProblemsHomeScreen(),
       routes: [
         GoRoute(
+          path: 'generate',
+          builder: (context, state) => const AiQuizScreen(),
+        ),
+        GoRoute(
           path: ':mission',
           name: AppRouteNames.problemMission,
           builder: (context, state) => QuestionPreviewScreen(
@@ -191,17 +195,9 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
               ),
             ),
           ],
-          redirect: (context, state) =>
-              GrammarLanguage.fromId(state.pathParameters['language']!) == null
-              ? '/grammar'
-              : null,
-          builder: (context, state) {
-            return GrammarChaptersScreen(
-              language: GrammarLanguage.fromId(
-                state.pathParameters['language']!,
-              )!,
-            );
-          },
+          builder: (context, state) => GrammarChaptersScreen(
+            language: state.pathParameters['language']!,
+          ),
         ),
       ],
     ),

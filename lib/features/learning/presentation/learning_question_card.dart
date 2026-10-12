@@ -78,7 +78,7 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
             LearningCode(question.codeSnippet!),
           ],
           const SizedBox(height: 16),
-          if (question.questionType == LearningQuestionType.multipleChoice)
+          if (question.questionType.hasChoices)
             for (final choice in question.choiceOptions)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -126,7 +126,12 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
                 hintText:
                     question.questionType == LearningQuestionType.codeWriting
                     ? '// 코드를 작성하세요.'
-                    : '출력 결과와 코드의 동작 과정을 설명해 주세요.',
+                    : question.questionType ==
+                          LearningQuestionType.codeExplanation
+                    ? '출력 결과와 코드의 동작 과정을 설명해 주세요.'
+                    : question.questionType == LearningQuestionType.fillBlank
+                    ? '빈칸이 여러 개면 쉼표로 구분해 주세요.'
+                    : '답안을 작성해 주세요.',
               ),
             ),
           if (result != null) ...[

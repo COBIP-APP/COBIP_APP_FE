@@ -1,6 +1,6 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
-import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:cobip_app_fe/features/problems/presentation/question_preview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -35,7 +35,7 @@ void main() {
     expect(router.routeInformationProvider.value.uri.path, '/problems/2000');
     final store = tester
         .element(find.byType(QuestionPreviewScreen))
-        .read<LearningPreviewStore>();
+        .read<LearningStore>();
     expect(store.latest(2000), isNull);
     expect(tester.takeException(), isNull);
   });

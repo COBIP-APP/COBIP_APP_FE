@@ -3,7 +3,7 @@ import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:cobip_app_fe/app/app_ui_tokens.dart';
 import 'package:cobip_app_fe/app/widgets/learning_card.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_preview_widgets.dart';
-import 'package:cobip_app_fe/features/learning/presentation/learning_preview_store.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:cobip_app_fe/features/grammar/presentation/grammar_lesson_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,7 +27,7 @@ void main() {
     await open(tester, '/grammar/java/chapters/111');
     final store = tester
         .element(find.byType(GrammarLessonScreen))
-        .read<LearningPreviewStore>();
+        .read<LearningStore>();
     expect(store.progress(111)!.lastSectionId, 11101);
     expect(store.progress(111)!.completedAt, isNull);
     expect(find.text('학습 목차'), findsNothing);

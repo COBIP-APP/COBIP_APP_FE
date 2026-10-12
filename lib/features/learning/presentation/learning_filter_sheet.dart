@@ -240,11 +240,6 @@ class LearningListToolbar extends StatelessWidget {
               style: AppTypography.meta,
             ),
           ),
-          const SizedBox(width: 8),
-          const Tooltip(
-            message: '예시 데이터이며 학습 기록은 앱을 실행하는 동안만 유지됩니다.',
-            child: Text('예시 데이터', style: AppTypography.meta),
-          ),
         ],
       ),
     ],

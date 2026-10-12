@@ -37,6 +37,8 @@ AI 문제 생성·채점·챗봇·추가 해설은 현재 운영 AI 서버를 �
 
 메인의 조회 API, 빈 상태·오류 처리와 학습 상세 이동의 남은 경계는 [메인 API 연동 작업 기록](docs/home-api-integration.md)을 참고합니다.
 
+프로필·내 학습·북마크·문제별 최근 결과와 계정 기능은 [마이페이지 API 연동 작업 기록](docs/mypage-api-integration.md)을 참고합니다.
+
 ## 팀 규칙
 
 브랜치, 커밋, Dart 스타일과 폴더 구조는 [CONVENTIONS.md](CONVENTIONS.md)를 따릅니다.

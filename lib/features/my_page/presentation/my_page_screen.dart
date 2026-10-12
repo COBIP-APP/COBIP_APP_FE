@@ -2,619 +2,803 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../app/app_ui_tokens.dart';
 import '../../../app/router/app_router.dart';
+import '../../../app/widgets/learning_card.dart';
+import '../../../app/widgets/learning_ui.dart';
 import '../../auth/presentation/auth_view_model.dart';
+import '../../learning/presentation/learning_store.dart';
+import '../data/my_page_api.dart';
+import 'my_page_view_model.dart';
+
+enum _Tab {
+  learning('내 학습'),
+  bookmarks('북마크'),
+  results('최근 결과');
+
+  const _Tab(this.label);
+  final String label;
+}
+
+enum _LearningFilter {
+  all('전체 보기'),
+  inProgress('학습 중'),
+  completed('학습 완료');
+
+  const _LearningFilter(this.label);
+  final String label;
+}
+
+String _date(DateTime value) {
+  final date = value.toLocal();
+  return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+}
 
 class MyPageScreen extends StatelessWidget {
   const MyPageScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthViewModel>();
+    final userId = auth.user?.userId;
+    if (userId == null) {
+      return const Scaffold(body: Center(child: Text('로그인이 필요합니다.')));
+    }
+    return ChangeNotifierProvider(
+      key: ValueKey(userId),
+      create: (_) =>
+          MyPageViewModel(api: MyPageApi(auth.api.dio), userId: userId)
+            ..refresh(),
+      child: const _MyPageBody(),
+    );
+  }
+}
 
-  // API 연결 전 화면 배치 확인용 임시 데이터입니다.
-  static const _templates = [
-    (category: 'Spring Boot', title: 'JWT 기반 사용자 인증 시스템 구현', likes: 128),
-    (category: 'Spring Security', title: '이메일 인증 회원가입 시스템', likes: 96),
-    (category: 'Database', title: '효율적인 ERD 설계 가이드', likes: 74),
-  ];
-  static const _missions = [
-    (
-      title: '사용자 로그인 기능 구현',
-      detail: 'JWT 로그인 시스템 구현하기',
-      success: true,
-      date: '2025.08.24',
-    ),
-    (
-      title: '게시글 작성 기능 구현',
-      detail: '마크다운 지원 첨부 기능 포함',
-      success: false,
-      date: '2025.08.20',
-    ),
-    (
-      title: '비밀번호 찾기 기능 구현',
-      detail: '이메일 인증 기반 비밀번호 재설정',
-      success: true,
-      date: '2025.08.18',
-    ),
-    (
-      title: '파일 업로드 및 다운로드 API 구현',
-      detail: 'S3 연동 파일 관리 API',
-      success: true,
-      date: '2025.08.15',
-    ),
-  ];
+class _MyPageBody extends StatefulWidget {
+  const _MyPageBody();
+  @override
+  State<_MyPageBody> createState() => _MyPageBodyState();
+}
+
+class _MyPageBodyState extends State<_MyPageBody> {
+  _Tab _tab = _Tab.learning;
+  _LearningFilter _learningFilter = _LearningFilter.all;
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _openTemplate(int id, [int? sectionId]) async {
+    final vm = context.read<MyPageViewModel>();
+    try {
+      final destination = await vm.destination(id, sectionId);
+      if (!mounted || destination == null) return;
+      await context.pushNamed(
+        destination.grammar
+            ? AppRouteNames.grammarConcept
+            : AppRouteNames.practicalChapter,
+        pathParameters: {
+          'template': '${destination.templateId}',
+          if (destination.grammar)
+            'language': destination.language
+          else
+            'topic': '${destination.categoryId}',
+        },
+        queryParameters: {
+          if (destination.sectionId != null)
+            'section': '${destination.sectionId}',
+        },
+      );
+      if (mounted && !vm.disposed) await vm.refresh();
+    } catch (error) {
+      if (!vm.disposed) _showError(vm.message(error));
+    }
+  }
+
+  Future<void> _removeBookmark(MyBookmark item) async {
+    final vm = context.read<MyPageViewModel>();
+    final store = context.read<LearningStore>();
+    try {
+      await vm.removeBookmark(item.templateId);
+      if (mounted && !vm.disposed) store.requestRefresh();
+    } catch (error) {
+      if (!vm.disposed) _showError(vm.message(error));
+    }
+  }
+
+  Future<void> _openResult(MyRecentResult item) async {
+    final vm = context.read<MyPageViewModel>();
+    await context.pushNamed(
+      AppRouteNames.problemMission,
+      pathParameters: {'mission': '${item.question.id}'},
+    );
+    if (mounted && !vm.disposed) await vm.loadRecent();
+  }
+
+  Future<void> _browse(String routeName) async {
+    final vm = context.read<MyPageViewModel>();
+    await context.pushNamed(routeName);
+    if (mounted && !vm.disposed) await vm.refresh();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DefaultTabController(
-      length: 4,
-      child: Builder(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              tooltip: '홈으로 돌아가기',
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  context.goNamed(AppRouteNames.home);
-                }
-              },
+    final vm = context.watch<MyPageViewModel>();
+    final records = vm.progress.error == null ? vm.progress.data : null;
+    final complete = records?.where((item) => item.completedAt != null).length;
+    return LearningTheme(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('마이페이지'),
+          leading: IconButton(
+            tooltip: '홈으로 돌아가기',
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.canPop()
+                ? context.pop()
+                : context.goNamed(AppRouteNames.home),
+          ),
+          actions: [
+            IconButton(
+              tooltip: '기록 새로고침',
+              icon: const Icon(Icons.refresh),
+              onPressed: vm.refreshing ? null : vm.refresh,
             ),
-            title: Text(
-              '마이페이지',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+          ],
+        ),
+        body: SafeArea(
+          child: LearningBody(
+            child: RefreshIndicator(
+              onRefresh: vm.refresh,
+              child: ListView(
+                key: const PageStorageKey('my-page'),
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: AppSpacing.pagePadding(context),
+                children: [
+                  _SectionContent(
+                    section: vm.profile,
+                    retry: vm.loadProfile,
+                    builder: (profile) => _ProfileCard(
+                      profile: profile,
+                      onSettings: () => _browse(AppRouteNames.accountSettings),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  LearningCard(
+                    emphasizedShadow: true,
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final stacked =
+                              MediaQuery.textScalerOf(context).scale(14) > 22;
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 18,
+                            children: [
+                              for (final (label, count, icon) in [
+                                (
+                                  '학습 중',
+                                  records == null
+                                      ? null
+                                      : records.length - complete!,
+                                  Icons.auto_stories_outlined,
+                                ),
+                                ('완료', complete, Icons.task_alt),
+                                (
+                                  '북마크',
+                                  vm.bookmarks.error == null
+                                      ? vm.bookmarks.data?.length
+                                      : null,
+                                  Icons.bookmark_border,
+                                ),
+                              ])
+                                SizedBox(
+                                  width: stacked
+                                      ? constraints.maxWidth
+                                      : (constraints.maxWidth - 24) / 3,
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        icon,
+                                        color: AppColors.primary,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        count == null ? '—' : '$count',
+                                        style: AppTypography.section,
+                                      ),
+                                      Text(label, style: AppTypography.helper),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  const Text('나의 학습 기록', style: AppTypography.section),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '배운 내용을 돌아보고, 다음 학습을 이어가세요.',
+                    style: AppTypography.helper,
+                  ),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final tab in _Tab.values)
+                        ChoiceChip(
+                          label: Text(tab.label),
+                          selected: _tab == tab,
+                          onSelected: (_) {
+                            setState(() => _tab = tab);
+                            if (tab == _Tab.results &&
+                                vm.recent.data == null &&
+                                vm.recent.error == null) {
+                              vm.loadRecent();
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (vm.opening)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 16),
+                      child: LinearProgressIndicator(),
+                    ),
+                  if (_tab == _Tab.learning)
+                    _SectionContent(
+                      section: vm.progress,
+                      retry: vm.loadProgress,
+                      builder: _learning,
+                    ),
+                  if (_tab == _Tab.bookmarks)
+                    _SectionContent(
+                      section: vm.bookmarks,
+                      retry: vm.loadBookmarks,
+                      builder: _bookmarks,
+                    ),
+                  if (_tab == _Tab.results) ...[
+                    const Text(
+                      '현재 공개된 문제마다 가장 최근에 제출한 결과를 보여드려요.',
+                      style: AppTypography.helper,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '저장되지 않은 AI 연습 결과는 포함되지 않아요.',
+                      style: AppTypography.meta,
+                    ),
+                    const SizedBox(height: 16),
+                    _SectionContent(
+                      section: vm.recent,
+                      retry: vm.loadRecent,
+                      builder: _results,
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-            actions: [
-              const IconButton(
-                onPressed: null,
-                tooltip: '알림',
-                icon: Icon(Icons.notifications_outlined),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _learning(List<MyLearningRecord> items) {
+    final vm = context.read<MyPageViewModel>();
+    final visible = items.where(
+      (item) => switch (_learningFilter) {
+        _LearningFilter.all => true,
+        _LearningFilter.inProgress => item.completedAt == null,
+        _LearningFilter.completed => item.completedAt != null,
+      },
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final filter in _LearningFilter.values)
+              ChoiceChip(
+                label: Text(filter.label),
+                selected: _learningFilter == filter,
+                showCheckmark: false,
+                selectedColor: AppColors.primary,
+                labelStyle: AppTypography.meta.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _learningFilter == filter
+                      ? AppColors.surface
+                      : AppColors.textSecondary,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                side: BorderSide(
+                  color: _learningFilter == filter
+                      ? AppColors.primary
+                      : AppColors.border,
+                ),
+                onSelected: (_) => setState(() => _learningFilter = filter),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (visible.isEmpty)
+          _EmptyState(
+            icon: Icons.auto_stories_outlined,
+            text: switch (_learningFilter) {
+              _LearningFilter.all => '아직 시작한 학습이 없어요.',
+              _LearningFilter.inProgress => '진행 중인 학습이 없어요.',
+              _LearningFilter.completed => '아직 완료한 학습이 없어요.',
+            },
+            action: '학습 둘러보기',
+            onPressed: () => _browse(AppRouteNames.grammar),
+          ),
+        for (final item in visible)
+          _RecordCard(
+            background: item.completedAt == null
+                ? AppColors.inProgressSurface
+                : AppColors.completedSurface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _Badge(
+                      item.completedAt == null ? '학습 중' : '학습 완료',
+                      item.completedAt == null
+                          ? AppColors.warning
+                          : AppColors.success,
+                    ),
+                    Text(
+                      [
+                        item.categoryName,
+                        item.languageName,
+                      ].whereType<String>().join(' · '),
+                      style: AppTypography.meta,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(item.title, style: AppTypography.card),
+                const SizedBox(height: 8),
+                Text(
+                  item.lastSectionTitle ?? '저장된 목차 위치가 없어요.',
+                  style: AppTypography.helper,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '최근 학습 ${_date(item.lastStudiedAt)}',
+                  style: AppTypography.meta,
+                ),
+                if (item.completedAt != null)
+                  Text(
+                    '완료 ${_date(item.completedAt!)}',
+                    style: AppTypography.meta,
+                  ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: vm.opening
+                      ? null
+                      : () =>
+                            _openTemplate(item.templateId, item.lastSectionId),
+                  icon: const Icon(Icons.arrow_forward, size: 18),
+                  label: Text(item.completedAt == null ? '이어서 학습' : '다시 보기'),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _bookmarks(List<MyBookmark> items) {
+    final vm = context.watch<MyPageViewModel>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (items.isEmpty)
+          _EmptyState(
+            icon: Icons.bookmark_border,
+            text: '아직 북마크한 학습이 없어요.',
+            action: '학습 둘러보기',
+            onPressed: () => _browse(AppRouteNames.grammar),
+          ),
+        for (final item in items)
+          _RecordCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.difficulty.label,
+                        style: AppTypography.meta,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: '북마크 해제',
+                      onPressed:
+                          vm.removing(item.templateId) || vm.bookmarks.loading
+                          ? null
+                          : () => _removeBookmark(item),
+                      icon: vm.removing(item.templateId)
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              Icons.bookmark,
+                              color: AppColors.primary,
+                            ),
+                    ),
+                  ],
+                ),
+                Text(item.title, style: AppTypography.card),
+                if (item.summary?.isNotEmpty == true) ...[
+                  const SizedBox(height: 8),
+                  Text(item.summary!, style: AppTypography.helper),
+                ],
+                const SizedBox(height: 12),
+                Text('북마크 ${_date(item.createdAt)}', style: AppTypography.meta),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: vm.opening
+                      ? null
+                      : () => _openTemplate(item.templateId),
+                  child: const Text('학습 열기'),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _results(List<MyRecentResult> items) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (items.isEmpty)
+        _EmptyState(
+          icon: Icons.quiz_outlined,
+          text: '조회 가능한 최근 제출 결과가 없어요.',
+          action: '문제 둘러보기',
+          onPressed: () => _browse(AppRouteNames.problems),
+        ),
+      for (final item in items)
+        _ResultCard(item: item, onPressed: () => _openResult(item)),
+    ],
+  );
+}
+
+class AccountSettingsScreen extends StatelessWidget {
+  const AccountSettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthViewModel>();
+    final userId = auth.user?.userId;
+    if (userId == null) {
+      return const Scaffold(body: Center(child: Text('로그인이 필요합니다.')));
+    }
+    return ChangeNotifierProvider(
+      key: ValueKey(userId),
+      create: (_) =>
+          MyPageViewModel(api: MyPageApi(auth.api.dio), userId: userId)
+            ..loadProfile(),
+      child: const _AccountSettingsBody(),
+    );
+  }
+}
+
+class _AccountSettingsBody extends StatelessWidget {
+  const _AccountSettingsBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<MyPageViewModel>();
+    return LearningTheme(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('계정 관리'),
+          leading: IconButton(
+            tooltip: '마이페이지로 돌아가기',
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.canPop()
+                ? context.pop()
+                : context.goNamed(AppRouteNames.myPage),
+          ),
+        ),
+        body: SafeArea(
+          child: LearningBody(
+            child: RefreshIndicator(
+              onRefresh: vm.loadProfile,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: AppSpacing.pagePadding(context),
+                children: [_account(context, vm)],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _account(BuildContext context, MyPageViewModel vm) {
+    final auth = context.watch<AuthViewModel>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SectionContent(
+          section: vm.profile,
+          retry: vm.loadProfile,
+          builder: (profile) => _RecordCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('내 정보', style: AppTypography.card),
+                const SizedBox(height: 16),
+                Text(
+                  '닉네임: ${profile.user.nickname}',
+                  style: AppTypography.body,
+                ),
+                const SizedBox(height: 10),
+                Text('이메일: ${profile.user.email}', style: AppTypography.body),
+                const SizedBox(height: 10),
+                Text(
+                  '가입일: ${_date(profile.createdAt)}',
+                  style: AppTypography.helper,
+                ),
+              ],
+            ),
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => context.pushNamed(AppRouteNames.passwordReset),
+          icon: const Icon(Icons.lock_outline),
+          label: const Text('비밀번호 재설정'),
+        ),
+        const SizedBox(height: 8),
+        const Text('이메일 인증 후 비밀번호를 재설정할 수 있어요.', style: AppTypography.meta),
+        const SizedBox(height: 20),
+        OutlinedButton.icon(
+          onPressed: auth.isBusy ? null : auth.logout,
+          icon: const Icon(Icons.logout),
+          label: const Text('로그아웃'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({required this.profile, required this.onSettings});
+  final MyProfile profile;
+  final VoidCallback onSettings;
+  @override
+  Widget build(BuildContext context) => LearningCard(
+    emphasizedShadow: true,
+    backgroundColor: AppColors.primarySoft,
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const CircleAvatar(
+                radius: 25,
+                backgroundColor: AppColors.surface,
+                child: Icon(
+                  Icons.person_outline,
+                  color: AppColors.primary,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'MY COBIA',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.5,
+                  ),
+                ),
               ),
               IconButton(
                 tooltip: '계정 관리',
-                onPressed: () => DefaultTabController.of(context).animateTo(3),
+                onPressed: onSettings,
                 icon: const Icon(Icons.settings_outlined),
+                color: AppColors.primary,
               ),
             ],
-            bottom: TabBar(
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              labelColor: theme.colorScheme.primary,
-              unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-              indicatorColor: theme.colorScheme.primary,
-              labelStyle: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-              tabs: const [
-                Tab(text: 'MY홈'),
-                Tab(text: '내 학습'),
-                Tab(text: '대시보드'),
-                Tab(text: '계정 관리'),
-              ],
-            ),
           ),
-          body: SafeArea(
-            top: false,
-            child: TabBarView(
-              children: [
-                _myHome(context),
-                _learning(context),
-                _dashboard(context),
-                _account(context),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _myHome(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return ListView(
-      key: const PageStorageKey('my-home'),
-      padding: const EdgeInsets.all(24),
-      children: [
-        _profile(context),
-        const SizedBox(height: 24),
-        _section(
-          context,
-          '활동 요약',
-          trailing: Text('오늘 기준', style: text.labelSmall),
-          child: IntrinsicHeight(
-            child: Row(
-              children: [
-                Expanded(
-                  child: _activity(
-                    context,
-                    Icons.favorite_border,
-                    '5',
-                    '좋아요한 템플릿',
-                  ),
-                ),
-                const VerticalDivider(width: 16),
-                Expanded(
-                  child: _activity(
-                    context,
-                    Icons.assignment_outlined,
-                    '12',
-                    '수행한 미션',
-                  ),
-                ),
-                const VerticalDivider(width: 16),
-                Expanded(
-                  child: _activity(
-                    context,
-                    Icons.check_circle_outline,
-                    '7',
-                    '성공한 미션',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _section(
-          context,
-          '좋아요한 템플릿',
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < _templates.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(child: _template(context, i)),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        _section(
-          context,
-          '최근 미션 수행 기록',
-          child: Column(
-            children: [
-              for (var i = 0; i < _missions.length; i++) ...[
-                if (i > 0) const Divider(height: 24),
-                _mission(context, i),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _learning(BuildContext context) => ListView(
-    key: const PageStorageKey('my-learning'),
-    padding: const EdgeInsets.all(24),
-    children: [
-      _pageTitle(context, '내 학습', '학습 중인 과정과 진행 상황을 확인하세요.'),
-      _section(
-        context,
-        '학습 현황',
-        trailing: const Text('예시'),
-        child: Row(
-          children: [
-            Expanded(
-              child: _activity(context, Icons.menu_book_outlined, '2', '전체 학습'),
-            ),
-            Expanded(child: _activity(context, Icons.trending_up, '2', '학습 중')),
-            Expanded(
-              child: _activity(context, Icons.check_circle_outline, '0', '완료'),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      _section(
-        context,
-        '전체 학습 시간',
-        trailing: const SizedBox.shrink(),
-        child: Text(
-          '1시간 7분',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      const SizedBox(height: 16),
-      _learningCard(context, '자바의 정석', '1. 자바란?', .93),
-      const SizedBox(height: 12),
-      _learningCard(context, '파이썬 기초 마스터', '0. 파이썬이란?', .5),
-    ],
-  );
-
-  Widget _learningCard(
-    BuildContext context,
-    String title,
-    String chapter,
-    double progress,
-  ) => _section(
-    context,
-    title,
-    trailing: _badge(context, '학습 중'),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(chapter, style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: LinearProgressIndicator(value: progress)),
-            const SizedBox(width: 12),
-            Text('${(progress * 100).round()}%'),
-          ],
-        ),
-        const SizedBox(height: 12),
-        const OutlinedButton(onPressed: null, child: Text('이어서 학습')),
-      ],
-    ),
-  );
-
-  Widget _dashboard(BuildContext context) => ListView(
-    key: const PageStorageKey('my-dashboard'),
-    padding: const EdgeInsets.all(24),
-    children: [
-      _pageTitle(context, '대시보드', '나의 학습과 미션 활동을 한눈에 확인하세요.'),
-      _section(
-        context,
-        '미션 현황',
-        trailing: const Text('예시'),
-        child: Row(
-          children: [
-            Expanded(
-              child: _activity(
-                context,
-                Icons.assignment_outlined,
-                '12',
-                '수행한 미션',
-              ),
-            ),
-            Expanded(
-              child: _activity(
-                context,
-                Icons.check_circle_outline,
-                '7',
-                '성공한 미션',
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      _section(
-        context,
-        '최근 활동',
-        trailing: const SizedBox.shrink(),
-        child: Column(
-          children: [
-            _mission(context, 0),
-            const Divider(height: 24),
-            _mission(context, 1),
-          ],
-        ),
-      ),
-    ],
-  );
-
-  Widget _account(BuildContext context) => ListView(
-    key: const PageStorageKey('my-account'),
-    padding: const EdgeInsets.all(24),
-    children: [
-      _pageTitle(context, '계정 관리', '프로필과 계정 정보를 관리하세요.'),
-      _section(
-        context,
-        '내 정보',
-        trailing: const SizedBox.shrink(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '닉네임: ${context.watch<AuthViewModel>().user?.nickname ?? "-"}',
-            ),
-            const SizedBox(height: 12),
-            Text('이메일: ${context.watch<AuthViewModel>().user?.email ?? "-"}'),
-            const SizedBox(height: 12),
-            const Text('가입일: 서버 정보 미제공'),
-            const SizedBox(height: 16),
-            Text(
-              '로그인한 계정 정보입니다. 프로필 변경 기능은 추후 연결됩니다.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      const Card(
-        child: Column(
-          children: [
-            ListTile(
-              enabled: false,
-              leading: Icon(Icons.person_outline),
-              title: Text('프로필 수정'),
-              trailing: Icon(Icons.chevron_right),
-            ),
-            Divider(height: 1),
-            ListTile(
-              enabled: false,
-              leading: Icon(Icons.lock_outline),
-              title: Text('비밀번호 변경'),
-              trailing: Icon(Icons.chevron_right),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      OutlinedButton(
-        onPressed: context.watch<AuthViewModel>().isBusy
-            ? null
-            : () => context.read<AuthViewModel>().logout(),
-        child: const Text('로그아웃'),
-      ),
-    ],
-  );
-
-  Widget _pageTitle(BuildContext context, String title, String description) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(description),
-          ],
-        ),
-      );
-  Widget _profile(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Stack(
-          children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: colors.primaryContainer,
-              child: Icon(Icons.person, size: 56, color: colors.primary),
-            ),
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: CircleAvatar(
-                radius: 12,
-                backgroundColor: colors.primary,
-                child: Icon(
-                  Icons.camera_alt_outlined,
-                  size: 16,
-                  color: colors.onPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    context.watch<AuthViewModel>().user?.nickname ?? '-',
-                    style: text.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  _badge(
-                    context,
-                    context.watch<AuthViewModel>().user?.role == 'ADMIN'
-                        ? '관리자'
-                        : '학습자',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '✉ ${context.watch<AuthViewModel>().user?.email ?? "-"}',
-                style: text.bodySmall,
-              ),
-              const SizedBox(height: 4),
-              Text('가입일 정보 미제공', style: text.bodySmall),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _section(
-    BuildContext context,
-    String title, {
-    Widget? trailing,
-    required Widget child,
-  }) {
-    final theme = Theme.of(context);
-    return Card.outlined(
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                trailing ??
-                    Text(
-                      '전체 보기 ›',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _activity(
-    BuildContext context,
-    IconData icon,
-    String value,
-    String label,
-  ) {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Icon(icon, size: 24, color: theme.colorScheme.primary),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelSmall,
-        ),
-      ],
-    );
-  }
-
-  Widget _template(BuildContext context, int index) {
-    final item = _templates[index];
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            item.category,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            item.title,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
+          Text(profile.user.nickname, style: AppTypography.detail),
+          const SizedBox(height: 6),
+          Text(profile.user.email, style: AppTypography.helper),
+          const SizedBox(height: 16),
           Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
             children: [
-              Icon(Icons.favorite, size: 16, color: theme.colorScheme.primary),
-              Text('${item.likes}', style: theme.textTheme.labelSmall),
-              const Icon(Icons.bookmark_border, size: 16),
+              _Badge(
+                profile.user.role == 'ADMIN' ? '관리자' : '학습자',
+                AppColors.primary,
+              ),
+              Text('${_date(profile.createdAt)} 가입', style: AppTypography.meta),
             ],
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _mission(BuildContext context, int index) {
-    final item = _missions[index];
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(
-          Icons.assignment_outlined,
-          size: 24,
-          color: theme.colorScheme.primary,
+class _RecordCard extends StatelessWidget {
+  const _RecordCard({required this.child, this.background = AppColors.surface});
+  final Widget child;
+  final Color background;
+  @override
+  Widget build(BuildContext context) => LearningCard(
+    emphasizedShadow: true,
+    backgroundColor: background,
+    margin: const EdgeInsets.only(bottom: 16),
+    child: Padding(padding: const EdgeInsets.all(20), child: child),
+  );
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge(this.text, this.color);
+  final String text;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .09),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(text, style: AppTypography.link.copyWith(color: color)),
+  );
+}
+
+class _SectionContent<T> extends StatelessWidget {
+  const _SectionContent({
+    required this.section,
+    required this.retry,
+    required this.builder,
+  });
+  final MyPageSection<T> section;
+  final Future<void> Function() retry;
+  final Widget Function(T) builder;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (section.loading)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: LinearProgressIndicator(),
         ),
-        const SizedBox(width: 12),
-        Expanded(
+      if (section.error != null)
+        _RecordCard(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                item.title,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(item.detail, style: theme.textTheme.labelSmall),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  _badge(
-                    context,
-                    item.success ? '성공' : '실패',
-                    isError: !item.success,
-                  ),
-                  Text(item.date, style: theme.textTheme.labelSmall),
-                ],
+              Text(section.error!, style: AppTypography.helper),
+              if (section.data != null)
+                const Text('아래 내용은 이전 조회 결과입니다.', style: AppTypography.meta),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: section.loading ? null : retry,
+                child: const Text('다시 시도'),
               ),
             ],
           ),
         ),
-        const Icon(Icons.chevron_right, size: 20),
-      ],
-    );
-  }
+      if (section.data != null) builder(section.data as T),
+    ],
+  );
+}
 
-  Widget _badge(BuildContext context, String label, {bool isError = false}) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: isError
-            ? theme.colorScheme.errorContainer
-            : theme.colorScheme.primaryContainer,
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: isError
-              ? theme.colorScheme.onErrorContainer
-              : theme.colorScheme.onPrimaryContainer,
-        ),
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.icon,
+    required this.text,
+    required this.action,
+    required this.onPressed,
+  });
+  final IconData icon;
+  final String text, action;
+  final VoidCallback onPressed;
+  @override
+  Widget build(BuildContext context) => _RecordCard(
+    child: Column(
+      children: [
+        Icon(icon, size: 36, color: AppColors.primary),
+        const SizedBox(height: 16),
+        Text(text, textAlign: TextAlign.center, style: AppTypography.helper),
+        const SizedBox(height: 16),
+        OutlinedButton(onPressed: onPressed, child: Text(action)),
+      ],
+    ),
+  );
+}
+
+class _ResultCard extends StatelessWidget {
+  const _ResultCard({required this.item, required this.onPressed});
+  final MyRecentResult item;
+  final VoidCallback onPressed;
+  @override
+  Widget build(BuildContext context) {
+    final result = item.submission;
+    final graded = result.gradingStatus == 'COMPLETED';
+    final passed = graded && result.score! >= item.question.passScore;
+    final label = graded
+        ? (passed ? '통과' : '미통과')
+        : result.pending
+        ? '채점 대기'
+        : '채점 오류';
+    final color = graded
+        ? (passed ? AppColors.success : AppColors.error)
+        : result.pending
+        ? AppColors.warning
+        : AppColors.error;
+    return _RecordCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(item.question.questionType.label, style: AppTypography.meta),
+          const SizedBox(height: 10),
+          Text(
+            item.question.prompt,
+            style: AppTypography.card,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              _Badge(label, color),
+              if (graded) Text('${result.score}점', style: AppTypography.card),
+              Text(_date(result.submittedAt), style: AppTypography.meta),
+            ],
+          ),
+          if (result.feedback?.isNotEmpty == true) ...[
+            const SizedBox(height: 12),
+            Text(
+              result.feedback!,
+              style: AppTypography.helper,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: onPressed,
+            child: const Text('문제와 최근 결과 보기'),
+          ),
+        ],
       ),
     );
   }

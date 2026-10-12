@@ -8,10 +8,36 @@ class AiApiException implements Exception {
   final String message;
 }
 
-/// AI routes are relayed by Spring using the existing authenticated BE transport.
+/// Direct AI traffic uses its own Dio, without BE credentials or interceptors.
 class AiApi {
-  AiApi(this.dio);
+  AiApi(this.dio, {this.viaBackend = false}) : _ownsDio = false;
+  AiApi._owned(this.dio) : viaBackend = false, _ownsDio = true;
   final Dio dio;
+  final bool viaBackend;
+  final bool _ownsDio;
+
+  factory AiApi.fromEnvironment({required Dio backend}) {
+    if (const bool.fromEnvironment('AI_USE_BE_PROXY')) {
+      return AiApi(backend, viaBackend: true);
+    }
+    return AiApi._owned(
+      Dio(
+        BaseOptions(
+          baseUrl: const String.fromEnvironment(
+            'AI_BASE_URL',
+            defaultValue: 'https://ai.cobip.tech',
+          ),
+          connectTimeout: const Duration(seconds: 10),
+          contentType: 'application/json; charset=utf-8',
+          followRedirects: false,
+        ),
+      ),
+    );
+  }
+
+  void dispose() {
+    if (_ownsDio) dio.close(force: true);
+  }
 
   Future<T> _post<T>(
     String path,
@@ -36,7 +62,7 @@ class AiApi {
           receiveTimeout: const Duration(minutes: 5),
           sendTimeout: const Duration(seconds: 20),
           followRedirects: false,
-          extra: {'authRequired': true, 'noAuthReplay': true},
+          extra: {'authRequired': viaBackend, 'noAuthReplay': true},
         ),
       );
       final envelope = aiObject(response.data);
@@ -53,7 +79,10 @@ class AiApi {
         DioExceptionType.connectionError =>
           'AI 서버에 연결하지 못했어요. 서버 실행 상태와 네트워크를 확인해 주세요.',
         _ => switch (e.response?.statusCode) {
-          401 => '인증을 확인하지 못했어요. 다시 시도하거나 로그인해 주세요.',
+          401 || 403 =>
+            viaBackend
+                ? '인증을 확인하지 못했어요. 다시 시도하거나 로그인해 주세요.'
+                : 'AI 서버 접근이 거부됐어요. 서버 설정을 확인해 주세요.',
           404 => '서버에서 이 기능을 아직 사용할 수 없어요.',
           422 || 400 => 'AI 요청 형식을 확인하지 못했어요. 입력 내용을 확인해 주세요.',
           429 => '요청이 많아요. 잠시 후 다시 시도해 주세요.',

@@ -58,7 +58,13 @@ class _CobipAppState extends State<CobipApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: _auth),
-        Provider<AiApi>(create: (_) => widget.aiApi ?? AiApi(_auth.api.dio)),
+        Provider<AiApi>(
+          create: (_) =>
+              widget.aiApi ?? AiApi.fromEnvironment(backend: _auth.api.dio),
+          dispose: (_, api) {
+            if (widget.aiApi == null) api.dispose();
+          },
+        ),
         ChangeNotifierProxyProvider<AuthViewModel, ChatViewModel>(
           create: (context) =>
               ChatViewModel(api: context.read<AiApi>())

@@ -11,11 +11,43 @@ import 'auth_test_support.dart';
 import 'ai_test_support.dart';
 
 void main() {
+  test('운영 AI 전용 클라이언트는 BE 주소·토큰·인터셉터를 공유하지 않는다', () async {
+    final backend = Dio(
+      BaseOptions(
+        baseUrl: 'https://be.test',
+        headers: {'Authorization': 'Bearer private-be-token'},
+      ),
+    );
+    var backendRequests = 0;
+    backend.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (r, h) {
+          backendRequests++;
+          h.next(r);
+        },
+      ),
+    );
+    final api = AiApi.fromEnvironment(backend: backend);
+    addTearDown(api.dispose);
+    final server = AiTestServer();
+    api.dio.httpClientAdapter = server;
+    await api.chat('연결 확인');
+    final request = server.calls('/ai/chat').single;
+    expect(request.uri.toString(), 'https://ai.cobip.tech/ai/chat');
+    expect(
+      request.headers.keys.any((k) => k.toLowerCase() == 'authorization'),
+      isFalse,
+    );
+    expect(request.extra['authRequired'], isFalse);
+    expect(backendRequests, 0);
+    expect(backend.options.baseUrl, 'https://be.test');
+    expect(request.followRedirects, isFalse);
+  });
   test('기존 BE 인증으로 혼합 유형 생성, 번호 제출, 6필드 채점과 해설을 사용한다', () async {
     final server = AiTestServer();
     final auth = await testAuth(authenticated: true, adapter: server);
     addTearDown(auth.dispose);
-    final api = AiApi(auth.api.dio);
+    final api = AiApi(auth.api.dio, viaBackend: true);
     final batch = await api.generate(
       category: 'Infrastructure',
       domain: 'AWS',
@@ -149,7 +181,7 @@ void main() {
     final auth = await testAuth(authenticated: true, adapter: server);
     addTearDown(auth.dispose);
     await expectLater(
-      AiApi(auth.api.dio).chat('질문'),
+      AiApi(auth.api.dio, viaBackend: true).chat('질문'),
       throwsA(isA<AiApiException>()),
     );
     expect(server.calls('/ai/chat'), hasLength(1));

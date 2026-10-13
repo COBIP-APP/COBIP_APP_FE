@@ -9,6 +9,11 @@ on:
     branches:
       - main
       - develop
+      - 'feature/**'
+      - 'fix/**'
+      - 'docs/**'
+      - 'chore/**'
+      - 'refactor/**'
   workflow_dispatch:
 
 permissions:
@@ -48,7 +53,7 @@ jobs:
         run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze Flutter project
-        run: flutter analyze --no-pub
+        run: flutter analyze
 
       - name: Build Android debug APK
-        run: flutter build apk --debug --no-pub
+        run: flutter build apk --debug

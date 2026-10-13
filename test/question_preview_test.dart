@@ -5,7 +5,9 @@ import 'package:cobip_app_fe/app/router/app_router.dart';
 import 'package:cobip_app_fe/app/app_ui_tokens.dart';
 import 'package:cobip_app_fe/app/widgets/learning_card.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_preview_widgets.dart';
-import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
+
+import 'fixtures/learning_preview_data.dart';
+
 import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:cobip_app_fe/features/problems/presentation/question_preview_screen.dart';
 import 'package:flutter/material.dart';
@@ -56,7 +58,9 @@ void main() {
       background,
     );
     final question = tester.widget<QuestionPreviewCard>(card).item;
-    await tester.tap(find.text(question.prompt));
+    await tester.tap(
+      find.descendant(of: card, matching: find.text(question.prompt)),
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(ValueKey('result-$id')), findsNothing);
     expect(find.text('풀이 보기'), findsNothing);

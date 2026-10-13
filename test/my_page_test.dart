@@ -6,6 +6,7 @@ import 'package:cobip_app_fe/features/learning/data/learning_api.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:cobip_app_fe/features/my_page/data/my_page_api.dart';
 import 'package:cobip_app_fe/features/my_page/presentation/my_page_view_model.dart';
+import 'package:cobip_app_fe/features/problems/presentation/question_preview_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -98,6 +99,115 @@ void main() {
     if (!vm.disposed) vm.dispose();
   });
 
+  testWidgets('학습 기록 네 탭을 체크 없이 한 줄로 표시하고 내 AI 문제를 연다', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final own = serverQuestion(41)
+      ..addAll({
+        'id': 501,
+        'createdBy': 1,
+        'creatorNickname': '테스트학습자',
+        'published': false,
+        'prompt': '마이페이지 AI 문제',
+      });
+    var deleted = false;
+    var rejectDelete = true;
+    server.handle = (r) async {
+      if (r.path == '/api/users/me/questions/501' && r.method == 'DELETE') {
+        if (rejectDelete) return jsonResponse({}, 500);
+        deleted = true;
+        return ResponseBody.fromString('', 204);
+      }
+      if (r.path == '/api/users/me/questions') {
+        return jsonResponse(deleted ? [] : [own], 200);
+      }
+      if (r.path == '/api/questions/501') {
+        return jsonResponse(deleted ? {} : own, deleted ? 404 : 200);
+      }
+      return server.respond(r);
+    };
+    final auth = (await tester.runAsync(
+      () => testAuth(authenticated: true, adapter: server),
+    ))!;
+    addTearDown(auth.dispose);
+    final router = createAppRouter(initialLocation: '/my-page');
+    addTearDown(router.dispose);
+    await tester.pumpWithAuth(
+      CobipApp(
+        router: router,
+        learningStore: LearningStore(api: LearningApi(auth.api.dio)),
+      ),
+      auth: auth,
+    );
+    await settleNetwork(tester);
+    await reveal(tester, find.widgetWithText(ChoiceChip, 'AI 생성 문제'));
+    final tabs = [
+      '내 학습',
+      '북마크',
+      '최근 결과',
+      'AI 생성 문제',
+    ].map((label) => find.widgetWithText(ChoiceChip, label)).toList();
+    for (final tab in tabs) {
+      expect(tester.widget<ChoiceChip>(tab).showCheckmark, isFalse);
+      expect(tester.widget<ChoiceChip>(tab).labelStyle!.fontSize, 14);
+      expect(tester.getSize(tab).height, greaterThanOrEqualTo(48));
+      expect(tester.getTopLeft(tab).dy, tester.getTopLeft(tabs.first).dy);
+    }
+    await tester.tap(tabs.last);
+    await settleNetwork(tester);
+    await reveal(tester, find.text('마이페이지 AI 문제'));
+    expect(find.textContaining('통과 기준'), findsNothing);
+    expect(find.textContaining('작성자:'), findsNothing);
+    expect(
+      tester
+          .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, '삭제'))
+          .onPressed,
+      isNotNull,
+    );
+    expect(
+      server.requests.any((r) => r.path == '/api/users/me/questions'),
+      isTrue,
+    );
+    await tester.tap(find.text('마이페이지 AI 문제'));
+    await settleNetwork(tester);
+    expect(find.byType(QuestionPreviewScreen), findsOneWidget);
+    expect(
+      tester
+          .widget<QuestionPreviewScreen>(find.byType(QuestionPreviewScreen))
+          .questionId,
+      501,
+    );
+    expect(find.textContaining('작성자:'), findsNothing);
+    expect(find.text('Java · 객관식 · 보통'), findsNothing);
+    router.pop();
+    await settleNetwork(tester);
+    await reveal(tester, find.widgetWithText(OutlinedButton, '삭제'));
+    await tester.tap(find.widgetWithText(OutlinedButton, '삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(server.requests.where((r) => r.method == 'DELETE'), isEmpty);
+    await tester.tap(find.widgetWithText(OutlinedButton, '삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '삭제'));
+    await settleNetwork(tester);
+    expect(deleted, isFalse);
+    expect(find.text('마이페이지 AI 문제'), findsOneWidget);
+    rejectDelete = false;
+    await tester.tap(find.widgetWithText(OutlinedButton, '삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '삭제'));
+    await settleNetwork(tester);
+    expect(deleted, isTrue);
+    expect(find.text('마이페이지 AI 문제'), findsNothing);
+    await reveal(tester, find.text('아직 저장한 AI 생성 문제가 없어요.'));
+    expect(find.text('아직 저장한 AI 생성 문제가 없어요.'), findsOneWidget);
+
+    expect(tester.takeException(), isNull);
+  });
+
   test('기존 응답의 가입일·목차 null·북마크 날짜를 보존하고 최근 결과는 지연 조회', () async {
     server.bookmarked = true;
     await vm.refresh();
@@ -160,6 +270,43 @@ void main() {
     expect(vm.recent.data, isEmpty);
     server.failure = 500;
     server.failurePath = '/api/questions/42/submissions/latest';
+    await vm.loadRecent();
+    expect(vm.recent.error, isNotNull);
+  });
+
+  test('최근 결과에 비공개 AI 문제를 포함하고 같은 문제는 중복 조회하지 않는다', () async {
+    final own = serverQuestion(41)
+      ..addAll({
+        'id': 501,
+        'createdBy': 1,
+        'published': false,
+        'prompt': '저장한 AI 문제',
+      });
+    server.handle = (r) async => r.path == '/api/users/me/questions'
+        ? jsonResponse([own, serverQuestion(41)..['createdBy'] = 1], 200)
+        : server.respond(r);
+    for (final id in [41, 501]) {
+      server.saved[id] = {
+        'id': id,
+        'userId': 1,
+        'questionId': id,
+        'gradingStatus': 'COMPLETED',
+        'score': 100,
+        'submittedAt': stamp,
+      };
+    }
+    await vm.loadRecent();
+    expect(vm.recent.error, isNull);
+    expect(vm.recent.data!.map((r) => r.question.id), [501, 41]);
+    expect(
+      server.requests.where(
+        (r) => r.path == '/api/questions/41/submissions/latest',
+      ),
+      hasLength(1),
+    );
+    server.failure = 500;
+    server.failurePath = '/api/users/me/questions';
+    server.handle = server.respond;
     await vm.loadRecent();
     expect(vm.recent.error, isNotNull);
   });

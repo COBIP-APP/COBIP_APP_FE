@@ -54,6 +54,55 @@ Future<void> tapVisible(WidgetTester tester, Finder target) async {
 }
 
 void main() {
+  for (final topic in ['AWS', 'Docker', 'Java']) {
+    test('AI가 분류명을 바꿔도 입력 주제 $topic을 저장 요청에 보존한다', () async {
+      final server = AiTestServer();
+      Map<String, dynamic>? saved;
+      server.handle = (r) async {
+        if (r.path == '/api/users/me/questions') {
+          if (r.method == 'POST') {
+            saved = ownQuestion()
+              ..addAll({
+                'languageId': topic == 'Java' ? 101 : null,
+                'generationTopic': r.data['category'],
+              });
+            return jsonResponse(saved, 201);
+          }
+          return jsonResponse([?saved], 200);
+        }
+        return server.respondAll(r);
+      };
+      final dio = testApi(server).dio;
+      final store = LearningStore(api: LearningApi(dio))..bindUser(1);
+      addTearDown(store.dispose);
+      await store.load();
+      final vm = AiQuizViewModel(AiApi(dio), userId: '1', learningStore: store);
+      addTearDown(vm.dispose);
+      await vm.generate(
+        category: ' $topic ',
+        difficulty: '중급',
+        types: [AiQuizType.multipleChoice],
+        countPerType: 1,
+      );
+      expect(vm.batch!.category, 'Infrastructure');
+      expect(vm.batch!.generationTopic, topic);
+      await vm.save();
+      expect(vm.error, isNull);
+      expect(
+        server.calls('/api/users/me/questions').single.data['category'],
+        topic,
+      );
+
+      // New FE session reconstructs the label from BE's proposed response field.
+      final restored = LearningStore(api: LearningApi(dio))..bindUser(1);
+      addTearDown(restored.dispose);
+      await restored.load();
+      await restored.loadMyQuestions();
+      expect(restored.myQuestions.single.generationTopic, topic);
+      expect(restored.questionLanguageName(restored.myQuestions.single), topic);
+    });
+  }
+
   for (final entry in {
     'ox': 'OX',
     'short_answer': 'SHORT_ANSWER',

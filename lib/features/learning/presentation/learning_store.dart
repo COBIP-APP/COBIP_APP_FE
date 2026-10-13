@@ -20,6 +20,8 @@ class LearningStore extends ChangeNotifier {
   List<LearningQuestion> _myQuestions = [];
   int _saveVersion = 0;
   final _saveVersions = <int, int>{};
+  // Late list/detail responses must not resurrect a confirmed deletion.
+  final _deletedQuestions = <int>{};
   PreviewLoadState? myQuestionsState;
   String? myQuestionsError;
   List<LearningQuestion> get myQuestions => _myQuestions;
@@ -66,6 +68,7 @@ class LearningStore extends ChangeNotifier {
     _questions = [];
     _myQuestions = [];
     _saveVersions.clear();
+    _deletedQuestions.clear();
     _saveVersion = 0;
     myQuestionsState = null;
     myQuestionsError = null;
@@ -138,7 +141,9 @@ class LearningStore extends ChangeNotifier {
       _languages = languages;
       _categories = categories;
       _templates = templates;
-      _questions = questions;
+      _questions = questions
+          .where((q) => !_deletedQuestions.contains(q.id))
+          .toList();
       _progress
         ..clear()
         ..addEntries(progress.map((p) => MapEntry(p.templateId, p)));
@@ -148,11 +153,13 @@ class LearningStore extends ChangeNotifier {
       _submissions
         ..clear()
         ..addEntries(
-          submissions.whereType<LearningSubmission>().map(
-            (s) => MapEntry(s.questionId, s),
-          ),
+          submissions
+              .whereType<LearningSubmission>()
+              .where((s) => !_deletedQuestions.contains(s.questionId))
+              .map((s) => MapEntry(s.questionId, s)),
         );
       for (final q in visibleQuestions) {
+        if (_deletedQuestions.contains(q.id)) continue;
         final s = _submissions[q.id];
         if (_passed(q, s)) _solved.add(q.id);
       }
@@ -216,11 +223,13 @@ class LearningStore extends ChangeNotifier {
       );
       if (!_current(generation)) return;
       _myQuestions = {
-        for (final q in items) q.id: q,
+        for (final q in items)
+          if (!_deletedQuestions.contains(q.id)) q.id: q,
         for (final q in _myQuestions)
           if ((_saveVersions[q.id] ?? 0) > saveVersion) q.id: q,
       }.values.toList();
       for (var i = 0; i < items.length; i++) {
+        if (_deletedQuestions.contains(items[i].id)) continue;
         final s = submissions[i];
         if (s == null) {
           _submissions.remove(items[i].id);
@@ -261,6 +270,34 @@ class LearningStore extends ChangeNotifier {
       ];
     },
   );
+
+  bool canDeleteMyQuestion(LearningQuestion question) =>
+      _userId != null &&
+      question.createdBy == _userId &&
+      !question.published &&
+      !_deletedQuestions.contains(question.id);
+
+  Future<void> deleteMyQuestion(int questionId) async {
+    final item = question(questionId);
+    if (item == null || !canDeleteMyQuestion(item)) {
+      throw const LearningApiException('내가 저장한 비공개 AI 문제만 삭제할 수 있어요.');
+    }
+    await _mutate<void>(
+      'q:$questionId',
+      (_, cancel) => api.deleteMyQuestion(questionId, cancelToken: cancel),
+      (_) {
+        _deletedQuestions.add(questionId);
+        _myQuestions = _myQuestions.where((q) => q.id != questionId).toList();
+        _questions = _questions.where((q) => q.id != questionId).toList();
+        _submissions.remove(questionId);
+        _solved.remove(questionId);
+        _saveVersions.remove(questionId);
+        _details['q:$questionId'] = PreviewLoadState.error;
+        _detailErrors['q:$questionId'] = '삭제된 문제입니다. 목록으로 돌아가 주세요.';
+      },
+    );
+  }
+
   String? detailError(String key) => _detailErrors[key];
   Future<void> ensureDetail(String key, {bool refresh = false}) async {
     if (state != PreviewLoadState.ready ||
@@ -294,6 +331,12 @@ class LearningStore extends ChangeNotifier {
         );
         final latest = await api.latest(userId, id, cancelToken: cancel);
         if (!_current(generation)) return;
+        if (_deletedQuestions.contains(id)) {
+          throw const LearningApiException(
+            '삭제된 문제입니다. 목록으로 돌아가 주세요.',
+            status: 404,
+          );
+        }
         if (item.createdBy == userId) {
           _myQuestions = [
             for (final q in _myQuestions)
@@ -423,6 +466,18 @@ class LearningStore extends ChangeNotifier {
 
   int? categoryId(String code) =>
       categories.where((c) => c.code == code).firstOrNull?.id;
+
+  Future<LearningSubmission?> refreshSubmission(int questionId) => _mutate(
+    'q:$questionId',
+    (u, c) => api.latest(u, questionId, cancelToken: c),
+    (result) {
+      if (result != null) {
+        _submissions[questionId] = result;
+        final item = question(questionId);
+        if (item != null && _passed(item, result)) _solved.add(questionId);
+      }
+    },
+  );
   Set<int> categoryIds(String code) {
     final root = categoryId(code);
     if (root == null) return {};
@@ -441,6 +496,18 @@ class LearningStore extends ChangeNotifier {
       categoryIds('GRAMMAR').contains(item.categoryId);
   String languageName(int? id) =>
       languages.where((l) => l.id == id).firstOrNull?.name ?? '언어 공통';
+  String questionLanguageName(LearningQuestion question) {
+    for (final label in [
+      question.languageName,
+      languages.where((l) => l.id == question.languageId).firstOrNull?.name,
+      question.languageCode,
+      question.generationTopic,
+    ]) {
+      if (label != null && label.trim().isNotEmpty) return label.trim();
+    }
+    return question.languageId == null ? '언어 공통' : '언어 #${question.languageId}';
+  }
+
   String categoryName(int id) =>
       categories.where((c) => c.id == id).firstOrNull?.name ?? '학습';
   String templateListLocation(LearningTemplate t) {

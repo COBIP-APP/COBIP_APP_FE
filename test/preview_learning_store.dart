@@ -4,7 +4,8 @@ import 'package:cobip_app_fe/features/learning/data/learning_api.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 
 import 'package:cobip_app_fe/features/learning/data/learning_models.dart';
-import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
+
+import 'fixtures/learning_preview_data.dart';
 
 // Local-only UI rehearsal. No API, database, or persistent storage writes.
 class PreviewLearningStore extends LearningStore {

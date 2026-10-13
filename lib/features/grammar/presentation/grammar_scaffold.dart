@@ -1,3 +1,4 @@
+import '../../../app/widgets/app_home_header.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../chat/presentation/chat_panel.dart';
 
@@ -37,7 +38,10 @@ class GrammarScaffold extends StatelessWidget {
       ),
       child: Scaffold(
         appBar: isOverview
-            ? null
+            ? AppBar(
+                automaticallyImplyLeading: false,
+                title: const AppHomeHeader(),
+              )
             : AppBar(
                 title: Text(title),
                 actions: actions,

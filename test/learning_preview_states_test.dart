@@ -2,7 +2,9 @@ import 'preview_learning_store.dart';
 
 import 'package:cobip_app_fe/features/grammar/presentation/grammar_home_screen.dart';
 import 'package:cobip_app_fe/features/learning/data/learning_models.dart';
-import 'package:cobip_app_fe/features/learning/data/learning_preview_data.dart';
+
+import 'fixtures/learning_preview_data.dart';
+
 import 'package:cobip_app_fe/features/learning/presentation/learning_store.dart';
 import 'package:cobip_app_fe/features/learning/presentation/learning_preview_widgets.dart';
 import 'package:cobip_app_fe/features/problems/presentation/submission_preview_result.dart';

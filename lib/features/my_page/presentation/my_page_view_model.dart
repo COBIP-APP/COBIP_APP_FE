@@ -25,6 +25,7 @@ class MyPageViewModel extends ChangeNotifier {
   final recent = MyPageSection<List<MyRecentResult>>();
   final _cancel = CancelToken();
   final _removing = <int>{};
+  final _deletedQuestions = <int>{};
   bool _disposed = false;
   bool _recentRequested = false;
   bool _opening = false;
@@ -73,7 +74,23 @@ class MyPageViewModel extends ChangeNotifier {
       : _load(bookmarks, () => api.bookmarks(userId, _cancel));
   Future<void> loadRecent() {
     _recentRequested = true;
-    return _load(recent, () => api.recent(userId, _cancel));
+    return _load(recent, () async {
+      final items = await api.recent(userId, _cancel);
+      return items
+          .where((item) => !_deletedQuestions.contains(item.question.id))
+          .toList();
+    });
+  }
+
+  void questionDeleted(int id) {
+    if (_disposed) return;
+    _deletedQuestions.add(id);
+    if (recent.data != null) {
+      recent._data = recent.data!
+          .where((item) => item.question.id != id)
+          .toList();
+    }
+    _notify();
   }
 
   Future<void> refresh() async {

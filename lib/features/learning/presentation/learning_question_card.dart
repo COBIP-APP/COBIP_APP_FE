@@ -181,6 +181,15 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
                       style: AppTypography.meta,
                     ),
                   ],
+                  if (result.gradingStatus == 'FAILED') ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      result.feedback?.isNotEmpty == true
+                          ? result.feedback!
+                          : '채점 중 오류가 발생했어요. 답안을 다시 제출해 주세요.',
+                      style: AppTypography.helper,
+                    ),
+                  ],
                   if (graded &&
                       (explanation?.isNotEmpty == true ||
                           result.correctAnswer?.isNotEmpty == true ||

@@ -1,4 +1,4 @@
-import '../../../app/widgets/app_home_header.dart';
+import '../../../app/widgets/progressive_card_list.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -50,11 +50,11 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
         .toList();
     return PracticalScaffold(
       body: PreviewContent(
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
+        child: ProgressiveCardList(
           padding: AppSpacing.pagePadding(context, top: 4),
-          children: [
-            const AppHomeHeader(),
+          resetKey: (_search.text, _categoryId, _bookmarksOnly),
+          items: [for (final item in items) TemplatePreviewCard(item: item)],
+          header: [
             const SizedBox(height: 24),
             const LearningIntro(
               title: '실무 학습',
@@ -100,7 +100,6 @@ class _PracticalHomeScreenState extends State<PracticalHomeScreen> {
                     ? '아직 등록된 학습이 없어요.'
                     : '검색 결과가 없어요. 다른 키워드를 입력해보세요.',
               ),
-            for (final item in items) TemplatePreviewCard(item: item),
           ],
         ),
       ),

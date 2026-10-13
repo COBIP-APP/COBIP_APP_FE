@@ -1,9 +1,11 @@
-import '../../grammar/data/condition_lesson_data.dart';
-import '../../grammar/data/condition_quiz_data.dart';
-import '../../grammar/data/grammar_sample_data.dart';
-import '../../practical/data/practical_sample_data.dart';
-import '../../problems/data/problem_sample_data.dart';
-import 'learning_models.dart';
+import 'condition_lesson_data.dart';
+import 'condition_quiz_data.dart';
+import 'grammar_sample_data.dart';
+import 'practical_sample_data.dart';
+import 'problem_sample_data.dart';
+
+import 'package:cobip_app_fe/features/learning/data/learning_models.dart';
+
 import 'practical_quiz_preview_data.dart';
 
 // Existing authored sample text is adapted into the BE template/section shape.

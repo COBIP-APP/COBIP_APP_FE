@@ -30,13 +30,6 @@ class PracticalTopic {
   final String summary;
   final List<String> tags;
   final List<PracticalChapter> chapters;
-
-  static PracticalTopic? fromId(String? id) {
-    for (final topic in practicalTopics) {
-      if (topic.id == id) return topic;
-    }
-    return null;
-  }
 }
 
 // 서버 연결 전 화면 탐색에 사용하는 샘플 콘텐츠입니다.

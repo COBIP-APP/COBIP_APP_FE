@@ -138,6 +138,9 @@ LearningQuestion _question(Object? value, {int? ownerId}) {
     questionType: type,
     categoryId: _id(q['categoryId']),
     languageId: _optionalId(q['languageId']),
+    languageCode: _optionalText(q['languageCode']),
+    languageName: _optionalText(q['languageName']),
+    generationTopic: _optionalText(q['generationTopic']),
     relatedTemplateId: _optionalId(q['relatedTemplateId']),
     relatedSectionId: _optionalId(q['relatedSectionId']),
     codeSnippet: _optionalText(q['codeSnippet']),
@@ -314,11 +317,16 @@ class LearningApi {
       }, cancelToken: cancelToken);
   Future<List<LearningQuestion>> questions({
     int? templateId,
+    int? sectionId,
     CancelToken? cancelToken,
   }) => _request(
     '/api/questions',
     (v) => _list(v).map(_question).toList(),
-    query: {'publishedOnly': true, 'templateId': ?templateId},
+    query: {
+      'publishedOnly': true,
+      'templateId': ?templateId,
+      'sectionId': ?sectionId,
+    },
     cancelToken: cancelToken,
   );
   Future<LearningQuestion> question(
@@ -333,7 +341,7 @@ class LearningApi {
     return result;
   }, cancelToken: cancelToken);
 
-  // Proposed ordinary-user contract; do not use the admin creation API.
+  // Keep the ordinary-user save contract; category carries the original topic.
   Future<LearningQuestion> saveGeneratedQuestion({
     required int userId,
     required String clientRequestId,
@@ -356,7 +364,7 @@ class LearningApi {
         additionalStatuses: {200},
         body: {
           'clientRequestId': clientRequestId,
-          'category': batch.category,
+          'category': batch.generationTopic,
           'difficulty': batch.difficulty,
           'question': quiz.toJson(),
         },
@@ -390,6 +398,29 @@ class LearningApi {
     } on LearningApiException catch (e) {
       if (e.status == 404 || e.status == 405 || e.status == 501) {
         throw const LearningApiException('내가 만든 문제 조회 기능이 아직 서버에 준비되지 않았어요.');
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> deleteMyQuestion(
+    int questionId, {
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      await _request<void>(
+        '/api/users/me/questions/$questionId',
+        (_) {}, // 204 has no response body to decode.
+        method: 'DELETE',
+        status: 204,
+        cancelToken: cancelToken,
+      );
+    } on LearningApiException catch (error) {
+      if (error.status == 404) {
+        throw const LearningApiException(
+          '삭제할 수 없는 문제이거나 이미 삭제된 문제예요. 목록을 새로고침해 주세요.',
+          status: 404,
+        );
       }
       rethrow;
     }

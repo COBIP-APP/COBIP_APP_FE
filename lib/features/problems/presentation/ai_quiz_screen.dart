@@ -82,7 +82,7 @@ class _QuizPageState extends State<_QuizPage> {
             _buildForm(vm)
           else ...[
             Text(
-              '${batch.category} · ${batch.difficulty} · ${batch.quizzes.length}문제',
+              '${batch.generationTopic} · ${batch.difficulty} · ${batch.quizzes.length}문제',
               style: AppTypography.meta,
             ),
             const SizedBox(height: 12),

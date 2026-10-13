@@ -75,7 +75,7 @@ class AiQuiz {
 }
 
 class AiQuizBatch {
-  AiQuizBatch.fromJson(Map<String, dynamic> json)
+  AiQuizBatch.fromJson(Map<String, dynamic> json, {this.requestedCategory})
     : category = aiText(json['category']),
       difficulty = aiText(json['difficulty']),
       quizzes = List.unmodifiable(
@@ -88,6 +88,9 @@ class AiQuizBatch {
     }
   }
   final String category, difficulty;
+  // Keep user intent even when AI returns a broader category in its response.
+  final String? requestedCategory;
+  String get generationTopic => (requestedCategory ?? category).trim();
   final List<AiQuiz> quizzes;
 }
 

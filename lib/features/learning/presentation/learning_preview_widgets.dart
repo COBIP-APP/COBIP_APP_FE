@@ -152,8 +152,9 @@ class TemplatePreviewCard extends StatelessWidget {
 }
 
 class QuestionPreviewCard extends StatelessWidget {
-  const QuestionPreviewCard({super.key, required this.item});
+  const QuestionPreviewCard({super.key, required this.item, this.action});
   final LearningQuestion item;
+  final Widget? action;
   @override
   Widget build(BuildContext context) {
     final store = context.watch<LearningStore>();
@@ -170,10 +171,9 @@ class QuestionPreviewCard extends StatelessWidget {
         onTap: () => context.push('/problems/${item.id}'),
         child: LearningOverviewContent(
           label:
-              '${store.languageName(item.languageId)} · ${item.questionType.label}',
+              '${store.questionLanguageName(item)} · ${item.questionType.label}',
           title: item.prompt,
-          description:
-              '통과 기준 ${item.passScore}점 · ${item.creatorLabel(store.userId)}',
+          action: action,
           icon: Icons.terminal_rounded,
           tags: [item.difficulty.label],
           footerIcon: solved

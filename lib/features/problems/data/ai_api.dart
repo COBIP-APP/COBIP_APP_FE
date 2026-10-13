@@ -116,7 +116,7 @@ class AiApi {
       'user_id': ?userId,
       if (domain?.trim().isNotEmpty == true) 'domain': domain!.trim(),
     },
-    AiQuizBatch.fromJson,
+    (json) => AiQuizBatch.fromJson(json, requestedCategory: category.trim()),
     cancelToken,
   );
 

@@ -1,4 +1,4 @@
-import '../../../app/widgets/app_home_header.dart';
+import '../../../app/widgets/progressive_card_list.dart';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -49,11 +49,11 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
       title: '문법 학습',
       isOverview: true,
       body: PreviewContent(
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
+        child: ProgressiveCardList(
           padding: AppSpacing.pagePadding(context, top: 4),
-          children: [
-            const AppHomeHeader(),
+          resetKey: (_search.text, _languageId, _bookmarksOnly),
+          items: [for (final item in items) TemplatePreviewCard(item: item)],
+          header: [
             const SizedBox(height: 24),
             const LearningIntro(
               title: '문법 학습',
@@ -126,7 +126,6 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                     ? '아직 등록된 학습이 없어요.'
                     : '검색 결과가 없어요. 다른 검색어를 입력해 주세요.',
               ),
-            for (final item in items) TemplatePreviewCard(item: item),
           ],
         ),
       ),

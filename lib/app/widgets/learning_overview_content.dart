@@ -9,7 +9,7 @@ class LearningOverviewContent extends StatelessWidget {
     super.key,
     required this.label,
     required this.title,
-    required this.description,
+    this.description = '',
     required this.icon,
     required this.footer,
     this.tags = const [],
@@ -123,8 +123,10 @@ class LearningOverviewContent extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(description, style: AppTypography.helper),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(description, style: AppTypography.helper),
+            ],
             if (tags.isNotEmpty) ...[
               const SizedBox(height: 16),
               Wrap(

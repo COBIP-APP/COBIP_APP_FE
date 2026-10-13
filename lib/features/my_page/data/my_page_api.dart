@@ -145,7 +145,12 @@ class MyPageApi {
       }, cancel);
 
   Future<List<MyRecentResult>> recent(int userId, CancelToken cancel) async {
-    final questions = await learning.questions(cancelToken: cancel);
+    final published = await learning.questions(cancelToken: cancel);
+    final owned = await learning.myQuestions(userId, cancelToken: cancel);
+    final questions = {
+      for (final question in published) question.id: question,
+      for (final question in owned) question.id: question,
+    }.values.toList();
     final results = <MyRecentResult>[];
     // Latest-only endpoint: bounded requests, never infer a lifetime history.
     for (var i = 0; i < questions.length; i += 4) {

@@ -1,3 +1,4 @@
+import '../../../app/widgets/app_home_header.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/app_ui_tokens.dart';
 import '../../chat/presentation/chat_panel.dart';
@@ -23,7 +24,10 @@ class PracticalScaffold extends StatelessWidget {
       appBar: isDetail
           ? AppBar(title: const Text('실무 기술 학습'), centerTitle: true)
           : onBack == null
-          ? null
+          ? AppBar(
+              automaticallyImplyLeading: false,
+              title: const AppHomeHeader(),
+            )
           : AppBar(
               automaticallyImplyLeading: false,
               leading: onBack == null

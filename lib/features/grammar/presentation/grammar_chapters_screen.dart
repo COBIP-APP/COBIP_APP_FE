@@ -1,3 +1,5 @@
+import '../../../app/widgets/progressive_card_list.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -36,10 +38,11 @@ class GrammarChaptersScreen extends StatelessWidget {
     return GrammarScaffold(
       title: '${selected?.name ?? '언어 공통'} 문법',
       body: PreviewContent(
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
+        child: ProgressiveCardList(
           padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
-          children: [
+          resetKey: language,
+          items: [for (final item in items) TemplatePreviewCard(item: item)],
+          header: [
             LearningHero(
               title: '문법 챕터',
               description: '학습할 내용과 마지막 학습 상태를 확인해 보세요.',
@@ -48,7 +51,6 @@ class GrammarChaptersScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             if (items.isEmpty) const LearningNotice('아직 등록된 학습이 없어요.'),
-            for (final item in items) TemplatePreviewCard(item: item),
           ],
         ),
       ),

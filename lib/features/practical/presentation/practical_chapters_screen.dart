@@ -1,3 +1,5 @@
+import '../../../app/widgets/progressive_card_list.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -22,10 +24,11 @@ class PracticalChaptersScreen extends StatelessWidget {
     return PracticalScaffold(
       onBack: () => context.canPop() ? context.pop() : context.go('/practical'),
       body: PreviewContent(
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
+        child: ProgressiveCardList(
           padding: AppSpacing.pagePadding(context),
-          children: [
+          resetKey: categoryId,
+          items: [for (final item in items) TemplatePreviewCard(item: item)],
+          header: [
             LearningHero(
               title: '${store.categoryName(categoryId)} 학습',
               description: '학습할 내용과 마지막 학습 상태를 확인해 보세요.',
@@ -33,7 +36,6 @@ class PracticalChaptersScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             if (items.isEmpty) const LearningNotice('아직 등록된 학습이 없어요.'),
-            for (final item in items) TemplatePreviewCard(item: item),
           ],
         ),
       ),

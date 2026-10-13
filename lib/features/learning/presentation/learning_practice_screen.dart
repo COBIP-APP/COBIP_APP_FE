@@ -11,9 +11,13 @@ import 'learning_detail_scaffold.dart';
 import 'learning_question_card.dart';
 
 class LearningPracticeScreen extends StatefulWidget {
-  const LearningPracticeScreen({super.key, required this.templateId});
+  const LearningPracticeScreen({
+    super.key,
+    required this.templateId,
+    this.sectionId,
+  });
   final int templateId;
-
+  final int? sectionId;
   @override
   State<LearningPracticeScreen> createState() => _LearningPracticeScreenState();
 }
@@ -21,73 +25,109 @@ class LearningPracticeScreen extends StatefulWidget {
 class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
   final _scroll = ScrollController();
   final _answers = <int, String>{};
-  Map<int, LearningSubmission> _results = {};
-  final _accepted = <int, LearningSubmission>{};
-  final _acceptedAnswers = <int, String>{};
+  final _results = <int, LearningSubmission>{};
+  final _errors = <int, String>{};
   bool _busy = false;
   String? _error;
-
   @override
   void dispose() {
     _scroll.dispose();
     super.dispose();
   }
 
-  Future<void> _submit(List<LearningQuestion> questions) async {
+  bool _completed(LearningSubmission? result) =>
+      result?.gradingStatus == 'COMPLETED' && result?.score != null;
+
+  Future<void> _submit(
+    List<LearningQuestion> questions, {
+    bool refresh = false,
+  }) async {
+    if (_busy) return;
     FocusScope.of(context).unfocus();
+    final store = context.read<LearningStore>();
     setState(() {
       _busy = true;
       _error = null;
     });
-    try {
-      final store = context.read<LearningStore>();
-      final submissions = await Future.wait([
-        for (final question in questions)
-          () async {
-            final answer = _answers[question.id]!;
-            if (_acceptedAnswers[question.id] == answer &&
-                _accepted.containsKey(question.id)) {
-              return _accepted[question.id]!;
-            }
-            final result = await store.submit(question.id, answer);
-            _accepted[question.id] = result;
-            _acceptedAnswers[question.id] = answer;
-            return result;
-          }(),
-      ]);
-      if (!mounted) return;
-      setState(() {
-        _results = {
-          for (final result in submissions) result.questionId: result,
-        };
-      });
-      _scroll.jumpTo(0);
-    } catch (_) {
-      if (mounted) {
-        setState(() => _error = '답안을 확인하지 못했어요. 선택한 답은 유지되니 다시 눌러 주세요.');
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    await Future.wait(
+      questions.map((q) async {
+        final previous = _results[q.id] ?? store.latest(q.id);
+        if (_completed(previous)) return;
+        try {
+          final result = refresh || previous?.pending == true
+              ? await store.refreshSubmission(q.id)
+              : await store.submit(q.id, _answers[q.id]!);
+          if (!mounted) return;
+          setState(() {
+            if (result != null) _results[q.id] = result;
+            _errors.remove(q.id);
+            if (result == null) _errors[q.id] = '제출 결과를 찾지 못했어요. 다시 확인해 주세요.';
+          });
+        } catch (_) {
+          if (mounted) {
+            setState(
+              () => _errors[q.id] = '답안을 확인하지 못했어요. 입력한 답안은 유지됩니다. 다시 시도해 주세요.',
+            );
+          }
+        }
+      }),
+    );
+    if (mounted) setState(() => _busy = false);
   }
 
-  Future<void> _finish(String location) async {
+  Future<void> _advance(
+    LearningTemplate template,
+    TemplateSection section,
+  ) async {
+    if (_busy) return;
+    final store = context.read<LearningStore>();
+    final sections = template.allSections;
+    final index = sections.indexWhere((s) => s.id == section.id);
+    final current = store.questions.where(
+      (q) =>
+          q.published &&
+          q.relatedTemplateId == template.id &&
+          q.relatedSectionId == section.id,
+    );
+    if (current.any((q) => !_completed(_results[q.id] ?? store.latest(q.id)))) {
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      final store = context.read<LearningStore>();
-      final section = store.template(widget.templateId)?.allSections.lastOrNull;
-      if (section == null) throw StateError('No lesson section');
-      await store.saveProgress(
-        widget.templateId,
-        store.progress(widget.templateId)?.lastSectionId ?? section.id,
-        completed: true,
-      );
-      if (mounted) context.go(location);
+      if (index < sections.length - 1) {
+        final next = sections[index + 1];
+        await store.saveProgress(template.id, next.id);
+        if (mounted) {
+          context.go('${store.templateLocation(template)}?section=${next.id}');
+        }
+      } else {
+        final linked = store.questions.where(
+          (q) =>
+              q.published &&
+              q.relatedTemplateId == template.id &&
+              sections.any((s) => s.id == q.relatedSectionId),
+        );
+        final missing = linked
+            .where((q) => !_completed(_results[q.id] ?? store.latest(q.id)))
+            .firstOrNull;
+        if (linked.isEmpty) {
+          setState(() => _error = '등록된 문제가 없어 챕터를 완료할 수 없어요. 학습 목록으로 돌아가 주세요.');
+          return;
+        }
+        if (missing != null) {
+          setState(
+            () => _error = '앞선 목차에 아직 채점을 마치지 않은 문제가 있어요. 목차에서 해당 학습을 이어가 주세요.',
+          );
+          return;
+        }
+        await store.saveProgress(template.id, section.id, completed: true);
+        if (mounted) context.go(store.templateListLocation(template));
+      }
     } catch (_) {
-      if (mounted) setState(() => _error = '학습 완료를 저장하지 못했어요. 다시 눌러 주세요.');
+      if (mounted) setState(() => _error = '학습 진도를 저장하지 못했어요. 다시 눌러 주세요.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -96,93 +136,142 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<LearningStore>();
-    final questions = store.questions
-        .where((question) => question.relatedTemplateId == widget.templateId)
-        .toList();
-    final answered = questions
-        .where((q) => _answers[q.id]?.trim().isNotEmpty == true)
-        .length;
-    final allCorrect =
-        questions.isNotEmpty &&
-        questions.every((question) {
-          final result = _results[question.id];
-          return result?.gradingStatus == 'COMPLETED' &&
-              result?.score != null &&
-              result!.score! >= question.passScore;
-        });
     final template = store.template(widget.templateId);
-    final listLocation = template == null
+    final section = template?.allSections
+        .where((s) => s.id == widget.sectionId)
+        .firstOrNull;
+    final questions = store.questions
+        .where(
+          (q) =>
+              q.published &&
+              q.relatedTemplateId == widget.templateId &&
+              q.relatedSectionId == section?.id &&
+              section != null,
+        )
+        .toList();
+    for (final q in questions) {
+      final saved = store.latest(q.id);
+      if (saved != null) {
+        _answers.putIfAbsent(
+          q.id,
+          () =>
+              saved.selectedChoiceKey ??
+              saved.sourceCode ??
+              saved.answerText ??
+              '',
+        );
+      }
+    }
+    final done = questions.every(
+      (q) => _completed(_results[q.id] ?? store.latest(q.id)),
+    );
+    final canSubmit = questions.every(
+      (q) => _answers[q.id]?.trim().isNotEmpty == true,
+    );
+    final location = template == null
         ? '/grammar'
-        : store.templateListLocation(template);
+        : store.templateLocation(template);
     return LearningDetailScaffold(
-      title: '학습 확인 문제',
+      title: section == null ? '학습 확인 문제' : '${section.title} · 문제',
       showChat: false,
-      fallbackLocation: listLocation,
+      fallbackLocation: location,
       body: LearningDetailContent(
         detailKey: 't:${widget.templateId}',
         child: ListView(
           controller: _scroll,
           padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
           children: [
-            if (questions.isEmpty)
-              const LearningNotice('이 학습에 연결된 문제는 아직 없어요.')
+            if (section == null)
+              const LearningNotice('학습 목차를 먼저 선택해 주세요.')
             else ...[
               Text(
-                _results.isEmpty
-                    ? '모든 문제를 풀고 한 번에 답을 확인해 보세요. ($answered / ${questions.length})'
-                    : '결과를 확인하고, 풀이가 궁금하면 ‘풀이 보기’를 눌러 주세요.',
+                '${section.title}에 연결된 문제를 풀고 채점 결과를 확인해 주세요.',
                 style: AppTypography.body,
               ),
               const SizedBox(height: 20),
+              if (questions.isEmpty)
+                const LearningNotice('이 목차에 연결된 문제는 아직 없어요.'),
               for (var i = 0; i < questions.length; i++) ...[
                 LearningQuestionCard(
                   key: ValueKey(questions[i].id),
                   question: questions[i],
                   title: '문제 ${i + 1}',
                   answer: _answers[questions[i].id],
-                  result: _results[questions[i].id],
-                  locked: _busy || _results.isNotEmpty,
+                  result:
+                      _results[questions[i].id] ??
+                      store.latest(questions[i].id),
+                  showSubmissionDetails: true,
+                  locked:
+                      _busy ||
+                      _completed(
+                        _results[questions[i].id] ??
+                            store.latest(questions[i].id),
+                      ) ||
+                      (_results[questions[i].id] ??
+                                  store.latest(questions[i].id))
+                              ?.pending ==
+                          true,
                   onChanged: (answer) =>
                       setState(() => _answers[questions[i].id] = answer),
                 ),
+                if (_errors[questions[i].id] != null)
+                  LearningNotice(_errors[questions[i].id]!),
+                if ((_results[questions[i].id] ?? store.latest(questions[i].id))
+                            ?.gradingStatus ==
+                        'FAILED' ||
+                    _errors.containsKey(questions[i].id))
+                  OutlinedButton(
+                    key: ValueKey('retry-${questions[i].id}'),
+                    onPressed:
+                        _busy ||
+                            (_answers[questions[i].id]?.trim().isEmpty ?? true)
+                        ? null
+                        : () => _submit([questions[i]]),
+                    child: const Text('이 문제 다시 제출'),
+                  ),
+                if ((_results[questions[i].id] ?? store.latest(questions[i].id))
+                        ?.pending ==
+                    true)
+                  OutlinedButton(
+                    key: ValueKey('refresh-${questions[i].id}'),
+                    onPressed: _busy
+                        ? null
+                        : () => _submit([questions[i]], refresh: true),
+                    child: const Text('채점 결과 새로고침'),
+                  ),
                 const SizedBox(height: 24),
               ],
+              if (questions.isNotEmpty && !done)
+                FilledButton(
+                  onPressed: !_busy && canSubmit
+                      ? () => _submit(questions)
+                      : null,
+                  child: Text(_busy ? '확인 중…' : '답 확인'),
+                ),
               if (_error != null) ...[
                 LearningNotice(_error!),
                 const SizedBox(height: 12),
               ],
-              if (_results.isEmpty)
-                FilledButton(
-                  onPressed: !_busy && answered == questions.length
-                      ? () => _submit(questions)
-                      : null,
-                  child: Text(_busy ? '확인 중…' : '답 확인'),
-                )
-              else if (allCorrect)
-                FilledButton(
-                  onPressed: _busy ? null : () => _finish(listLocation),
-                  child: Text(_busy ? '저장 중…' : '학습 끝내기'),
-                )
-              else
-                OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _answers.clear();
-                      _accepted.clear();
-                      _acceptedAnswers.clear();
-                      _results = {};
-                      _error = null;
-                    });
-                    _scroll.jumpTo(0);
-                  },
-                  child: const Text('다시 풀기'),
-                ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: !_busy && done
+                    ? () => _advance(template!, section)
+                    : null,
+                child: Text(_busy ? '처리 중…' : '다음'),
+              ),
             ],
             const SizedBox(height: 12),
             TextButton(
-              onPressed: () =>
-                  context.canPop() ? context.pop() : context.go(listLocation),
+              onPressed: _busy
+                  ? null
+                  : () => context.go('$location?section=${section?.id ?? ''}'),
               child: const Text('학습으로 돌아가기'),
+            ),
+            TextButton(
+              onPressed: _busy
+                  ? null
+                  : () => context.go('$location?contents=true'),
+              child: const Text('목차로 돌아가기'),
             ),
           ],
         ),

@@ -170,15 +170,17 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
     GoRoute(
       path: '/learning-practice/:template',
       builder: (context, state) => LearningPracticeScreen(
-        key: ValueKey(state.pathParameters['template']),
+        key: ValueKey(state.uri.toString()),
         templateId: int.tryParse(state.pathParameters['template']!) ?? -1,
+        sectionId: int.tryParse(state.uri.queryParameters['section'] ?? ''),
       ),
     ),
     GoRoute(
       path: '/grammar-practice/:template',
       builder: (context, state) => GrammarPracticeScreen(
-        key: ValueKey(state.pathParameters['template']),
+        key: ValueKey(state.uri.toString()),
         templateId: int.tryParse(state.pathParameters['template']!) ?? -1,
+        sectionId: int.tryParse(state.uri.queryParameters['section'] ?? ''),
       ),
     ),
     GoRoute(

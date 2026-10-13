@@ -22,6 +22,15 @@ void main() {
 
   testWidgets('실제 저장소로 서버 ID 화면을 열고 진도·답안을 저장한다', (tester) async {
     final server = LearningServer();
+    server.handle = (r) async {
+      if (r.path == '/api/questions') {
+        return jsonResponse([standaloneQuestion(41)], 200);
+      }
+      if (r.path == '/api/questions/41') {
+        return jsonResponse(standaloneQuestion(41), 200);
+      }
+      return server.respond(r);
+    };
     final auth = await tester.runAsync(
       () => testAuth(authenticated: true, adapter: server),
     );
@@ -41,6 +50,7 @@ void main() {
           .templateId,
       31,
     );
+    await reveal(tester, '첫 목차');
     expect(find.text('서버 본문'), findsOneWidget);
     expect(server.savedProgress?['lastSectionId'], 311);
     await tester.tap(find.byTooltip('북마크 저장'));
@@ -110,7 +120,9 @@ void main() {
     );
     addTearDown(auth!.dispose);
     final store = LearningStore(api: LearningApi(auth.api.dio));
-    final router = createAppRouter(initialLocation: '/grammar-practice/31');
+    final router = createAppRouter(
+      initialLocation: '/grammar-practice/31?section=311',
+    );
     addTearDown(router.dispose);
     await tester.pumpWithAuth(
       CobipApp(router: router, learningStore: store),
@@ -179,6 +191,7 @@ void main() {
       '/grammar/common/chapters/31',
     );
     await reveal(tester, '서버 조건문');
+    await reveal(tester, '첫 목차');
     expect(find.text('서버 본문'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

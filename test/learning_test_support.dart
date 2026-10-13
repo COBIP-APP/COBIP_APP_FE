@@ -50,6 +50,10 @@ Map<String, dynamic> serverQuestion(int id) => {
   'explanation': '서버 해설',
 };
 
+Map<String, dynamic> standaloneQuestion(int id) =>
+    serverQuestion(id)
+      ..addAll({'relatedTemplateId': null, 'relatedSectionId': null});
+
 class LearningServer extends TestAuthAdapter {
   LearningServer() {
     handle = respond;

@@ -36,7 +36,7 @@ void main() {
           entry.$3,
         );
         expect(find.byTooltip('목차'), findsOneWidget);
-        expect(find.text('학습 목차'), findsNothing);
+        expect(find.text('학습 목차'), findsOneWidget);
         if (systemBack) {
           await tester.binding.handlePopRoute();
         } else {

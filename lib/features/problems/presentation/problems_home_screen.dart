@@ -1,3 +1,4 @@
+import '../../../app/widgets/progressive_card_list.dart';
 import '../../../app/widgets/app_home_header.dart';
 
 import 'package:flutter/material.dart';
@@ -21,14 +22,15 @@ class ProblemsHomeScreen extends StatefulWidget {
 
 class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
   final _search = TextEditingController();
-  final _scroll = ScrollController();
-  static const _pageSize = 5;
-  int _page = 0;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final store = context.watch<LearningStore>();
+    if (store.state == PreviewLoadState.ready &&
+        !_languageOptions(store).containsKey(_language)) {
+      _language = 'all';
+    }
     final userId = store.userId;
     if (userId != null &&
         store.state == PreviewLoadState.ready &&
@@ -46,35 +48,69 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
   @override
   void dispose() {
     _search.dispose();
-    _scroll.dispose();
     super.dispose();
   }
 
-  int? _languageId;
+  String _language = 'all';
   LearningQuestionType? _type;
   bool _submittedOnly = false;
   bool _mineOnly = false;
+
+  String _languageKey(LearningQuestion question) {
+    if (question.languageId != null) return '${question.languageId}';
+    final topic = question.generationTopic?.trim().toLowerCase();
+    return topic == null || topic.isEmpty ? 'common' : 'topic:$topic';
+  }
+
+  Iterable<LearningQuestion> _problemQuestions(LearningStore store) {
+    final categories = store.categoryIds('CODING_PROBLEM');
+    return store.questions.where(
+      (q) =>
+          categories.contains(q.categoryId) &&
+          q.relatedTemplateId == null &&
+          q.relatedSectionId == null,
+    );
+  }
+
+  Map<String, String> _languageOptions(LearningStore store) {
+    final options = <String, String>{};
+    for (final question in _problemQuestions(store)) {
+      options.putIfAbsent(
+        _languageKey(question),
+        () => store.questionLanguageName(question),
+      );
+    }
+    final entries = options.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+    return {
+      'all': '전체 언어',
+      for (final entry in entries) entry.key: entry.value,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<LearningStore>();
-    final items = (_mineOnly ? store.myQuestions : store.questions)
+    final languageOptions = _languageOptions(store);
+    final available = _problemQuestions(store).toList();
+    final items = available
         .where(
           (q) =>
-              store.categoryIds('CODING_PROBLEM').contains(q.categoryId) &&
               (!_mineOnly || q.createdBy == store.userId) &&
               q.prompt.toLowerCase().contains(
                 _search.text.trim().toLowerCase(),
               ) &&
-              (_languageId == null || q.languageId == _languageId) &&
+              (_language == 'all' || _languageKey(q) == _language) &&
               (_type == null || q.questionType == _type) &&
               (!_submittedOnly || store.latest(q.id) != null),
         )
         .toList();
-    final pageCount = (items.length / _pageSize).ceil();
-    _page = _page.clamp(0, pageCount > 0 ? pageCount - 1 : 0);
-    final pageItems = items.skip(_page * _pageSize).take(_pageSize);
     return LearningTheme(
       child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: const AppHomeHeader(),
+        ),
         bottomNavigationBar: const AppBottomNavigation(selectedIndex: 3),
         body: SafeArea(
           child: LearningBody(
@@ -83,12 +119,21 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                 await store.load();
                 await store.loadMyQuestions();
               },
-              child: ListView(
-                controller: _scroll,
-                physics: const AlwaysScrollableScrollPhysics(),
+              child: ProgressiveCardList(
                 padding: AppSpacing.pagePadding(context, top: 4),
-                children: [
-                  const AppHomeHeader(),
+                resetKey: (
+                  _search.text,
+                  _language,
+                  _type,
+                  _mineOnly,
+                  _submittedOnly,
+                ),
+                items: [
+                  if (!_mineOnly ||
+                      store.myQuestionsState == PreviewLoadState.ready)
+                    for (final item in items) QuestionPreviewCard(item: item),
+                ],
+                header: [
                   const SizedBox(height: 24),
                   const LearningIntro(
                     title: '문제 풀이',
@@ -99,13 +144,13 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                     controller: _search,
                     hint: '문제 검색',
                     summary:
-                        '${_languageId == null ? '전체 언어' : store.languageName(_languageId)} · ${_type?.label ?? '전체 유형'}${_mineOnly ? ' · 내가 만든 문제' : ''}${_submittedOnly ? ' · 제출한 문제' : ''}',
+                        '${languageOptions[_language] ?? '전체 언어'} · ${_type?.label ?? '전체 유형'}${_mineOnly ? ' · 내가 만든 문제' : ''}${_submittedOnly ? ' · 제출한 문제' : ''}',
                     filtered:
-                        _languageId != null ||
+                        _language != 'all' ||
                         _type != null ||
                         _submittedOnly ||
                         _mineOnly,
-                    onChanged: () => setState(() => _page = 0),
+                    onChanged: () => setState(() {}),
                     onFilter: () async {
                       final result = await showLearningFilters(
                         context,
@@ -114,10 +159,11 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                             'all': '전체 문제',
                             'mine': '내가 만든 문제',
                           }),
-                          LearningFilterGroup('language', '언어', {
-                            'all': '전체 언어',
-                            for (final l in store.languages) '${l.id}': l.name,
-                          }),
+                          LearningFilterGroup(
+                            'language',
+                            '언어·주제',
+                            languageOptions,
+                          ),
                           LearningFilterGroup('type', '문제 유형', {
                             'all': '전체 유형',
                             for (final t in LearningQuestionType.values)
@@ -126,7 +172,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                         ],
                         current: LearningFilterValues({
                           'creator': _mineOnly ? 'mine' : 'all',
-                          'language': _languageId?.toString() ?? 'all',
+                          'language': _language,
                           'type': _type?.code ?? 'all',
                         }, markedOnly: _submittedOnly),
                         defaults: const LearningFilterValues({
@@ -138,10 +184,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                       );
                       if (result != null && mounted) {
                         setState(() {
-                          _page = 0;
-                          _languageId = int.tryParse(
-                            result.selections['language']!,
-                          );
+                          _language = result.selections['language']!;
                           _type = LearningQuestionType.values
                               .where((t) => t.code == result.selections['type'])
                               .firstOrNull;
@@ -182,20 +225,9 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
                       LearningNotice(
                         _mineOnly && store.myQuestions.isEmpty
                             ? '아직 저장한 문제가 없어요. AI 문제를 만든 뒤 문제 저장을 눌러 주세요.'
-                            : store.questions.isEmpty
+                            : available.isEmpty
                             ? '아직 등록된 문제가 없어요.'
                             : '조건에 맞는 문제가 없어요. 다른 필터를 선택해 주세요.',
-                      ),
-                    for (final item in pageItems)
-                      QuestionPreviewCard(item: item),
-                    if (pageCount > 1)
-                      _ProblemPagination(
-                        page: _page,
-                        pageCount: pageCount,
-                        onChanged: (page) {
-                          setState(() => _page = page);
-                          if (_scroll.hasClients) _scroll.jumpTo(0);
-                        },
                       ),
                   ],
                 ],
@@ -204,54 +236,6 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ProblemPagination extends StatelessWidget {
-  const _ProblemPagination({
-    required this.page,
-    required this.pageCount,
-    required this.onChanged,
-  });
-  final int page;
-  final int pageCount;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final start = (page - 2).clamp(0, (pageCount - 5).clamp(0, pageCount));
-    final end = (start + 5).clamp(0, pageCount);
-    return Wrap(
-      key: const ValueKey('problem-pagination'),
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        IconButton(
-          tooltip: '이전 페이지',
-          onPressed: page > 0 ? () => onChanged(page - 1) : null,
-          icon: const Icon(Icons.chevron_left),
-        ),
-        for (var i = start; i < end; i++)
-          Semantics(
-            selected: page == i,
-            child: TextButton(
-              key: ValueKey('problem-page-${i + 1}'),
-              onPressed: page == i ? null : () => onChanged(i),
-              style: TextButton.styleFrom(
-                minimumSize: const Size(44, 44),
-                disabledForegroundColor: AppColors.primary,
-                backgroundColor: page == i ? AppColors.primarySoft : null,
-              ),
-              child: Text('${i + 1}'),
-            ),
-          ),
-        IconButton(
-          tooltip: '다음 페이지',
-          onPressed: page < pageCount - 1 ? () => onChanged(page + 1) : null,
-          icon: const Icon(Icons.chevron_right),
-        ),
-      ],
     );
   }
 }

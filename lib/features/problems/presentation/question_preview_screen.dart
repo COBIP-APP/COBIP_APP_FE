@@ -144,16 +144,6 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                 controller: _scroll,
                 padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
                 children: [
-                  Text(
-                    '${store.languageName(item.languageId)} · ${item.questionType.label} · ${item.difficulty.label}',
-                    style: AppTypography.meta,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.creatorLabel(store.userId),
-                    style: AppTypography.meta,
-                  ),
-                  const SizedBox(height: 16),
                   LearningQuestionCard(
                     question: item,
                     title: '문제',

@@ -7,11 +7,4 @@ enum GrammarLanguage {
   const GrammarLanguage(this.id, this.label);
   final String id;
   final String label;
-
-  static GrammarLanguage? fromId(String id) {
-    for (final language in values) {
-      if (language.id == id) return language;
-    }
-    return null;
-  }
 }

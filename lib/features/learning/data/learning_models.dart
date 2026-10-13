@@ -116,6 +116,9 @@ class LearningQuestion {
     required this.questionType,
     required this.categoryId,
     this.languageId,
+    this.languageCode,
+    this.languageName,
+    this.generationTopic,
     this.relatedTemplateId,
     this.relatedSectionId,
     this.codeSnippet,
@@ -133,6 +136,9 @@ class LearningQuestion {
   final LearningQuestionType questionType;
   final int categoryId;
   final int? languageId;
+  final String? languageCode;
+  final String? languageName;
+  final String? generationTopic;
   final int? relatedTemplateId;
   final int? relatedSectionId;
   final String? codeSnippet;

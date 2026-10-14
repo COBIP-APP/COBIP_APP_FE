@@ -79,6 +79,29 @@ void main() {
       addTearDown(router.dispose);
       await tester.pumpLearningWidget(CobipApp(router: router));
       await tester.pumpAndSettle();
+      final chatButton = find.byTooltip('COBIA 챗봇');
+      final chatBounds = tester.getRect(chatButton);
+      expect(
+        chatBounds.top,
+        greaterThanOrEqualTo(tester.getBottomLeft(find.byType(AppBar)).dy),
+      );
+      expect(chatBounds.right, greaterThan(size.width / 2));
+      final bodyBounds = tester.getRect(find.byType(ListView).first);
+      expect(chatBounds.top, greaterThan(bodyBounds.top));
+      expect(chatBounds.top - bodyBounds.top, lessThanOrEqualTo(24));
+      expect(bodyBounds.top, tester.getBottomLeft(find.byType(AppBar)).dy);
+      await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(chatButton), chatBounds);
+      await tester.tap(find.byTooltip('목차'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.drag(find.byType(ListView).last, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byTooltip('목차 닫기'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('COBIA 챗봇'));
       await tester.pumpAndSettle();
       tester.view.viewInsets = FakeViewPadding(bottom: keyboard);

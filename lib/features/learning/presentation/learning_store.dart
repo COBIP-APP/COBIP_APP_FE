@@ -35,6 +35,8 @@ class LearningStore extends ChangeNotifier {
   final _progress = <int, LearningProgress>{};
   final _bookmarks = <int>{};
   final _submissions = <int, LearningSubmission>{};
+  // Unsubmitted practice input survives navigation in the current user session.
+  final _practiceDrafts = <int, String>{};
   // BE exposes latest only: past passes discovered this session remain marked.
   final _solved = <int>{};
   final _details = <String, PreviewLoadState>{};
@@ -75,6 +77,7 @@ class LearningStore extends ChangeNotifier {
     _progress.clear();
     _bookmarks.clear();
     _submissions.clear();
+    _practiceDrafts.clear();
     _solved.clear();
     _details.clear();
     _detailErrors.clear();
@@ -290,6 +293,7 @@ class LearningStore extends ChangeNotifier {
         _myQuestions = _myQuestions.where((q) => q.id != questionId).toList();
         _questions = _questions.where((q) => q.id != questionId).toList();
         _submissions.remove(questionId);
+        _practiceDrafts.remove(questionId);
         _solved.remove(questionId);
         _saveVersions.remove(questionId);
         _details['q:$questionId'] = PreviewLoadState.error;
@@ -376,6 +380,11 @@ class LearningStore extends ChangeNotifier {
   LearningProgress? progress(int id) => _progress[id];
   bool bookmarked(int id) => _bookmarks.contains(id);
   LearningSubmission? latest(int id) => _submissions[id];
+  String? practiceDraft(int id) => _practiceDrafts[id];
+  void rememberPracticeDraft(int id, String answer) {
+    if (!_disposed && userId != null) _practiceDrafts[id] = answer;
+  }
+
   bool solved(int id) => _solved.contains(id);
   bool _passed(LearningQuestion q, LearningSubmission? s) =>
       s?.gradingStatus == 'COMPLETED' &&

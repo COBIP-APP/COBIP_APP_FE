@@ -25,25 +25,8 @@ class LearningCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadii.card),
         boxShadow: emphasizedShadow
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: .15),
-                  blurRadius: 20,
-                  offset: const Offset(0, 7),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: .07),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: .08),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+            ? AppShadows.learningCardEmphasized
+            : AppShadows.learningCard,
       ),
       child: Material(
         color: backgroundColor,

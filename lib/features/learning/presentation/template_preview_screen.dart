@@ -6,9 +6,12 @@ import '../../../app/app_ui_tokens.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/widgets/learning_visuals.dart';
 import '../data/learning_models.dart';
+import 'learning_flow.dart';
+import 'learning_navigation.dart';
 import 'learning_store.dart';
 import 'learning_preview_widgets.dart';
 import 'learning_detail_scaffold.dart';
+import 'learning_contents_sheet.dart';
 
 class TemplatePreviewScreen extends StatefulWidget {
   const TemplatePreviewScreen({
@@ -51,14 +54,35 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
     }
   }
 
-  Future<void> _practice(TemplateSection section) async {
+  Future<void> _practice(
+    LearningTemplate template,
+    TemplateSection section,
+  ) async {
     if (_busy) return;
+    final flow = LearningFlow(context.read<LearningStore>(), template);
+    if (flow.questionsFor(section).isEmpty) {
+      await _move(() => flow.advance(section));
+      return;
+    }
     await _select(section);
     if (!mounted || _error != null) return;
-    final prefix = widget.practical
-        ? '/learning-practice'
-        : '/grammar-practice';
-    context.push('$prefix/${widget.templateId}?section=${section.id}');
+    context.go(flow.practiceLocation(section));
+  }
+
+  Future<void> _move(Future<String> Function() destination) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final location = await destination();
+      if (mounted) context.go(location);
+    } catch (_) {
+      if (mounted) setState(() => _error = '학습 진도를 저장하지 못했어요. 다시 눌러 주세요.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -72,9 +96,11 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
     final store = context.watch<LearningStore>();
     final item = store.template(widget.templateId);
     final sections = item?.allSections ?? <TemplateSection>[];
-    final section = sections
-        .where((s) => s.id == (_selectedId ?? widget.sectionId))
-        .firstOrNull;
+    final flow = item == null ? null : LearningFlow(store, item);
+    final selectedId = _selectedId ?? widget.sectionId;
+    final section =
+        sections.where((s) => s.id == selectedId).firstOrNull ??
+        sections.firstOrNull;
     if (!_entryRequested &&
         store.detailReady('t:${widget.templateId}') &&
         section != null) {
@@ -89,18 +115,25 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
       title: item?.title ?? (widget.practical ? '실무 학습' : '문법 학습'),
       fallbackLocation: item == null
           ? (widget.practical ? '/practical' : '/grammar')
-          : store.templateListLocation(item),
+          : flow!.homeLocation,
       actions: item == null
           ? null
           : [
               BookmarkButton(templateId: item.id),
               IconButton(
                 tooltip: '목차',
-                onPressed: _busy
-                    ? null
-                    : () => context.push(
-                        '${store.templateLocation(item)}?contents=true',
-                      ),
+                onPressed: () async {
+                  final selected = await showLearningContentsSheet(
+                    context,
+                    template: item,
+                    currentSectionId: section?.id,
+                  );
+                  if (mounted &&
+                      selected != null &&
+                      selected.id != section?.id) {
+                    await _select(selected);
+                  }
+                },
                 icon: const Icon(Icons.format_list_bulleted),
               ),
             ],
@@ -110,37 +143,15 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
             ? const Center(child: Text('학습을 찾을 수 없어요. 목록에서 다시 선택해 주세요.'))
             : ListView(
                 controller: _scroll,
-                padding: AppSpacing.pagePadding(context).copyWith(bottom: 100),
+                padding: AppSpacing.pagePadding(context),
                 children: [
                   if (_error != null) ...[
                     LearningNotice(_error!),
                     const SizedBox(height: 16),
                   ],
-                  if (sections.isEmpty)
+                  if (section == null)
                     const LearningNotice('아직 등록된 목차가 없어요.')
-                  else if (section == null) ...[
-                    const Text('학습 목차', style: AppTypography.section),
-                    const SizedBox(height: 12),
-                    const Text('학습할 목차를 선택해 주세요.', style: AppTypography.helper),
-                    const SizedBox(height: 16),
-                    for (final entry in sections)
-                      ListTile(
-                        key: ValueKey('section-${entry.id}'),
-                        selected:
-                            store.progress(item.id)?.lastSectionId == entry.id,
-                        contentPadding: EdgeInsets.only(
-                          left: entry.parentId == null ? 0 : 16,
-                        ),
-                        leading: const Icon(Icons.menu_book_outlined),
-                        title: Text(entry.title),
-                        subtitle:
-                            store.progress(item.id)?.lastSectionId == entry.id
-                            ? const Text('최근 학습한 목차')
-                            : null,
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: _busy ? null : () => _select(entry),
-                      ),
-                  ] else ...[
+                  else ...[
                     LearningSection(
                       title: section.title,
                       label:
@@ -178,9 +189,11 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
                     ),
                     PreviewMediaList(items: item.media),
                     const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: _busy ? null : () => _practice(section),
-                      child: const Text('다음'),
+                    LearningNavigation(
+                      keyPrefix: 'lesson',
+                      onPrevious: () => _move(() => flow!.previous(section)),
+                      onHome: () => context.go(flow!.homeLocation),
+                      onNext: () => _practice(item, section),
                     ),
                   ],
                   if (_busy)

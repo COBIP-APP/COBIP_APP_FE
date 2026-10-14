@@ -545,7 +545,7 @@ void main() {
       await tester.tap(find.text('서버 조건문').last);
       await tester.pumpAndSettle();
       expect(
-        find.text('학습 목차'),
+        find.text('서버 본문'),
         findsOneWidget,
         reason: tester
             .widgetList<Text>(find.byType(Text))
@@ -553,7 +553,7 @@ void main() {
             .join(' | '),
       );
       expect(
-        GoRouterState.of(tester.element(find.text('학습 목차')))
+        GoRouterState.of(tester.element(find.text('서버 본문')))
             .uri
             .queryParameters['section'],
         isNull,

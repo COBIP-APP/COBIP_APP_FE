@@ -15,7 +15,7 @@ void main() {
     '실무: 목차별 본문·문제와 마지막 완료 흐름',
     (tester) => verifySectionFlow(tester, practical: true),
   );
-  testWidgets('실무 분류와 검색에서 학습 목차로 이동하고 위치를 저장한다', (tester) async {
+  testWidgets('실무 카드는 첫 본문을 열고 목차 버튼으로 다른 위치를 선택한다', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -49,10 +49,13 @@ void main() {
     );
     await tester.tap(find.text(database.title));
     await tester.pumpAndSettle();
-    expect(find.text('학습 목차'), findsOneWidget);
+    expect(find.text('학습 목차'), findsNothing);
     expect(find.text('연결된 문제'), findsNothing);
     expect(find.text('문제 풀기'), findsNothing);
-    expect(store.progress(202), isNull);
+    expect(store.progress(202)!.lastSectionId, database.allSections.first.id);
+    await tester.tap(find.byTooltip('목차'));
+    await tester.pumpAndSettle();
+    expect(find.text('학습 목차'), findsOneWidget);
     await tester.dragUntilVisible(
       find
           .byKey(ValueKey('section-${database.allSections.last.id}'))

@@ -68,6 +68,87 @@ int submissions(SectionServer server, int id) => server.requests
     .length;
 
 void main() {
+  for (final practical in [false, true]) {
+    testWidgets('${practical ? '실무' : '문법'}에서 채점 후 개별 다시 풀기와 재제출을 제공한다', (
+      tester,
+    ) async {
+      final server = SectionServer(practical: practical);
+      final store = await openSectionApp(
+        tester,
+        server,
+        '/${practical ? 'learning' : 'grammar'}-practice/31?section=311',
+      );
+      await enterAnswer(tester, 42, '기존 코드 답안');
+      await enterAnswer(tester, 43, '다른 문제의 미제출 답안');
+      await tapKey(tester, 'choice-41-A');
+      await tapKey(tester, 'submit-41');
+      final firstChoiceResult = store.latest(41)!;
+      expect(firstChoiceResult.score, 0);
+      expect(find.text('다시 풀기'), findsOneWidget);
+      expect(find.text('확인 완료'), findsNothing);
+      await tapKey(tester, 'explanation-toggle-41');
+      expect(find.text('서버 해설'), findsOneWidget);
+
+      await tapKey(tester, 'submit-41');
+      expect(submissions(server, 41), 1);
+      expect(store.latest(41), same(firstChoiceResult));
+      expect(store.practiceDraft(41), '');
+      expect(find.byKey(const ValueKey('result-41')), findsNothing);
+      expect(find.text('서버 해설'), findsNothing);
+      expect(
+        tester
+            .widget<FilledButton>(find.byKey(const ValueKey('submit-41')))
+            .onPressed,
+        isNull,
+      );
+      await tapKey(tester, 'practice-previous');
+      await tapText(tester, '다음');
+      expect(find.byKey(const ValueKey('result-41')), findsNothing);
+      await tapKey(tester, 'choice-41-B');
+      await tapKey(tester, 'submit-41');
+      expect(submissions(server, 41), 2);
+      expect(store.latest(41)!.id, isNot(firstChoiceResult.id));
+      expect(store.latest(41)!.selectedChoiceKey, 'B');
+      expect(store.practiceDraft(41), isNull);
+      expect(find.text('서버 해설'), findsNothing);
+
+      await tapKey(tester, 'submit-42');
+      final firstCodeResult = store.latest(42)!;
+      expect(firstCodeResult.score, 100);
+      await tapKey(tester, 'submit-42');
+      await reveal(tester, find.byKey(const ValueKey('answer-42')));
+      final field = tester.widget<TextField>(
+        find.byKey(const ValueKey('answer-42')),
+      );
+      expect(field.enabled, isTrue);
+      expect(field.controller!.text, '');
+      expect(store.latest(42), same(firstCodeResult));
+      expect(submissions(server, 42), 1);
+      await enterAnswer(tester, 42, '다시 작성한 코드');
+      server.handle = (request) async {
+        if (request.method == 'POST' &&
+            request.path == '/api/questions/42/submissions') {
+          return jsonResponse({}, 500);
+        }
+        return server.respond(request);
+      };
+      await tapKey(tester, 'submit-42');
+      expect(find.textContaining('입력한 답안은 유지됩니다'), findsOneWidget);
+      expect(store.latest(42), same(firstCodeResult));
+      expect(store.practiceResult(42), isNull);
+      expect(store.practiceDraft(42), '다시 작성한 코드');
+      server.handle = server.respond;
+      await tapKey(tester, 'submit-42');
+      expect(submissions(server, 42), 3);
+      expect(store.latest(42)!.sourceCode, '다시 작성한 코드');
+      expect(store.practiceResult(42), same(store.latest(42)));
+      expect(store.practiceDraft(43), '다른 문제의 미제출 답안');
+      expect(submissions(server, 43), 0);
+      expect(store.latest(41)!.selectedChoiceKey, 'B');
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('한 문제만 채점하고 다른 입력을 유지하며 이전·홈·목차와 다음을 제공한다', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

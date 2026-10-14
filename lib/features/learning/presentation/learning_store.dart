@@ -24,19 +24,26 @@ class LearningStore extends ChangeNotifier {
   final _deletedQuestions = <int>{};
   PreviewLoadState? myQuestionsState;
   String? myQuestionsError;
-  List<LearningQuestion> get myQuestions => _myQuestions;
+  List<LearningQuestion> get myQuestions => _myQuestions.toList()
+    ..sort((a, b) => compareNewestFirst(a.createdAt, a.id, b.createdAt, b.id));
   List<LearningLanguage> get languages => _languages;
   List<LearningCategory> get categories => _categories;
-  List<LearningTemplate> get templates => _templates;
+  List<LearningTemplate> get templates => _templates.toList()
+    ..sort((a, b) => compareNewestFirst(a.createdAt, a.id, b.createdAt, b.id));
   List<LearningQuestion> get questions => {
     for (final q in _questions) q.id: q,
     for (final q in _myQuestions) q.id: q,
   }.values.toList();
+  // Card order is independent of the question order within a chapter.
+  List<LearningQuestion> get questionCards => questions.toList()
+    ..sort((a, b) => compareNewestFirst(a.createdAt, a.id, b.createdAt, b.id));
   final _progress = <int, LearningProgress>{};
   final _bookmarks = <int>{};
   final _submissions = <int, LearningSubmission>{};
   // Unsubmitted practice input survives navigation in the current user session.
   final _practiceDrafts = <int, String>{};
+  // Retrying hides the previous result without deleting submission history.
+  final _practiceRetries = <int>{};
   // BE exposes latest only: past passes discovered this session remain marked.
   final _solved = <int>{};
   final _details = <String, PreviewLoadState>{};
@@ -78,6 +85,7 @@ class LearningStore extends ChangeNotifier {
     _bookmarks.clear();
     _submissions.clear();
     _practiceDrafts.clear();
+    _practiceRetries.clear();
     _solved.clear();
     _details.clear();
     _detailErrors.clear();
@@ -294,6 +302,7 @@ class LearningStore extends ChangeNotifier {
         _questions = _questions.where((q) => q.id != questionId).toList();
         _submissions.remove(questionId);
         _practiceDrafts.remove(questionId);
+        _practiceRetries.remove(questionId);
         _solved.remove(questionId);
         _saveVersions.remove(questionId);
         _details['q:$questionId'] = PreviewLoadState.error;
@@ -380,9 +389,25 @@ class LearningStore extends ChangeNotifier {
   LearningProgress? progress(int id) => _progress[id];
   bool bookmarked(int id) => _bookmarks.contains(id);
   LearningSubmission? latest(int id) => _submissions[id];
+  LearningSubmission? practiceResult(int id) =>
+      _practiceRetries.contains(id) ? null : latest(id);
   String? practiceDraft(int id) => _practiceDrafts[id];
   void rememberPracticeDraft(int id, String answer) {
     if (!_disposed && userId != null) _practiceDrafts[id] = answer;
+  }
+
+  void retryPracticeQuestion(int id) {
+    final result = latest(id);
+    if (_disposed ||
+        userId == null ||
+        _busy.contains('q:$id') ||
+        result?.gradingStatus != 'COMPLETED' ||
+        result?.score == null) {
+      return;
+    }
+    _practiceDrafts[id] = '';
+    _practiceRetries.add(id);
+    _notify();
   }
 
   bool solved(int id) => _solved.contains(id);
@@ -468,6 +493,8 @@ class LearningStore extends ChangeNotifier {
       (u, c) => api.submit(u, q, answer, cancelToken: c),
       (s) {
         _submissions[questionId] = s;
+        _practiceDrafts.remove(questionId);
+        _practiceRetries.remove(questionId);
         if (_passed(q, s)) _solved.add(questionId);
       },
     );

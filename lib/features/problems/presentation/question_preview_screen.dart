@@ -149,7 +149,6 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                     title: '문제',
                     answer: answer,
                     result: _javaResult == null ? result : null,
-                    showSubmissionDetails: true,
                     locked: _busy || _javaBusy || result != null,
                     onChanged: (value) => setState(() => _answer = value),
                   ),
@@ -167,7 +166,6 @@ class _QuestionPreviewScreenState extends State<QuestionPreviewScreen> {
                     AiResultCard(
                       key: ObjectKey(_javaResult),
                       isCorrect: _javaResult!.isCorrect,
-                      score: _javaResult!.score,
                       feedback: _javaResult!.feedback,
                       formattedCode: _javaResult!.formattedCode,
                     ),

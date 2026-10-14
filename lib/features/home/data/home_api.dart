@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../auth/data/auth_api.dart';
+import '../../learning/data/learning_models.dart' show compareNewestFirst;
 
 class HomeApiException implements Exception {
   const HomeApiException(this.code, this.message, {this.status});
@@ -78,6 +79,7 @@ class HomeTemplate {
     this.categoryName,
     this.languageCode,
     this.languageName,
+    this.createdAt,
   });
 
   final int id;
@@ -88,6 +90,7 @@ class HomeTemplate {
   final String? categoryName;
   final String? languageCode;
   final String? languageName;
+  final DateTime? createdAt;
 
   factory HomeTemplate.fromJson(Map<String, dynamic> data) {
     final title = data['title'];
@@ -104,6 +107,7 @@ class HomeTemplate {
       categoryName: _optionalString(data, 'categoryName'),
       languageCode: _optionalString(data, 'languageCode'),
       languageName: _optionalString(data, 'languageName'),
+      createdAt: data['createdAt'] == null ? null : _date(data, 'createdAt'),
     );
   }
 }
@@ -187,9 +191,11 @@ class HomeApi {
       final templates = data.map(
         (item) => HomeTemplate.fromJson(_object(item)),
       );
-      return List.unmodifiable(
-        templates.where((template) => template.published),
-      );
+      final published =
+          templates.where((template) => template.published).toList()..sort(
+            (a, b) => compareNewestFirst(a.createdAt, a.id, b.createdAt, b.id),
+          );
+      return List.unmodifiable(published);
     } on FormatException {
       throw _invalidResponse;
     }

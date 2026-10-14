@@ -12,6 +12,7 @@ import 'learning_store.dart';
 import 'learning_preview_widgets.dart';
 import 'learning_detail_scaffold.dart';
 import 'learning_contents_sheet.dart';
+import 'learning_markdown_body.dart';
 
 class TemplatePreviewScreen extends StatefulWidget {
   const TemplatePreviewScreen({
@@ -161,8 +162,8 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (section.body?.isNotEmpty == true)
-                            Text(section.body!, style: AppTypography.body),
+                          if (section.body?.trim().isNotEmpty == true)
+                            LearningMarkdownBody(section.body!),
                           if (section.exampleCode?.isNotEmpty == true) ...[
                             const SizedBox(height: 16),
                             LearningCode(section.exampleCode!),
@@ -179,7 +180,7 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen> {
                                 onTap: _busy ? null : () => _select(child),
                               ),
                           ],
-                          if ((section.body?.isEmpty ?? true) &&
+                          if ((section.body?.trim().isEmpty ?? true) &&
                               (section.exampleCode?.isEmpty ?? true) &&
                               section.media.isEmpty &&
                               section.children.isEmpty)

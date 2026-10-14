@@ -152,7 +152,6 @@ class _QuizPageState extends State<_QuizPage> {
               AiResultCard(
                 key: ObjectKey(vm.result),
                 isCorrect: vm.result!.isCorrect,
-                score: vm.result!.score,
                 feedback: vm.result!.feedback,
                 correctAnswer: vm.result!.correctAnswer,
                 explanation: batch.quizzes[vm.index].explanation,

@@ -1,5 +1,8 @@
 import 'package:cobip_app_fe/app/cobip_app.dart';
 import 'package:cobip_app_fe/app/router/app_router.dart';
+import 'package:cobip_app_fe/app/widgets/progressive_card_list.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_filter_sheet.dart';
+import 'package:cobip_app_fe/features/learning/presentation/learning_preview_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,11 +29,27 @@ void main() {
     expect(find.text('COBIA와 함께 문법을 학습해보세요'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsNothing);
 
+    Set<int?> cardLanguages() => tester
+        .widget<ProgressiveCardList>(find.byType(ProgressiveCardList))
+        .items
+        .cast<TemplatePreviewCard>()
+        .map((card) => card.item.languageId)
+        .toSet();
+    expect(cardLanguages(), {1, 2, 3});
+    expect(find.text('전체 문법 챕터'), findsOneWidget);
+    expect(
+      tester
+          .widget<LearningListToolbar>(find.byType(LearningListToolbar))
+          .filtered,
+      isFalse,
+    );
+
     await tester.tap(find.byTooltip('필터'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Python'));
     await tester.tap(find.text('적용'));
     await tester.pumpAndSettle();
+    expect(cardLanguages(), {2});
     await tester.enterText(find.byType(TextField), 'elif');
     await tester.pumpAndSettle();
     expect(find.text('조건문'), findsOneWidget);
@@ -49,6 +68,26 @@ void main() {
     await tester.tap(find.byTooltip('검색어 지우기'));
     await tester.pumpAndSettle();
     expect(find.text('변수와 자료형'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('필터'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('초기화'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '전체 언어'))
+          .selected,
+      isTrue,
+    );
+    await tester.tap(find.text('적용'));
+    await tester.pumpAndSettle();
+    expect(cardLanguages(), {1, 2, 3});
+    expect(
+      tester
+          .widget<LearningListToolbar>(find.byType(LearningListToolbar))
+          .filtered,
+      isFalse,
+    );
 
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();

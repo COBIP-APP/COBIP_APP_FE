@@ -31,16 +31,15 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<LearningStore>();
-    final language =
-        store.languages.where((l) => l.id == _languageId).firstOrNull ??
-        store.languages.firstOrNull;
+    final language = store.languages
+        .where((l) => l.id == _languageId)
+        .firstOrNull;
     final query = _search.text.trim().toLowerCase();
     final items = store.templates
         .where(
           (t) =>
               store.categoryIds('GRAMMAR').contains(t.categoryId) &&
-              language != null &&
-              (t.languageId == null || t.languageId == language.id) &&
+              (language == null || t.languageId == language.id) &&
               (!_bookmarksOnly || store.bookmarked(t.id)) &&
               '${t.title} ${t.summary}'.toLowerCase().contains(query),
         )
@@ -64,25 +63,22 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
               controller: _search,
               hint: '문법 검색',
               summary:
-                  '${language?.name ?? '언어 없음'}${_bookmarksOnly ? ' · 북마크' : ''}',
-              filtered:
-                  language?.id != store.languages.firstOrNull?.id ||
-                  _bookmarksOnly,
+                  '${language?.name ?? '전체 언어'}${_bookmarksOnly ? ' · 북마크' : ''}',
+              filtered: language != null || _bookmarksOnly,
               onChanged: () => setState(() {}),
               onFilter: () async {
                 final result = await showLearningFilters(
                   context,
                   groups: [
                     LearningFilterGroup('language', '언어', {
+                      'all': '전체 언어',
                       for (final l in store.languages) '${l.id}': l.name,
                     }),
                   ],
                   current: LearningFilterValues({
-                    'language': '${language?.id ?? ''}',
+                    'language': language?.id.toString() ?? 'all',
                   }, markedOnly: _bookmarksOnly),
-                  defaults: LearningFilterValues({
-                    'language': '${store.languages.firstOrNull?.id ?? ''}',
-                  }),
+                  defaults: const LearningFilterValues({'language': 'all'}),
                   markedLabel: '북마크만 보기',
                 );
                 if (result != null && mounted) {
@@ -100,21 +96,20 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    '${language?.name ?? '언어 없음'} 문법 챕터',
+                    '${language?.name ?? '전체'} 문법 챕터',
                     style: AppTypography.section,
                   ),
                 ),
-                TextButton(
-                  onPressed: language == null
-                      ? null
-                      : () {
-                          FocusScope.of(context).unfocus();
-                          context.push(
-                            '/grammar/${Uri.encodeComponent(language.code.toLowerCase())}/chapters',
-                          );
-                        },
-                  child: const Text('전체 보기'),
-                ),
+                if (language != null)
+                  TextButton(
+                    onPressed: () {
+                      FocusScope.of(context).unfocus();
+                      context.push(
+                        '/grammar/${Uri.encodeComponent(language.code.toLowerCase())}/chapters',
+                      );
+                    },
+                    child: const Text('전체 보기'),
+                  ),
               ],
             ),
             const SizedBox(height: 12),

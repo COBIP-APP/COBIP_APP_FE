@@ -8,9 +8,8 @@ class LearningFlow {
   final LearningStore store;
   final LearningTemplate template;
 
-  String get homeLocation => store.isGrammar(template)
-      ? store.templateListLocation(template)
-      : '/practical';
+  String get homeLocation =>
+      store.isGrammar(template) ? '/grammar' : '/practical';
 
   String lessonLocation(TemplateSection section) =>
       '${store.templateLocation(template)}?section=${section.id}';

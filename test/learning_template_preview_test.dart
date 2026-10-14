@@ -56,8 +56,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('뒤로가기'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('뒤로가기'));
-    await tester.pumpAndSettle();
     await tester.dragUntilVisible(
       find.byTooltip('필터').hitTestable(),
       find.byType(ListView).first,

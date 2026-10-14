@@ -55,7 +55,7 @@ void main() {
     final practice = practical
         ? '/learning-practice/31'
         : '/grammar-practice/31';
-    final home = practical ? '/practical' : '/grammar/java/chapters';
+    final home = practical ? '/practical' : '/grammar';
 
     testWidgets('$area: 첫 본문 진입, 빈 문제 건너뛰기, 이전 단계와 홈 이동', (tester) async {
       final server = _OutlineServer(practical: practical);

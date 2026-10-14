@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cobip_app_fe/features/grammar/presentation/grammar_chapters_screen.dart';
+import 'package:cobip_app_fe/features/grammar/presentation/grammar_home_screen.dart';
 
 import 'section_flow_test_support.dart';
 
@@ -95,7 +95,7 @@ void main() {
     await answerSection(tester, 80);
     await tapText(tester, '다음');
     expect(server.savedProgress!['completedAt'], isNull);
-    expect(find.byType(GrammarChaptersScreen), findsOneWidget);
+    expect(find.byType(GrammarHomeScreen), findsOneWidget);
   });
   testWidgets('문제가 없는 목차는 다음 본문으로 이동하되 본문만으로 완료하지 않는다', (tester) async {
     final server = SectionServer()..noQuestions = true;
@@ -108,6 +108,6 @@ void main() {
     expect(find.text('설명 319'), findsOneWidget);
     await tapText(tester, '다음');
     expect(server.savedProgress!['completedAt'], isNull);
-    expect(find.byType(GrammarChaptersScreen), findsOneWidget);
+    expect(find.byType(GrammarHomeScreen), findsOneWidget);
   });
 }

@@ -18,7 +18,6 @@ import '../../features/auth/presentation/password_reset_screen.dart';
 import '../../features/auth/presentation/sign_up_complete_screen.dart';
 import '../../features/auth/presentation/sign_up_screen.dart';
 import '../../features/auth/presentation/terms_screen.dart';
-import '../../features/grammar/presentation/grammar_chapters_screen.dart';
 import '../../features/grammar/presentation/grammar_home_screen.dart';
 import '../../features/grammar/presentation/grammar_lesson_screen.dart';
 import '../../features/grammar/presentation/grammar_practice_screen.dart';
@@ -191,22 +190,15 @@ GoRouter createAppRouter({String initialLocation = '/login'}) => GoRouter(
         GoRoute(
           path: ':language/chapters',
           name: AppRouteNames.grammarChapters,
-          routes: [
-            GoRoute(
-              path: ':template',
-              name: AppRouteNames.grammarConcept,
-              builder: (context, state) => GrammarLessonScreen(
-                key: ValueKey(state.uri.toString()),
-                templateId:
-                    int.tryParse(state.pathParameters['template']!) ?? -1,
-                sectionId: int.tryParse(
-                  state.uri.queryParameters['section'] ?? '',
-                ),
-              ),
-            ),
-          ],
-          builder: (context, state) => GrammarChaptersScreen(
-            language: state.pathParameters['language']!,
+          redirect: (context, state) => '/grammar',
+        ),
+        GoRoute(
+          path: ':language/chapters/:template',
+          name: AppRouteNames.grammarConcept,
+          builder: (context, state) => GrammarLessonScreen(
+            key: ValueKey(state.uri.toString()),
+            templateId: int.tryParse(state.pathParameters['template']!) ?? -1,
+            sectionId: int.tryParse(state.uri.queryParameters['section'] ?? ''),
           ),
         ),
       ],

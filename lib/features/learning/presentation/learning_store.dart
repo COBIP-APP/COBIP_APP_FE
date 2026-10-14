@@ -24,14 +24,19 @@ class LearningStore extends ChangeNotifier {
   final _deletedQuestions = <int>{};
   PreviewLoadState? myQuestionsState;
   String? myQuestionsError;
-  List<LearningQuestion> get myQuestions => _myQuestions;
+  List<LearningQuestion> get myQuestions => _myQuestions.toList()
+    ..sort((a, b) => compareNewestFirst(a.createdAt, a.id, b.createdAt, b.id));
   List<LearningLanguage> get languages => _languages;
   List<LearningCategory> get categories => _categories;
-  List<LearningTemplate> get templates => _templates;
+  List<LearningTemplate> get templates => _templates.toList()
+    ..sort((a, b) => compareNewestFirst(a.createdAt, a.id, b.createdAt, b.id));
   List<LearningQuestion> get questions => {
     for (final q in _questions) q.id: q,
     for (final q in _myQuestions) q.id: q,
   }.values.toList();
+  // Card order is independent of the question order within a chapter.
+  List<LearningQuestion> get questionCards => questions.toList()
+    ..sort((a, b) => compareNewestFirst(a.createdAt, a.id, b.createdAt, b.id));
   final _progress = <int, LearningProgress>{};
   final _bookmarks = <int>{};
   final _submissions = <int, LearningSubmission>{};

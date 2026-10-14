@@ -1,4 +1,11 @@
 // Screen models decoded from BE ContentDtos / ActivityDtos by LearningApi.
+int compareNewestFirst(DateTime? aDate, int aId, DateTime? bDate, int bId) {
+  if (aDate == null && bDate != null) return 1;
+  if (aDate != null && bDate == null) return -1;
+  final date = aDate == null ? 0 : bDate!.compareTo(aDate);
+  return date != 0 ? date : bId.compareTo(aId);
+}
+
 class LearningLanguage {
   const LearningLanguage(this.id, this.code, this.name);
   final int id;
@@ -73,6 +80,7 @@ class LearningTemplate {
     this.difficulty = LearningDifficulty.easy,
     required this.sections,
     this.media = const [],
+    this.createdAt,
   });
   final int id;
   final String title;
@@ -83,6 +91,7 @@ class LearningTemplate {
   final LearningDifficulty difficulty;
   final List<TemplateSection> sections;
   final List<LearningMedia> media;
+  final DateTime? createdAt;
   List<TemplateSection> get allSections =>
       sections.expand((s) => s.flattened).toList();
 }
@@ -130,6 +139,7 @@ class LearningQuestion {
     this.createdBy,
     this.creatorNickname,
     this.published = true,
+    this.createdAt,
   });
   final int id;
   final String prompt;
@@ -150,6 +160,7 @@ class LearningQuestion {
   final int? createdBy;
   final String? creatorNickname;
   final bool published;
+  final DateTime? createdAt;
 
   String creatorLabel(int? currentUserId) {
     if (createdBy == null) return '작성자 정보 없음';

@@ -96,6 +96,7 @@ LearningTemplate _template(Object? value, {bool detail = false}) {
     ),
     sections: detail ? _list(t['sections']).map(_section).toList() : const [],
     media: _media(t['media']),
+    createdAt: t['createdAt'] == null ? null : _date(t['createdAt']),
   );
 }
 
@@ -153,6 +154,7 @@ LearningQuestion _question(Object? value, {int? ownerId}) {
     ),
     passScore: score,
     media: _media(q['media']),
+    createdAt: q['createdAt'] == null ? null : _date(q['createdAt']),
   );
 }
 

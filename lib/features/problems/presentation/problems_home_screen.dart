@@ -62,9 +62,12 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
     return topic == null || topic.isEmpty ? 'common' : 'topic:$topic';
   }
 
-  Iterable<LearningQuestion> _problemQuestions(LearningStore store) {
+  Iterable<LearningQuestion> _problemQuestions(
+    LearningStore store,
+    Iterable<LearningQuestion> questions,
+  ) {
     final categories = store.categoryIds('CODING_PROBLEM');
-    return store.questions.where(
+    return questions.where(
       (q) =>
           categories.contains(q.categoryId) &&
           q.relatedTemplateId == null &&
@@ -74,7 +77,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
 
   Map<String, String> _languageOptions(LearningStore store) {
     final options = <String, String>{};
-    for (final question in _problemQuestions(store)) {
+    for (final question in _problemQuestions(store, store.questions)) {
       options.putIfAbsent(
         _languageKey(question),
         () => store.questionLanguageName(question),
@@ -92,7 +95,7 @@ class _ProblemsHomeScreenState extends State<ProblemsHomeScreen> {
   Widget build(BuildContext context) {
     final store = context.watch<LearningStore>();
     final languageOptions = _languageOptions(store);
-    final available = _problemQuestions(store).toList();
+    final available = _problemQuestions(store, store.questionCards).toList();
     final items = available
         .where(
           (q) =>

@@ -16,6 +16,53 @@ void main() {
     api = LearningApi(testApi(server).dio);
   });
 
+  test('카드는 생성 날짜 최신순으로 병합하되 챕터의 문제 순서는 유지한다', () async {
+    final templates = [
+      for (final (id, date) in [
+        (31, '2026-10-14T00:00:00Z'),
+        (32, '2026-10-14T09:00:00+09:00'),
+        (33, '2026-10-01T00:00:00Z'),
+        (34, null),
+      ])
+        {...serverTemplate(), 'id': id, 'createdAt': date},
+    ];
+    final questions = [
+      for (final (id, date) in [
+        (41, '2026-10-01T00:00:00Z'),
+        (42, '2026-10-03T00:00:00Z'),
+        (43, '2026-10-02T00:00:00Z'),
+      ])
+        {...serverQuestion(id), 'createdAt': date},
+    ];
+    final owned = {
+      ...standaloneQuestion(41),
+      'id': 501,
+      'createdBy': 1,
+      'published': false,
+      'createdAt': '2026-10-04T00:00:00Z',
+    };
+    server.handle = (r) async => switch (r.path) {
+      '/api/templates' => jsonResponse(templates, 200),
+      '/api/templates/31' => jsonResponse(templates.first, 200),
+      '/api/questions' => jsonResponse(questions, 200),
+      '/api/users/me/questions' => jsonResponse([owned], 200),
+      _ => await server.respond(r),
+    };
+    final store = LearningStore(api: api)..bindUser(1);
+    addTearDown(store.dispose);
+    await store.load();
+    await store.loadMyQuestions();
+    await store.ensureDetail('t:31');
+    expect(store.templates.map((item) => item.id), [32, 31, 33, 34]);
+    expect(store.template(31)!.createdAt, DateTime.utc(2026, 10, 14));
+    expect(store.questionCards.map((item) => item.id), [501, 42, 43, 41]);
+    expect(store.myQuestions.single.createdAt, DateTime.utc(2026, 10, 4));
+    expect(
+      store.questions.where((q) => q.relatedTemplateId == 31).map((q) => q.id),
+      [41, 42, 43],
+    );
+  });
+
   test('서버 언어·계층 분류 ID를 사용하고 요약과 상세를 분리한다', () async {
     final store = LearningStore(api: api)..bindUser(1);
     addTearDown(store.dispose);

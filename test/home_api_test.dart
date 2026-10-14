@@ -25,6 +25,22 @@ Map<String, Object?> _progress() => {
 };
 
 void main() {
+  test('홈 학습 카드도 생성 날짜 최신순으로 표시한다', () async {
+    final api = HomeApi(
+      testApi(
+        TestAuthAdapter(
+          handle: (_) async => jsonResponse([
+            {..._template, 'id': 90, 'createdAt': '2026-10-01T00:00:00Z'},
+            {..._template, 'id': 42, 'createdAt': '2026-10-14T00:00:00Z'},
+            {..._template, 'id': 43, 'createdAt': '2026-10-14T09:00:00+09:00'},
+          ], 200),
+        ),
+      ).dio,
+    );
+    final templates = await api.fetchTemplates();
+    expect(templates.map((item) => item.id), [43, 42, 90]);
+  });
+
   test('공개 템플릿과 본인 진도 계약을 파싱한다', () async {
     final adapter = TestAuthAdapter(
       handle: (options) async => options.path == '/api/templates'

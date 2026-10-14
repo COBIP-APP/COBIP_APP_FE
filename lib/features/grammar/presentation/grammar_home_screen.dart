@@ -1,7 +1,6 @@
 import '../../../app/widgets/progressive_card_list.dart';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/app_ui_tokens.dart';
@@ -100,13 +99,15 @@ class _GrammarHomeScreenState extends State<GrammarHomeScreen> {
                     style: AppTypography.section,
                   ),
                 ),
-                if (language != null)
+                if (language != null || _bookmarksOnly || query.isNotEmpty)
                   TextButton(
                     onPressed: () {
                       FocusScope.of(context).unfocus();
-                      context.push(
-                        '/grammar/${Uri.encodeComponent(language.code.toLowerCase())}/chapters',
-                      );
+                      setState(() {
+                        _languageId = null;
+                        _bookmarksOnly = false;
+                        _search.clear();
+                      });
                     },
                     child: const Text('전체 보기'),
                   ),

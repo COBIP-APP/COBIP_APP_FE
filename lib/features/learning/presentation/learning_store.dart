@@ -546,16 +546,14 @@ class LearningStore extends ChangeNotifier {
 
   String categoryName(int id) =>
       categories.where((c) => c.id == id).firstOrNull?.name ?? '학습';
-  String templateListLocation(LearningTemplate t) {
-    if (!isGrammar(t)) return '/practical/${t.categoryId}/templates';
+  String templateLocation(LearningTemplate t) {
+    if (!isGrammar(t)) return '/practical/${t.categoryId}/templates/${t.id}';
     final language = languages.where((l) => l.id == t.languageId).firstOrNull;
     return language == null
-        ? '/grammar/common/chapters'
-        : '/grammar/${Uri.encodeComponent(language.code.toLowerCase())}/chapters';
+        ? '/grammar/common/chapters/${t.id}'
+        : '/grammar/${Uri.encodeComponent(language.code.toLowerCase())}/chapters/${t.id}';
   }
 
-  String templateLocation(LearningTemplate t) =>
-      '${templateListLocation(t)}/${t.id}';
   @override
   void dispose() {
     _disposed = true;

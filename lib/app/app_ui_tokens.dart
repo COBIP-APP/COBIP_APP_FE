@@ -44,6 +44,28 @@ abstract final class AppRadii {
   static const pill = 999.0;
 }
 
+abstract final class AppShadows {
+  static final learningCard = [
+    BoxShadow(
+      color: AppColors.primary.withValues(alpha: .08),
+      blurRadius: 18,
+      offset: const Offset(0, 6),
+    ),
+  ];
+  static final learningCardEmphasized = [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: .15),
+      blurRadius: 20,
+      offset: const Offset(0, 7),
+    ),
+    BoxShadow(
+      color: Colors.black.withValues(alpha: .07),
+      blurRadius: 4,
+      offset: const Offset(0, 2),
+    ),
+  ];
+}
+
 abstract final class AppTypography {
   static const title = TextStyle(
     fontSize: 28,

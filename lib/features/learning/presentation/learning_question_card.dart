@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/app_ui_tokens.dart';
+import '../../../app/widgets/learning_button_shadow.dart';
 import '../../../app/widgets/learning_ui.dart';
 import '../../../app/widgets/learning_visuals.dart';
 import '../data/learning_models.dart';
@@ -16,6 +17,7 @@ class LearningQuestionCard extends StatefulWidget {
     this.result,
     this.locked = false,
     this.showSubmissionDetails = false,
+    this.submissionAction,
   });
   final LearningQuestion question;
   final String title;
@@ -24,6 +26,7 @@ class LearningQuestionCard extends StatefulWidget {
   final LearningSubmission? result;
   final bool locked;
   final bool showSubmissionDetails;
+  final Widget? submissionAction;
   @override
   State<LearningQuestionCard> createState() => _LearningQuestionCardState();
 }
@@ -43,7 +46,9 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
     if (_controller.text != (widget.answer ?? '')) {
       _controller.text = widget.answer ?? '';
     }
-    if (oldWidget.result != widget.result) _expanded = false;
+    if (oldWidget.result != widget.result) {
+      _expanded = false;
+    }
   }
 
   @override
@@ -85,27 +90,29 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Semantics(
                   selected: widget.answer == choice.key,
-                  child: OutlinedButton(
-                    key: ValueKey('choice-${question.id}-${choice.key}'),
-                    onPressed: locked
-                        ? null
-                        : () => widget.onChanged(choice.key),
-                    style: OutlinedButton.styleFrom(
-                      disabledForegroundColor: AppColors.textPrimary,
-                      backgroundColor: widget.answer == choice.key
-                          ? (graded
-                                ? color.withValues(alpha: .1)
-                                : AppColors.primarySoft)
-                          : AppColors.surface,
-                      side: BorderSide(
-                        color: widget.answer == choice.key
-                            ? (graded ? color : AppColors.primary)
-                            : AppColors.border,
+                  child: LearningButtonShadow(
+                    child: OutlinedButton(
+                      key: ValueKey('choice-${question.id}-${choice.key}'),
+                      onPressed: locked
+                          ? null
+                          : () => widget.onChanged(choice.key),
+                      style: OutlinedButton.styleFrom(
+                        disabledForegroundColor: AppColors.textPrimary,
+                        backgroundColor: widget.answer == choice.key
+                            ? (graded
+                                  ? color.withValues(alpha: .1)
+                                  : AppColors.primarySoft)
+                            : AppColors.surface,
+                        side: BorderSide(
+                          color: widget.answer == choice.key
+                              ? (graded ? color : AppColors.primary)
+                              : AppColors.border,
+                        ),
                       ),
-                    ),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text('${choice.key}. ${choice.text}'),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('${choice.key}. ${choice.text}'),
+                      ),
                     ),
                   ),
                 ),
@@ -135,6 +142,10 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
                     : '답안을 작성해 주세요.',
               ),
             ),
+          if (widget.submissionAction != null) ...[
+            const SizedBox(height: 16),
+            widget.submissionAction!,
+          ],
           if (result != null) ...[
             const SizedBox(height: 12),
             Container(
@@ -195,13 +206,15 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
                           result.correctAnswer?.isNotEmpty == true ||
                           result.feedback?.isNotEmpty == true)) ...[
                     const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      key: ValueKey('explanation-toggle-${question.id}'),
-                      onPressed: () => setState(() => _expanded = !_expanded),
-                      icon: Icon(
-                        _expanded ? Icons.expand_less : Icons.expand_more,
+                    LearningButtonShadow(
+                      child: OutlinedButton.icon(
+                        key: ValueKey('explanation-toggle-${question.id}'),
+                        onPressed: () => setState(() => _expanded = !_expanded),
+                        icon: Icon(
+                          _expanded ? Icons.expand_less : Icons.expand_more,
+                        ),
+                        label: Text(_expanded ? '풀이 접기' : '풀이 보기'),
                       ),
-                      label: Text(_expanded ? '풀이 접기' : '풀이 보기'),
                     ),
                     if (_expanded) ...[
                       const SizedBox(height: 12),

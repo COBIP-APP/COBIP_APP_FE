@@ -1,9 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:cobip_app_fe/features/grammar/presentation/grammar_chapters_screen.dart';
 
 import 'section_flow_test_support.dart';
 
+class _GrammarOutlineServer extends SectionServer {
+  @override
+  Map<String, dynamic> get template => super.template
+    ..['sections'] = [
+      {
+        'id': 900,
+        'parentId': null,
+        'title': '1. 개요',
+        'body': '파이썬 기초 개요',
+        'media': [],
+        'children': [
+          for (final section in sections) {...section, 'parentId': 900},
+        ],
+      },
+    ];
+}
+
 void main() {
+  testWidgets('문법 개요의 다음은 빈 문제 화면 없이 첫 하위 본문으로 이동한다', (tester) async {
+    final server = _GrammarOutlineServer();
+    await openSectionApp(
+      tester,
+      server,
+      '/grammar/java/chapters/31?section=900',
+    );
+    await tapText(tester, '다음');
+    expect(find.text('설명 311'), findsOneWidget);
+    expect(find.text('이 목차에 연결된 문제는 아직 없어요.'), findsNothing);
+    expect(server.savedProgress!['lastSectionId'], 311);
+    expect(server.savedProgress!['completedAt'], isNull);
+    await tapText(tester, '다음');
+    expect(find.text('목차 311 · 문제'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     '문법: 목차 선택 → 본문 → 해당 목차 3문제 → 다음 본문 → 마지막 채점 후 완료',
     (tester) => verifySectionFlow(tester, practical: false),
@@ -24,7 +59,7 @@ void main() {
       tester
           .widget<FilledButton>(find.widgetWithText(FilledButton, '다음'))
           .onPressed,
-      isNull,
+      isNotNull,
     );
     await reveal(tester, find.text('채점 서버 오류'));
     server.failed = false;
@@ -60,7 +95,7 @@ void main() {
     await answerSection(tester, 80);
     await tapText(tester, '다음');
     expect(server.savedProgress!['completedAt'], isNull);
-    expect(find.textContaining('앞선 목차에 아직 채점을'), findsOneWidget);
+    expect(find.byType(GrammarChaptersScreen), findsOneWidget);
   });
   testWidgets('문제가 없는 목차는 다음 본문으로 이동하되 본문만으로 완료하지 않는다', (tester) async {
     final server = SectionServer()..noQuestions = true;
@@ -70,11 +105,9 @@ void main() {
       '/grammar/java/chapters/31?section=311',
     );
     await tapText(tester, '다음');
-    await tapText(tester, '다음');
     expect(find.text('설명 319'), findsOneWidget);
     await tapText(tester, '다음');
-    await tapText(tester, '다음');
     expect(server.savedProgress!['completedAt'], isNull);
-    expect(find.textContaining('등록된 문제가 없어 챕터를 완료할 수 없어요'), findsOneWidget);
+    expect(find.byType(GrammarChaptersScreen), findsOneWidget);
   });
 }

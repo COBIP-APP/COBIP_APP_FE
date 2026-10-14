@@ -16,19 +16,31 @@ class SectionServer extends LearningServer {
   Map<String, dynamic> get template => serverTemplate()
     ..addAll({
       'categoryId': practical ? 204 : 201,
-      'sections': [
-        for (final id in [311, 319])
-          {
-            'id': id,
-            'parentId': null,
-            'title': '목차 $id',
-            'body': '설명 $id',
-            'exampleCode': 'int value = $id;',
-            'media': [],
-            'children': [],
-          },
-      ],
+      'sections': practical
+          ? [
+              {
+                'id': 300,
+                'parentId': null,
+                'title': '개요',
+                'body': '개요 본문',
+                'media': [],
+                'children': sections,
+              },
+            ]
+          : sections,
     });
+  List<Map<String, dynamic>> get sections => [
+    for (final id in [311, 319])
+      {
+        'id': id,
+        'parentId': practical ? 300 : null,
+        'title': '목차 $id',
+        'body': '설명 $id',
+        'exampleCode': 'int value = $id;',
+        'media': [],
+        'children': [],
+      },
+  ];
   @override
   Future<ResponseBody> respond(RequestOptions r) async {
     if (r.path == '/api/templates') return jsonResponse([template], 200);
@@ -125,7 +137,12 @@ Future<void> answerSection(WidgetTester tester, int base) async {
     tester.testTextInput.hide();
     await tester.pumpAndSettle();
   }
-  await tapText(tester, '답 확인');
+  for (final id in [base + 1, base + 2, base + 3]) {
+    final submit = find.byKey(ValueKey('submit-$id'));
+    await reveal(tester, submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+  }
 }
 
 Future<void> verifySectionFlow(
@@ -137,9 +154,13 @@ Future<void> verifySectionFlow(
       ? '/practical/204/templates/31'
       : '/grammar/java/chapters/31';
   final store = await openSectionApp(tester, server, path);
+  expect(find.text(practical ? '개요 본문' : '설명 311'), findsOneWidget);
+  expect(server.savedProgress!['lastSectionId'], practical ? 300 : 311);
+  await tester.tap(find.byTooltip('목차'));
+  await tester.pumpAndSettle();
   expect(find.text('학습 목차'), findsOneWidget);
-  expect(server.savedProgress, isNull);
-  await tapText(tester, '목차 311');
+  await tester.tap(find.byKey(const ValueKey('section-311')));
+  await tester.pumpAndSettle();
   expect(server.savedProgress!['lastSectionId'], 311);
   expect(find.text('설명 311'), findsOneWidget);
   await tapText(tester, '다음');

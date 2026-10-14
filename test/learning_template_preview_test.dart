@@ -20,17 +20,12 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('목차 선택 후 진도를 저장하고 문제 화면을 열어도 완료하지 않는다', (tester) async {
+  testWidgets('첫 본문에서 진도를 저장하고 다음·이전 이동만으로 완료하지 않는다', (tester) async {
     await open(tester, '/grammar/java/chapters/111');
     final store = tester
         .element(find.byType(GrammarLessonScreen))
         .read<LearningStore>();
-    expect(store.progress(111), isNull);
-    expect(find.text('학습 목차'), findsOneWidget);
-    final entry = find.byKey(const ValueKey('section-11101'));
-    await tester.ensureVisible(entry);
-    await tester.tap(entry);
-    await tester.pumpAndSettle();
+    expect(find.text('학습 목차'), findsNothing);
     expect(store.progress(111)!.lastSectionId, 11101);
     expect(store.progress(111)!.completedAt, isNull);
     await tester.dragUntilVisible(
@@ -41,7 +36,12 @@ void main() {
     await tester.tap(find.text('다음'));
     await tester.pumpAndSettle();
     expect(store.progress(111)!.completedAt, isNull);
-    await tester.tap(find.byTooltip('뒤로가기'));
+    await tester.dragUntilVisible(
+      find.text('이전').hitTestable(),
+      find.byType(ListView).last,
+      const Offset(0, -200),
+    );
+    await tester.tap(find.text('이전'));
     await tester.pumpAndSettle();
     expect(find.text('1 / 5 목차'), findsOneWidget);
     expect(store.progress(111)!.lastSectionId, 11101);

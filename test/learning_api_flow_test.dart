@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'auth_test_support.dart';
 import 'learning_test_support.dart';
+import 'section_flow_test_support.dart' as section_support;
 
 void main() {
   Future<void> reveal(WidgetTester tester, String text) async {
@@ -50,7 +51,6 @@ void main() {
           .templateId,
       31,
     );
-    await reveal(tester, '첫 목차');
     expect(find.text('서버 본문'), findsOneWidget);
     expect(server.savedProgress?['lastSectionId'], 311);
     await tester.tap(find.byTooltip('북마크 저장'));
@@ -143,12 +143,20 @@ void main() {
     }
     server.failure = 500;
     server.failurePath = '/api/questions/42/submissions';
-    await reveal(tester, '답 확인');
+    for (final id in [41, 42, 43]) {
+      final submit = find.byKey(ValueKey('submit-$id'));
+      await section_support.reveal(tester, submit);
+      await tester.tap(submit);
+      await tester.pumpAndSettle();
+    }
     expect(store.latest(41), isNotNull);
     expect(store.latest(42), isNull);
     expect(store.latest(43), isNotNull);
     server.failure = null;
-    await reveal(tester, '답 확인');
+    final retry = find.byKey(const ValueKey('submit-42'));
+    await section_support.reveal(tester, retry);
+    await tester.tap(retry);
+    await tester.pumpAndSettle();
     int submissions(int id) => server.requests
         .where(
           (r) =>

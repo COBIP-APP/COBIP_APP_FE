@@ -16,7 +16,6 @@ class LearningQuestionCard extends StatefulWidget {
     required this.onChanged,
     this.result,
     this.locked = false,
-    this.showSubmissionDetails = false,
     this.submissionAction,
   });
   final LearningQuestion question;
@@ -25,7 +24,6 @@ class LearningQuestionCard extends StatefulWidget {
   final ValueChanged<String> onChanged;
   final LearningSubmission? result;
   final bool locked;
-  final bool showSubmissionDetails;
   final Widget? submissionAction;
   @override
   State<LearningQuestionCard> createState() => _LearningQuestionCardState();
@@ -180,18 +178,6 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
                       ),
                     ],
                   ),
-                  if (widget.showSubmissionDetails) ...[
-                    const SizedBox(height: 8),
-                    if (graded)
-                      Text(
-                        '${result.score}점 · 통과 기준 ${question.passScore}점',
-                        style: AppTypography.meta,
-                      ),
-                    Text(
-                      '제출 ${previewDate(result.submittedAt)}',
-                      style: AppTypography.meta,
-                    ),
-                  ],
                   if (result.gradingStatus == 'FAILED') ...[
                     const SizedBox(height: 8),
                     Text(
@@ -227,8 +213,7 @@ class _LearningQuestionCardState extends State<LearningQuestionCard> {
                       ],
                       if (explanation?.isNotEmpty == true)
                         Text(explanation!, style: AppTypography.body),
-                      if (widget.showSubmissionDetails &&
-                          result.feedback?.isNotEmpty == true) ...[
+                      if (result.feedback?.isNotEmpty == true) ...[
                         const SizedBox(height: 8),
                         Text(result.feedback!, style: AppTypography.body),
                       ],

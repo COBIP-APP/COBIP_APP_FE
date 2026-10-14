@@ -7,7 +7,6 @@ class AiResultCard extends StatefulWidget {
   const AiResultCard({
     super.key,
     required this.isCorrect,
-    required this.score,
     required this.feedback,
     this.correctAnswer,
     this.explanation,
@@ -16,7 +15,6 @@ class AiResultCard extends StatefulWidget {
     this.extra,
   });
   final bool isCorrect;
-  final int score;
   final String feedback;
   final String? correctAnswer, explanation, relatedSection, formattedCode;
   final Widget? extra;
@@ -40,7 +38,7 @@ class _AiResultCardState extends State<AiResultCard> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            '${widget.isCorrect ? '정답' : '오답'} · ${widget.score}점',
+            widget.isCorrect ? '정답' : '오답',
             style: AppTypography.card.copyWith(color: color),
           ),
           const SizedBox(height: 12),

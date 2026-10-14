@@ -63,7 +63,7 @@ void main() {
     await tapVisible(tester, find.byKey(const ValueKey('ai-option-2')));
     await tapVisible(tester, find.text('답안 제출'));
     expect(server.calls('/ai/quiz/grade').single.data['userAnswer'], '2');
-    expect(find.text('정답 · 100점'), findsOneWidget);
+    expect(find.text('정답'), findsOneWidget);
     expect(find.text('생성 시 해설'), findsNothing);
     await tapVisible(tester, find.text('풀이 보기'));
     expect(find.text('생성 시 해설'), findsOneWidget);
@@ -151,7 +151,7 @@ void main() {
       ),
       hasLength(1),
     );
-    expect(find.text('정답 · 90점'), findsOneWidget);
+    expect(find.text('정답'), findsOneWidget);
     expect(
       store.latest(42)!.pending,
       isTrue,

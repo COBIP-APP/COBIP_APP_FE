@@ -107,7 +107,6 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
         title: '문제 ${index + 1}',
         answer: answer,
         result: result,
-        showSubmissionDetails: true,
         locked: _moving || submitting || graded || pending,
         onChanged: (value) =>
             setState(() => store.rememberPracticeDraft(question.id, value)),

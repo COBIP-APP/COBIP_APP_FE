@@ -37,7 +37,7 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
       result?.gradingStatus == 'COMPLETED' && result?.score != null;
 
   String? _answer(LearningStore store, int id) {
-    final saved = store.latest(id);
+    final saved = store.practiceResult(id);
     return store.practiceDraft(id) ??
         saved?.selectedChoiceKey ??
         saved?.sourceCode ??
@@ -47,7 +47,7 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
   Future<void> _submit(LearningQuestion question) async {
     if (_moving || _submitting.contains(question.id)) return;
     final store = context.read<LearningStore>();
-    final previous = store.latest(question.id);
+    final previous = store.practiceResult(question.id);
     if (_graded(previous)) return;
     final answer = _answer(store, question.id);
     if (previous?.pending != true && (answer?.trim().isEmpty ?? true)) return;
@@ -94,7 +94,7 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
   }
 
   Widget _question(LearningStore store, LearningQuestion question, int index) {
-    final result = store.latest(question.id);
+    final result = store.practiceResult(question.id);
     final graded = _graded(result);
     final submitting = _submitting.contains(question.id);
     final pending = result?.pending == true;
@@ -120,15 +120,21 @@ class _LearningPracticeScreenState extends State<LearningPracticeScreen> {
                 onPressed:
                     _moving ||
                         submitting ||
-                        graded ||
-                        (!pending && (answer?.trim().isEmpty ?? true))
+                        (!graded &&
+                            !pending &&
+                            (answer?.trim().isEmpty ?? true))
                     ? null
+                    : graded
+                    ? () {
+                        _errors.remove(question.id);
+                        store.retryPracticeQuestion(question.id);
+                      }
                     : () => _submit(question),
                 child: Text(
                   submitting
                       ? '확인 중…'
                       : graded
-                      ? '확인 완료'
+                      ? '다시 풀기'
                       : pending
                       ? '채점 결과 새로고침'
                       : result?.gradingStatus == 'FAILED'

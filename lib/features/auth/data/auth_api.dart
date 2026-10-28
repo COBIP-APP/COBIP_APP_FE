@@ -176,7 +176,10 @@ class AuthApi {
   factory AuthApi.fromEnvironment() => AuthApi(
     Dio(
       BaseOptions(
-        baseUrl: const String.fromEnvironment('API_BASE_URL'),
+        baseUrl: const String.fromEnvironment(
+          'API_BASE_URL',
+          defaultValue: 'https://api.cobia.shop',
+        ),
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 20),
         sendTimeout: const Duration(seconds: 10),

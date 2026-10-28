@@ -16,12 +16,18 @@ COBIP Android 앱의 Flutter 프로젝트입니다. 인증·회원가입·비밀
 
 ```powershell
 flutter pub get
+flutter run
+```
+
+기본 API 주소는 배포 서버 `https://api.cobia.shop`입니다. 로컬 백엔드를 사용할 때만 주소를 덮어씁니다.
+
+```powershell
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
 ```
 
 실행할 Android 기기나 에뮬레이터가 여러 개라면 `flutter devices`로 기기를 확인하고 `flutter run -d <device-id>`를 사용합니다.
 
-`API_BASE_URL`은 백엔드 호스트 주소입니다. 위 주소는 같은 PC에서 실행한 개발 서버에 Android 에뮬레이터로 연결하는 예시이며 서버를 자동으로 실행하지 않습니다. 실기기는 접근 가능한 개발 서버 주소를 별도로 사용합니다. 릴리스에서는 HTTPS 주소가 필요합니다. 주소 미설정·서버 오류를 모의 성공으로 처리하지 않습니다.
+`API_BASE_URL`은 백엔드 호스트 주소입니다. 로컬 주소는 같은 PC의 Android 에뮬레이터에서 개발 서버에 연결하는 예시이며 서버를 자동으로 실행하지 않습니다. 릴리스에서는 HTTPS 주소만 허용합니다. 주소·서버 오류를 모의 성공으로 처리하지 않습니다.
 
 AI 문제 생성·채점·챗봇·추가 해설은 현재 운영 AI 서버를 직접 호출합니다. `AI_BASE_URL`의 기본값은 팀에서 전달한 `https://ai.cobip.tech`이며 별도 Dio를 사용해 BE 로그인 토큰을 AI 서버에 보내지 않습니다. 로그인·학습 조회·기존 답안 저장은 계속 `API_BASE_URL`을 사용합니다. AI 요청의 응답 제한 시간은 5분이며 자동 재전송하지 않습니다.
 

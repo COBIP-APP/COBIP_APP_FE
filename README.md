@@ -1,50 +1,89 @@
-# COBIP App FE
+# COBIA Android 앱
 
-COBIP Android 앱의 Flutter 프로젝트입니다. 인증·회원가입·비밀번호 재설정과 메인의 공개 학습·진도 조회는 백엔드 API를 사용합니다. 문법·실무·문제 등 다른 팀원의 학습 상세 화면은 기존 구현을 유지합니다.
+COBIA는 프로그래밍 입문자가 문법에서 실무 주제까지 이어서 학습할 수 있도록 만든 Android 앱입니다. 챕터별 설명과 예제 코드를 읽고 문제를 풀며, 학습 위치와 풀이 결과를 확인할 수 있습니다. AI 문제 생성과 챗봇도 제공합니다.
 
-## 개발 환경
+이 저장소는 **Flutter 앱**입니다. 계정·학습 콘텐츠·진도는 [COBIP_APP_BE](https://github.com/COBIP-APP/COBIP_APP_BE) API가 처리하고, AI 문제 생성·챗봇은 별도 AI 서비스에 요청합니다. 기존 COBIP 웹과 COBIA 앱은 별도의 백엔드와 DB를 사용합니다.
 
-- Flutter stable 3.47.5
-- Dart 3.13.4
-- Android SDK 36
+## 주요 기능
 
-팀원은 Flutter SDK와 Android Studio의 Flutter/Dart 플러그인을 설치한 뒤 프로젝트를 실행합니다.
+| 화면 | 할 수 있는 일 |
+| --- | --- |
+| 계정 | 이메일 인증 후 회원가입, 로그인, 비밀번호 재설정 |
+| 홈·문법·실무 | 언어와 주제별 챕터 선택, 목차·Markdown 본문·예제 코드 확인 |
+| 문제 | 공개 문제 풀이, AI 문제 생성·채점, 생성 문제 저장 |
+| 챗봇 | 개발·학습 관련 질문과 AI 답변 확인 |
+| 마이페이지 | 학습 진도, 북마크, 저장한 문제와 최근 결과 확인 |
 
-## 실행
+콘텐츠는 [관리자 웹](https://github.com/COBIP-APP/COBIP_APP_ADMIN)에서 등록·공개합니다. 새 DB에서 학습 목록이 비어 있다면 먼저 콘텐츠를 등록해야 합니다.
 
-프로젝트 루트에서 실행합니다.
+## 실행 준비
+
+- Flutter SDK와 Android Studio·Android SDK
+- 실행 중인 Android 에뮬레이터 또는 Android 기기
+- 로그인·학습용 백엔드 서버. 로컬에서 실행하려면 [백엔드 README](https://github.com/COBIP-APP/COBIP_APP_BE)를 먼저 따릅니다.
+
+이 프로젝트의 `pubspec.yaml`은 Dart SDK `^3.13.4`를 요구합니다. 아래 명령은 **Windows PowerShell** 기준입니다.
 
 ```powershell
+git clone --branch develop https://github.com/COBIP-APP/COBIP_APP_FE.git
+cd COBIP_APP_FE
 flutter pub get
-flutter run
+flutter devices
 ```
 
-기본 API 주소는 배포 서버 `https://api.cobia.shop`입니다. 로컬 백엔드를 사용할 때만 주소를 덮어씁니다.
+### 로컬 백엔드와 연결해 실행
+
+같은 PC에서 백엔드 Docker Compose를 실행했다면 Android 에뮬레이터에서는 다음 명령을 사용합니다. `emulator-5554`가 다르면 `flutter devices`에 나온 기기 ID로 바꿉니다.
 
 ```powershell
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:8080
 ```
 
-실행할 Android 기기나 에뮬레이터가 여러 개라면 `flutter devices`로 기기를 확인하고 `flutter run -d <device-id>`를 사용합니다.
+이 명령에서는 계정·학습 API만 로컬 백엔드에 연결됩니다. AI 주소는 기본값인 `https://ai.cobip.tech`를 사용합니다. **AI까지 로컬에서 실행한 경우에만** 다음처럼 두 주소를 함께 지정합니다.
 
-`API_BASE_URL`은 백엔드 호스트 주소입니다. 로컬 주소는 같은 PC의 Android 에뮬레이터에서 개발 서버에 연결하는 예시이며 서버를 자동으로 실행하지 않습니다. 릴리스에서는 HTTPS 주소만 허용합니다. 주소·서버 오류를 모의 성공으로 처리하지 않습니다.
+```powershell
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:8080 --dart-define=AI_BASE_URL=http://10.0.2.2:8000
+```
 
-AI 문제 생성·채점·챗봇·추가 해설은 현재 운영 AI 서버를 직접 호출합니다. `AI_BASE_URL`의 기본값은 팀에서 전달한 `https://ai.cobip.tech`이며 별도 Dio를 사용해 BE 로그인 토큰을 AI 서버에 보내지 않습니다. 로그인·학습 조회·기존 답안 저장은 계속 `API_BASE_URL`을 사용합니다. AI 요청의 응답 제한 시간은 5분이며 자동 재전송하지 않습니다.
+`10.0.2.2`는 Android 에뮬레이터에서 같은 PC를 가리키는 주소입니다. 실제 휴대전화에서 로컬 서버에 접속할 때는 PC의 LAN 주소와 서버·방화벽 설정이 별도로 필요합니다. 위 HTTP 주소는 개발 실행용입니다.
 
-다른 AI 서버를 사용할 때는 `--dart-define=AI_BASE_URL=https://...`을 지정합니다. 추후 Spring이 동일한 `/ai/...` 요청·응답을 중계하면 `--dart-define=AI_USE_BE_PROXY=true`로 빌드하여 기존 BE 주소와 인증을 사용할 수 있습니다. 현재 기본값은 직접 호출이며, 직접 호출 실패 시 BE로 자동 우회하지 않습니다. 팀의 최종 `/api/ai/chat`·관리자 생성 경로는 별도 계약이므로 이 옵션만으로 전환되지 않습니다.
+### 운영 서버와 연결해 실행
 
-생성 문제의 `문제 저장`, 작성자 표시, `내가 만든 문제` 필터는 FE에 추가했습니다. 일반 사용자용 `POST/GET /api/users/me/questions`는 **BE 신규 구현이 필요한 제안 계약**입니다. API가 없으면 저장/조회 준비 안내를 표시하며 성공으로 처리하지 않습니다. 요청·응답 JSON, 작성자 권한, 중복 저장 방지, 추가 문제 유형과 기존 제출 API 확장 내용은 [BE 구현 요청](docs/learning-api-preview.md#2026-10-12-생성-문제-저장작성자내-문제-필터-be-구현-요청)에 정리했습니다.
+별도 주소를 지정하지 않으면 앱은 `https://api.cobia.shop`과 `https://ai.cobip.tech`를 사용합니다. 두 서버가 켜져 있고 인터넷에 연결되어 있어야 합니다.
 
-메일 인증에는 승인된 개발 서버의 SMTP 설정과 테스트 메일함이 필요합니다. SMTP 비밀번호·JWT 비밀값은 앱에 넣지 않습니다. 회원가입 성공 후에는 로그인 화면에서 별도로 로그인합니다.
+```powershell
+flutter run -d emulator-5554
+```
 
-프로젝트 내부 SDK를 사용하는 경우 `.tools/flutter/bin/flutter.bat`와 `.tools/flutter/bin/dart.bat`를 사용하고 `PUB_CACHE`, `APPDATA`, `GRADLE_USER_HOME`은 기존 `.tools` 설정을 유지합니다. SDK·캐시가 루트 안에 있으면 소스 포맷 검사는 `dart format --output=none --set-exit-if-changed lib test`로 범위를 제한할 수 있습니다.
+## 앱 사용 순서
 
-인증 계약, 변경 범위와 실제 서버 검증 보류 항목은 [인증 연동 작업 기록](docs/auth-api-integration.md)을 참고합니다.
+1. **회원가입:** 이메일 입력 → 인증 요청 → 메일로 받은 코드 확인 → 닉네임·비밀번호 입력. 메일 발송에는 백엔드 SMTP 설정이 필요합니다.
+2. **학습:** 홈에서 문법 또는 실무를 선택 → 챕터 소개와 목차 확인 → 본문·예제 읽기 → 연결된 문제 풀이.
+3. **문제·AI:** 공개 문제를 풀거나 AI 문제를 생성합니다. 생성한 문제를 저장하면 다시 찾아볼 수 있습니다.
+4. **기록:** 마이페이지에서 학습 위치, 북마크, 저장한 문제와 최근 결과를 확인합니다.
 
-메인의 조회 API, 빈 상태·오류 처리와 학습 상세 이동의 남은 경계는 [메인 API 연동 작업 기록](docs/home-api-integration.md)을 참고합니다.
+AI 답변과 채점은 학습을 돕는 참고 정보입니다. 중요한 코드·사실은 직접 확인하세요.
 
-프로필·내 학습·북마크·문제별 최근 결과와 계정 기능은 [마이페이지 API 연동 작업 기록](docs/mypage-api-integration.md)을 참고합니다.
+## 서버 주소와 빌드
 
-## 팀 규칙
+| 빌드 변수 | 기본값 | 역할 |
+| --- | --- | --- |
+| `API_BASE_URL` | `https://api.cobia.shop` | 인증·콘텐츠·진도·저장된 문제 API |
+| `AI_BASE_URL` | `https://ai.cobip.tech` | AI 문제 생성·채점·챗봇 API |
 
-브랜치, 커밋, Dart 스타일과 폴더 구조는 [CONVENTIONS.md](CONVENTIONS.md)를 따릅니다.
+AI 요청은 기본적으로 AI 서버에 직접 보냅니다. 일반 API와 AI API는 서로 다른 주소를 사용하므로 로컬 실행 시 각각의 연결 상태를 확인하세요. 릴리스 빌드에는 HTTPS 주소를 사용합니다.
+
+```powershell
+flutter build apk --release --dart-define=API_BASE_URL=https://api.cobia.shop --dart-define=AI_BASE_URL=https://ai.cobip.tech
+```
+
+결과 APK: `build/app/outputs/flutter-apk/app-release.apk`. APK에 지정한 서버 주소는 빌드할 때 정해지므로 주소를 바꾸려면 다시 빌드해야 합니다.
+
+## 문제가 생기면
+
+- **서버에 연결할 수 없음:** 백엔드가 실행 중인지 확인하고, `API_BASE_URL`이 현재 실행 방식과 맞는지 확인합니다.
+- **인증 메일이 오지 않음:** 스팸함과 백엔드 SMTP 설정을 확인합니다.
+- **학습 목록이 비어 있음:** 백엔드 DB에 관리자가 공개한 챕터·문제가 있는지 확인합니다.
+- **AI만 동작하지 않음:** `AI_BASE_URL`의 AI 서버 상태를 확인합니다. 백엔드가 정상이어도 AI 서버는 별도로 중단될 수 있습니다.
+
+프로젝트 내부 구성과 개발 규칙은 [CONVENTIONS.md](CONVENTIONS.md), API 연동 기록은 [docs](docs)를 참고하세요.
